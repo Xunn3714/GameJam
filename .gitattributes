@@ -6,6 +6,10 @@
 # This template is maintained from the gitattributes/gitattributes repository
 # and distributed under MIT License.
 
+# Normalize repository text. File-specific binary and LFS rules below override
+# this default where needed.
+*                       text=auto eol=lf
+
 # Define macros (only works in top-level gitattributes files)
 [attr]lfs               filter=lfs diff=lfs merge=lfs -text
 [attr]unity-json        eol=lf linguist-language=json
@@ -17,10 +21,15 @@
 # Unity source files
 *.cginc                 text
 *.compute               text linguist-language=hlsl
-*.cs                    text diff=csharp
+*.cs                    text eol=lf diff=csharp
 *.hlsl                  text linguist-language=hlsl
 *.raytrace              text linguist-language=hlsl
 *.shader                text
+
+# Windows command scripts require CRLF. PowerShell scripts remain LF so they
+# also work in cross-platform PowerShell.
+*.bat                   text eol=crlf
+*.cmd                   text eol=crlf
 
 # Unity JSON files
 *.asmdef                unity-json
