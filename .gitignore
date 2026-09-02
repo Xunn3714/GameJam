@@ -36,6 +36,8 @@
 
 # Visual Studio cache directory
 .vs/
+.vscode/
+.idea/
 
 # Gradle cache directory
 .gradle/
@@ -104,3 +106,16 @@ InitTestScene*.unity*
 
 # Auto-generated cache in Assets folder
 /[Aa]ssets/[Ss]ceneDependencyCache*
+
+# Local documentation-editor state. Keep Markdown content in Git, not each
+# contributor's Obsidian window layout, theme installation, or caches.
+/docs/.obsidian/workspace*.json
+/docs/.obsidian/appearance.json
+/docs/.obsidian/graph.json
+/docs/.obsidian/types.json
+/docs/.obsidian/themes/
+/docs/.obsidian/cache/
+
+# Common operating-system metadata
+.DS_Store
+Thumbs.db
