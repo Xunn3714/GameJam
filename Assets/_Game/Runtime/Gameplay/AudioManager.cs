@@ -6,15 +6,16 @@ public class AudioManager : MonoBehaviour
 
     public const string BGM_VOLUME_KEY = "BGMVolume";
     public const string SFX_VOLUME_KEY = "SFXVolume";
+    public const string SHEEP_VOLUME_KEY = "SheepVolume";
 
     [Header("Audio Sources")]
     public AudioSource bgmSource;
     public AudioSource sfxSource;
+    public AudioSource sheepSource;
 
 
     private void Awake()
     {
-        // 保证全游戏只有一个 AudioManager
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
@@ -24,22 +25,28 @@ public class AudioManager : MonoBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);
 
-        // 读取之前保存的音量
         LoadVolumeSettings();
     }
 
 
     private void LoadVolumeSettings()
     {
-        float bgmVolume = PlayerPrefs.GetFloat(BGM_VOLUME_KEY, 1f);
-        float sfxVolume = PlayerPrefs.GetFloat(SFX_VOLUME_KEY, 1f);
+        float bgmVolume =
+            PlayerPrefs.GetFloat(BGM_VOLUME_KEY, 1f);
+
+        float sfxVolume =
+            PlayerPrefs.GetFloat(SFX_VOLUME_KEY, 1f);
+
+        float sheepVolume =
+            PlayerPrefs.GetFloat(SHEEP_VOLUME_KEY, 1f);
 
         SetBGMVolume(bgmVolume);
         SetSFXVolume(sfxVolume);
+        SetSheepVolume(sheepVolume);
     }
 
 
-    // 播放背景音乐
+    // 播放 BGM
     public void PlayBGM(AudioClip clip)
     {
         if (clip == null)
@@ -54,14 +61,14 @@ public class AudioManager : MonoBehaviour
     }
 
 
-    // 停止背景音乐
+    // 停止 BGM
     public void StopBGM()
     {
         bgmSource.Stop();
     }
 
 
-    // 播放一次音效
+    // 播放普通 SFX
     public void PlaySFX(AudioClip clip)
     {
         if (clip == null)
@@ -71,16 +78,30 @@ public class AudioManager : MonoBehaviour
     }
 
 
-    // 设置 BGM 音量
+    // 播放 Sheep 音效
+    public void PlaySheepSFX(AudioClip clip)
+    {
+        if (clip == null)
+            return;
+
+        sheepSource.PlayOneShot(clip);
+    }
+
+
     public void SetBGMVolume(float volume)
     {
         bgmSource.volume = Mathf.Clamp01(volume);
     }
 
 
-    // 设置 SFX 音量
     public void SetSFXVolume(float volume)
     {
         sfxSource.volume = Mathf.Clamp01(volume);
+    }
+
+
+    public void SetSheepVolume(float volume)
+    {
+        sheepSource.volume = Mathf.Clamp01(volume);
     }
 }

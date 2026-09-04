@@ -1,0 +1,36 @@
+{
+    "version": 1,
+    "name": "SheepMvpDev",
+    "maps": [
+        {
+            "name": "Player",
+            "id": "564eadf8-e6aa-4b56-9ed6-d73156336546",
+            "actions": [
+                {
+                    "name": "Poop",
+                    "type": "Button",
+                    "id": "7d9c4f32-f960-47b1-aa0f-e649c5ee6512",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false,
+                    "priority": 0
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "f9609063-c411-4931-a607-b8f1c0bafccc",
+                    "path": "<Keyboard>/space",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Poop",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
+        }
+    ],
+    "controlSchemes": []
+}
