@@ -7,19 +7,25 @@ public sealed class MvpHudView : MonoBehaviour
     [SerializeField] private TMP_Text taskText;
     [SerializeField] private TMP_Text flockCountText;
 
+    private void Awake()
+    {
+        MvpTmpUiFont.Apply(taskText);
+        MvpTmpUiFont.Apply(flockCountText);
+    }
+
     public void UpdateProgress(
         int progress,
         int target,
-        int speciesCount)
+        int memberCount)
     {
         if (taskText != null)
         {
-            taskText.text = $"Find Sheep: {progress}/{target}";
+            taskText.text = $"找到羊：{progress}/{target}";
         }
 
         if (flockCountText != null)
         {
-            flockCountText.text = $"Group: {speciesCount}";
+            flockCountText.text = $"族群：{memberCount}";
         }
     }
 }
