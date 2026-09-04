@@ -948,11 +948,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 37547591881767895, guid: 04d5c16ecd67d5a48ae3d9e92745e9ea, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 600
+      value: 1000
       objectReference: {fileID: 0}
     - target: {fileID: 37547591881767895, guid: 04d5c16ecd67d5a48ae3d9e92745e9ea, type: 3}
       propertyPath: m_SizeDelta.y
-      value: 500
+      value: 700
       objectReference: {fileID: 0}
     - target: {fileID: 37547591881767895, guid: 04d5c16ecd67d5a48ae3d9e92745e9ea, type: 3}
       propertyPath: m_LocalPosition.x
@@ -1038,6 +1038,10 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5799193844918970890, guid: 04d5c16ecd67d5a48ae3d9e92745e9ea, type: 3}
+      propertyPath: sheepSlider
+      value: 
+      objectReference: {fileID: 971120307}
     - target: {fileID: 8161488588951238002, guid: 04d5c16ecd67d5a48ae3d9e92745e9ea, type: 3}
       propertyPath: m_AnchorMax.y
       value: 1
@@ -1061,6 +1065,17 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 37547591881767895, guid: 04d5c16ecd67d5a48ae3d9e92745e9ea, type: 3}
   m_PrefabInstance: {fileID: 971120304}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &971120307 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 4482483314873931829, guid: 04d5c16ecd67d5a48ae3d9e92745e9ea, type: 3}
+  m_PrefabInstance: {fileID: 971120304}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 67db9e8f0e2ae9c40bc1e2b64352a6b4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Slider
 --- !u!1 &1390761053
 GameObject:
   m_ObjectHideFlags: 0
