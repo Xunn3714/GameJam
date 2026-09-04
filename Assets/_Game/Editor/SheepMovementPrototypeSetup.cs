@@ -182,7 +182,7 @@ public static class SheepMovementPrototypeSetup
         return EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
     }
 
-    private static Sprite GetOrCreateCircleSprite()
+    internal static Sprite GetOrCreateCircleSprite()
     {
         Sprite sprite = AssetDatabase.LoadAllAssetsAtPath(CircleAssetPath).OfType<Sprite>().FirstOrDefault();
         if (sprite != null) return sprite;
