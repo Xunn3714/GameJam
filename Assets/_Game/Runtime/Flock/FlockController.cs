@@ -1,128 +1,112 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 [DisallowMultipleComponent]
 public sealed class FlockController : MonoBehaviour
 {
-    [Header("Player")]
-    [SerializeField] private SheepPlayerController playerController;
+    [Header("Flock")]
+    [SerializeField] private FlockMovementController movementController;
+    [SerializeField] private SheepMember[] startingMembers;
 
-    [Header("Formation")]
-    [SerializeField] private Transform formationRoot;
-    [SerializeField] private Transform[] followSlots;
-
-    [Header("Recruitable Sheep")]
-    [SerializeField] private RecruitableSheep[] recruitableSheep;
+    private readonly List<SheepMember> members = new List<SheepMember>();
 
     public int RecruitedCount { get; private set; }
+    public int MemberCount => members.Count;
+    public Vector2 Center => movementController != null
+        ? (Vector2)movementController.transform.position
+        : (Vector2)transform.position;
+    public Vector2 MovementVelocity => movementController != null
+        ? movementController.DesiredVelocity
+        : Vector2.zero;
+    public bool IsMoving => movementController != null && movementController.IsMoving;
+    public IReadOnlyList<SheepMember> Members => members;
 
     public event Action<RecruitableSheep, int> SheepRecruited;
+    public event Action<int> MemberCountChanged;
 
     private void Awake()
     {
-        if (playerController == null)
+        movementController ??= GetComponent<FlockMovementController>();
+
+        if (startingMembers == null)
+            return;
+
+        foreach (SheepMember member in startingMembers)
         {
-            playerController = GetComponent<SheepPlayerController>();
+            AddMember(member);
         }
     }
 
-    private void OnEnable()
+    public bool TryRecruit(RecruitableSheep sheep)
     {
-        if (recruitableSheep == null)
-            return;
+        if (sheep == null || sheep.IsRecruited)
+            return false;
 
-        foreach (RecruitableSheep sheep in recruitableSheep)
+        SheepMember member = sheep.GetComponent<SheepMember>();
+        if (member == null)
         {
-            if (sheep != null)
-            {
-                sheep.Recruited += HandleSheepRecruited;
-            }
-        }
-    }
-
-    private void OnDisable()
-    {
-        if (recruitableSheep == null)
-            return;
-
-        foreach (RecruitableSheep sheep in recruitableSheep)
-        {
-            if (sheep != null)
-            {
-                sheep.Recruited -= HandleSheepRecruited;
-            }
-        }
-    }
-
-    private void Update()
-    {
-        UpdateFormationDirection();
-    }
-
-    private void HandleSheepRecruited(RecruitableSheep sheep)
-    {
-        if (sheep == null)
-            return;
-
-        if (followSlots == null || followSlots.Length == 0)
-        {
-            Debug.LogWarning("FlockController 没有配置 Follow Slots。", this);
-            return;
+            member = sheep.gameObject.AddComponent<SheepMember>();
         }
 
-        if (RecruitedCount >= followSlots.Length)
-        {
-            Debug.LogWarning("没有更多可用的跟随位置。", this);
-            return;
-        }
+        if (!AddMember(member))
+            return false;
 
-        Transform slot = followSlots[RecruitedCount];
-
-        if (slot == null)
-        {
-            Debug.LogWarning(
-                $"Follow Slot {RecruitedCount} 没有设置。",
-                this
-            );
-            return;
-        }
-
-        // 加入族群：
-        // 直接成为对应 Slot 的子物体。
-        // 从此跟随 PlayerSheep 的整体 Transform 一起移动。
-        sheep.transform.SetParent(slot);
-
-        sheep.transform.localPosition = Vector3.zero;
-        sheep.transform.localRotation = Quaternion.identity;
-
+        sheep.CompleteRecruitment();
         RecruitedCount++;
-
         SheepRecruited?.Invoke(sheep, RecruitedCount);
 
         Debug.Log(
-            $"{sheep.name} joined formation Slot_{RecruitedCount:00}. " +
-            $"Current Sheep Count: {RecruitedCount + 1}",
-            sheep
-        );
+            $"{sheep.name} joined the flock. Current member count: {MemberCount}",
+            sheep);
+        return true;
     }
 
-    private void UpdateFormationDirection()
+    public bool Remove(SheepMember member)
     {
-        if (formationRoot == null || playerController == null)
-            return;
+        int index = members.IndexOf(member);
+        if (index < 0)
+            return false;
 
-        Vector2 direction = playerController.LastMoveDirection;
+        if (member.Agent != null)
+        {
+            member.Agent.SetFlock(null);
+        }
 
-        if (direction.sqrMagnitude <= 0.001f)
-            return;
+        member.Leave(this);
+        members.RemoveAt(index);
+        MemberCountChanged?.Invoke(MemberCount);
+        return true;
+    }
 
-        float angle =
-            Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg - 90f;
+    public void RejectCurrentMovement()
+    {
+        if (movementController != null)
+        {
+            movementController.RejectCurrentMovement();
+        }
+    }
 
-        formationRoot.rotation = Quaternion.Euler(
-            0f,
-            0f,
-            angle
-        );
+    private bool AddMember(SheepMember member)
+    {
+        if (member == null || members.Contains(member) || !member.Join(this))
+            return false;
+
+        if (member.GetComponent<SheepIdentity>() == null)
+        {
+            member.gameObject.AddComponent<SheepIdentity>();
+        }
+
+        SheepFlockAgent agent = member.GetComponent<SheepFlockAgent>();
+        if (agent == null)
+        {
+            agent = member.gameObject.AddComponent<SheepFlockAgent>();
+        }
+
+        members.Add(member);
+        member.SetAgent(agent);
+        agent.SetFlock(this);
+        MemberCountChanged?.Invoke(MemberCount);
+        return true;
     }
 }

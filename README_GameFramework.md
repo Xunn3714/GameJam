@@ -22,7 +22,7 @@ Unity 版本：**Unity 6.5（6000.5.9f1）**
 
 当前已经确定：
 
-* 玩家类型：羊。
+* 玩家控制对象：羊群整体，不存在固定头羊。
 * 视角：2D俯视角。
 * 操作：WASD移动，Space拉屎。
 * MVP目标：接触并招募另外5只羊。
@@ -159,7 +159,7 @@ Assets
     │
     ├── Runtime
     │   ├── Gameplay
-    │   ├── Player
+    │   ├── Flock
     │   └── UI
     │       └── MainMenu
     │
@@ -311,7 +311,7 @@ Input.GetKeyDown(...)
 Input.GetAxis(...)
 ```
 
-玩家输入方向已经确定，但玩法控制器尚未实现。
+玩家输入方向已经确定，输入应挂在羊群控制对象上，不挂在任何成员羊上。
 
 羊群 MVP 使用：
 
@@ -320,7 +320,7 @@ Player/Move → WASD
 Player/Poop → Space（待新增）
 ```
 
-移动继续使用现有 `Assets/InputSystem_Actions.inputactions`，不要使用旧版 `Input.GetAxis`。具体实现与验收见羊群 MVP 技术方案。
+羊群移动继续使用现有 `Assets/InputSystem_Actions.inputactions`，不要使用旧版 `Input.GetAxis`。具体实现与验收见羊群 MVP 技术方案。
 
 \---
 
