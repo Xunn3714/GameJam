@@ -1,5 +1,10 @@
 # 菜单 UI
 
+> **Status: Deprecated**
+> **Last checked: 2026-09-04**
+>
+> 本文描述的 `MenuUIController`、`PopupDialog`、`CameraShake2D` 和 `GameJam → UI` Editor 工具当前不在 `main` 的源码中，不能作为可用接口。羊群 MVP 应复用 `Assets/_Game/Scenes/MainMenu.unity`、`MainMenuController`、`SceneLoader` 和 `Level_01` 的现有 UI。本文以下内容仅保留为历史背景。
+
 菜单 UI 是游戏专用模块，位于 `Assets/_Game/Runtime/UI/`。不依赖共享 `GameJamKit`，可以独立放到任意场景验证。
 
 ## 创建开发场景
