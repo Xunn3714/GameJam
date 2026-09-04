@@ -1,14 +1,25 @@
 # GameJam Unity Starter
 
-面向 Game Jam 的 Unity 2D 协作工程。当前仓库只提供稳定的工程基线；具体玩法、输入动作、Layer、Prefab 和运行时模块应在题目与目标平台确定后按实际需求加入。
+面向 Game Jam 的 Unity 2D 协作工程。工程基线、主菜单、暂停、设置、音频和 Ending 已存在；当前玩法方向已经确定为俯视角羊群 MVP。
 
 ## 当前基线
 
 - Unity：`6000.5.9f1`
 - 渲染：Universal Render Pipeline / 2D Renderer
-- 输入：Unity Input System（当前仍是模板 action asset）
-- 当前入口：`Assets/Scenes/SampleScene.unity`（临时场景，首个竖切片完成时再改名和迁移）
-- 目标平台：待确定
+- 输入：Unity Input System；现有 `Player/Move`，MVP 计划新增 `Player/Poop`
+- 当前入口：`Assets/_Game/Scenes/MainMenu.unity`
+- 当前关卡：`Assets/_Game/Scenes/Level_01.unity`
+- 首轮目标平台：Windows（WASD + Space）
+
+## 当前玩法方向
+
+玩家从一只随机命名的羊开始，通过接触另外5只羊形成族群。Space 用于测试“拉屎”主动技能；找齐后显示族群规模、成员名单、拉屎次数和游戏用时。
+
+开始实现前依次阅读：
+
+1. [`AGENTS.md`](AGENTS.md)
+2. [羊群 MVP 策划案](docs/design/羊群MVP策划案.md)
+3. [羊群 MVP 技术方案](<docs/tech docs/羊群MVP技术方案.md>)
 
 `ProjectSettings/ProjectVersion.txt` 是 Unity 版本的唯一事实来源。不要使用其他 Unity 版本打开并保存项目。
 
@@ -81,6 +92,10 @@ Assets/
 
 ## 文档
 
+- `AGENTS.md`：Codex、Claude Code 及其他 coding agent 的统一实现入口。
+- `docs/design/`：已确认玩法目标、规则和 MVP 范围。
 - `docs/meeting summary/`：历史会议记录。
 - `docs/API docs/`：设计草案；只有明确标为 Accepted 且对应实现已存在的内容才可视为契约。
-- `docs/tech docs/`：研究资料，不自动代表本项目采用该方案。
+- `docs/tech docs/`：当前技术方案和研究资料；是否采用以文档状态及策划案/实现入口的引用为准。
+
+当前仓库实际存在误拼目录 `Assets/_Game/Content/Perfabs/`。不要自行创建并行的 `Prefabs/` 或直接移动现有资产；由 owner 在 Unity Project 窗口中统一处理。
