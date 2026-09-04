@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.TextCore.LowLevel;
@@ -7,16 +8,28 @@ using UnityEngine.TextCore.LowLevel;
 /// </summary>
 public static class MvpTmpUiFont
 {
-    private static readonly string[] PreferredFontNames =
-    {
-        "Microsoft YaHei",
-        "SimHei",
-        "Noto Sans CJK SC",
-        "Arial"
-    };
+    private const string BundledFontResourcePath = "NotoSansSC-Regular";
+    private const string MvpCharacters =
+        "找到羊族群加入了棉花糖云朵小卷豆豆奶盖白团咩毛球盐巴雪软月亮“”！：0123456789/";
 
     private static Font sourceFont;
     private static TMP_FontAsset cachedFontAsset;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    private static void RegisterGlobalFallback()
+    {
+        TMP_FontAsset fontAsset = GetOrCreate();
+        if (fontAsset == null)
+        {
+            return;
+        }
+
+        List<TMP_FontAsset> fallbackFonts = TMP_Settings.fallbackFontAssets;
+        if (fallbackFonts != null && !fallbackFonts.Contains(fontAsset))
+        {
+            fallbackFonts.Add(fontAsset);
+        }
+    }
 
     public static void Apply(TMP_Text text)
     {
@@ -26,10 +39,14 @@ public static class MvpTmpUiFont
         }
 
         TMP_FontAsset fontAsset = GetOrCreate();
-        if (fontAsset != null)
+        if (fontAsset == null)
         {
-            text.font = fontAsset;
+            return;
         }
+
+        // MVP 的动态中文内容直接使用内置字体，避免落入旧的
+        // Liberation Sans fallback 链后再次显示缺字方框。
+        text.font = fontAsset;
     }
 
     private static TMP_FontAsset GetOrCreate()
@@ -39,10 +56,11 @@ public static class MvpTmpUiFont
             return cachedFontAsset;
         }
 
-        sourceFont = Font.CreateDynamicFontFromOSFont(PreferredFontNames, 48);
+        sourceFont = Resources.Load<Font>(BundledFontResourcePath);
         if (sourceFont == null)
         {
-            Debug.LogWarning("No preferred system font was available for TMP Chinese text.");
+            Debug.LogWarning(
+                $"找不到内置中文字体 Resources/{BundledFontResourcePath}，TMP 中文文本可能显示为方框。");
             return null;
         }
 
@@ -51,14 +69,23 @@ public static class MvpTmpUiFont
             90,
             9,
             GlyphRenderMode.SDFAA,
-            1024,
-            1024,
+            2048,
+            2048,
             AtlasPopulationMode.Dynamic,
             true);
 
         if (cachedFontAsset == null)
         {
-            Debug.LogWarning("Failed to create a dynamic TMP font asset from the system font.");
+            Debug.LogWarning("无法从系统中文字体创建动态 TMP 字体资源。");
+            return null;
+        }
+
+        cachedFontAsset.name = $"{sourceFont.name} Dynamic TMP Fallback";
+        cachedFontAsset.hideFlags = HideFlags.DontSave;
+
+        if (!cachedFontAsset.TryAddCharacters(MvpCharacters, out string missingCharacters))
+        {
+            Debug.LogWarning($"内置中文字体缺少以下字符：{missingCharacters}");
         }
 
         return cachedFontAsset;
