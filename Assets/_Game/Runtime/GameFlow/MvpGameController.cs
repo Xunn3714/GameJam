@@ -12,9 +12,6 @@ public sealed class MvpGameController : MonoBehaviour
 
     private RecruitSheepTask recruitTask;
 
-    // 当前只有“羊”一个物种。
-    private const int CurrentSpeciesCount = 1;
-
     private void Awake()
     {
         // 当前任务固定寻找 5 只羊。
@@ -29,7 +26,13 @@ public sealed class MvpGameController : MonoBehaviour
         if (flockController != null)
         {
             flockController.SheepRecruited += HandleSheepRecruited;
+            flockController.MemberCountChanged += HandleMemberCountChanged;
         }
+    }
+
+    private void Start()
+    {
+        UpdateHud();
     }
 
     private void OnDisable()
@@ -37,7 +40,13 @@ public sealed class MvpGameController : MonoBehaviour
         if (flockController != null)
         {
             flockController.SheepRecruited -= HandleSheepRecruited;
+            flockController.MemberCountChanged -= HandleMemberCountChanged;
         }
+    }
+
+    private void HandleMemberCountChanged(int memberCount)
+    {
+        UpdateHud();
     }
 
     private void HandleSheepRecruited(
@@ -69,7 +78,7 @@ public sealed class MvpGameController : MonoBehaviour
         hudView.UpdateProgress(
             recruitTask.Progress,
             recruitTask.Target,
-            CurrentSpeciesCount
+            flockController != null ? flockController.MemberCount : 0
         );
     }
 

@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 
 [DisallowMultipleComponent]
@@ -10,8 +9,6 @@ public sealed class RecruitableSheep : MonoBehaviour
 
     private CircleCollider2D recruitTrigger;
 
-    public event Action<RecruitableSheep> Recruited;
-
     public bool IsRecruited { get; private set; }
 
     private void Awake()
@@ -22,23 +19,26 @@ public sealed class RecruitableSheep : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.GetComponentInParent<SheepPlayerController>() != null)
+        SheepMember member = other.GetComponentInParent<SheepMember>();
+        if (member != null && member.Flock != null)
         {
-            TryRecruit();
+            TryRecruit(member.Flock);
         }
     }
 
-    public bool TryRecruit()
+    public bool TryRecruit(FlockController flock)
     {
-        if (IsRecruited) return false;
+        return !IsRecruited && flock != null && flock.TryRecruit(this);
+    }
+
+    internal void CompleteRecruitment()
+    {
+        if (IsRecruited)
+            return;
 
         IsRecruited = true;
-        recruitTrigger.enabled = false;
         if (spriteRenderer != null) spriteRenderer.color = recruitedColor;
-
-        Recruited?.Invoke(this);
         Debug.Log($"{name} joined the flock.", this);
-        return true;
     }
 
     private void Reset()
