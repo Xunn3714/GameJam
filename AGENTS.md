@@ -2,6 +2,21 @@
 
 本文件是仓库内工程协作规则的唯一事实来源，适用于人工成员、Codex、Claude Code 及其他 coding agent。
 
+## 当前项目入口
+
+当前已确认的玩法是“羊群 MVP”。涉及玩法、玩家、关卡、UI、输入、音效或数据的任务，开始前必须依次阅读：
+
+1. `README.md`：当前工程状态和入口。
+2. `docs/design/羊群MVP策划案.md`：玩法目标、规则、文案和范围。
+3. `docs/tech docs/羊群MVP技术方案.md`：组件、数据流、文件范围和验收标准。
+4. `README_GameFramework.md`：现有主菜单、暂停、音频和场景切换能力。
+
+当前固定范围：2D俯视角、WASD移动、接触招募另外5只羊、单局随机且不重复的羊名、Space拉屎，以及完成时的简单本局统计。未经需求更新，不加入冲撞、敌人、饥饿、随机事件、其他物种、存档或长期统计。
+
+实现时复用现有 `SceneLoader`、`AudioManager`、`PauseManager` 和 `Level_01/GameCanvas`。不创建第二个 EventSystem，不为羊群 MVP 新增 asmdef，不修改 `ProjectSettings/`。功能先在个人 Dev Scene 验证，再由 `Level_01` owner 集成。
+
+发生文档冲突时：本文件的仓库规则优先；策划案决定“做什么”；技术方案决定“怎么做”；历史会议、研究资料和 Planned API 草案只能作为背景。
+
 ## 开始任务前
 
 1. 确认当前 branch 和 `git status`，保留所有不属于当前任务的已有改动。
@@ -56,4 +71,3 @@
 - 修改资源导入、Project Settings、asmdef 或包依赖后，必须完成一次干净的 Unity 导入/编译验证。
 - 修改 Prefab 或 Scene 后，在 Unity 中打开并运行相关 Dev/集成 Scene。
 - 任务结束时报告实际执行的验证；不能执行的验证必须说明原因。
-
