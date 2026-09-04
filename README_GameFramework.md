@@ -4,8 +4,14 @@ Unity 版本：**Unity 6.5（6000.5.9f1）**
 
 本 README 用于总结当前已经完成并测试通过的 Game Jam 基础工程内容。
 
-当前工程刻意避免过早绑定具体玩法方向。  
-现阶段主要完成的是可复用的：
+当前工程的基础框架已经完成，具体玩法方向现已确定为“俯视角羊群 MVP”。
+
+实现玩法前请阅读：
+
+* `docs/design/羊群MVP策划案.md`
+* `docs/tech docs/羊群MVP技术方案.md`
+
+已经完成的可复用基础能力包括：
 
 * 主菜单
 * 场景切换
@@ -14,18 +20,15 @@ Unity 版本：**Unity 6.5（6000.5.9f1）**
 * 音频系统
 * Ending / Credits
 
-而以下内容暂时不提前决定：
+当前已经确定：
 
-* 玩家类型
-* 第一人称 / 第三人称 / 横版 / 俯视角
-* 最终关卡数量
-* 核心玩法
-* 胜负条件
-* 最终美术 UI
-* 最终 BGM / SFX
-* 最终关卡 → Ending 的衔接方式
+* 玩家类型：羊。
+* 视角：2D俯视角。
+* 操作：WASD移动，Space拉屎。
+* MVP目标：接触并招募另外5只羊。
+* 完成反馈：显示羊名、族群规模、拉屎次数和游戏用时。
 
-等 Game Jam 玩法确定后再继续扩展。
+最终关卡数量、最终美术、正式音频和 Level → Ending 的衔接仍待后续试玩决定。
 
 \---
 
@@ -85,8 +88,9 @@ SettingPanel   OFF
 ```text
 0  MainMenu
 1  Level\_01
-2  Ending
 ```
+
+`Ending.unity` 资产已经存在，但当前没有进入 `EditorBuildSettings` Scene List，且没有与 Level\_01 接通。
 
 目前真正接通的流程：
 
@@ -150,7 +154,7 @@ Assets
     │   │   └── SFX
     │   │
     │   ├── Data
-    │   └── Prefabs
+    │   └── Perfabs              # 当前仓库实际拼写；更名需 owner 统一处理
     │       └── UI
     │
     ├── Runtime
@@ -166,6 +170,8 @@ Assets
 ```
 
 除非团队统一决定，否则不要随意修改这套目录结构。
+
+注意：根目录规范中的目标拼写是 `Prefabs`，但当前已提交资产位于 `Perfabs`。在 owner 统一更名前，新玩法资产暂时沿用实际目录，避免出现两套近似路径。
 
 \---
 
@@ -305,20 +311,16 @@ Input.GetKeyDown(...)
 Input.GetAxis(...)
 ```
 
-目前没有提前创建 Player 输入系统。
+玩家输入方向已经确定，但玩法控制器尚未实现。
 
-原因：
+羊群 MVP 使用：
 
-现在还不能确定：
+```text
+Player/Move → WASD
+Player/Poop → Space（待新增）
+```
 
-* 第一人称
-* 第三人称
-* 横版
-* 俯视角
-* RPG
-* 解谜
-
-所以 Player Input 等玩法确定后再做。
+移动继续使用现有 `Assets/InputSystem_Actions.inputactions`，不要使用旧版 `Input.GetAxis`。具体实现与验收见羊群 MVP 技术方案。
 
 \---
 
@@ -947,6 +949,3 @@ Folder
 ```
 
 对应的 `.meta` 文件应一起提交。
-
-
-

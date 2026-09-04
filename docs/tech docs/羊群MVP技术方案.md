@@ -8,6 +8,8 @@
 - **首轮平台**：Windows，WASD 键盘操作
 - **玩法场景**：`Assets/_Game/Scenes/Level_01.unity`
 - **计划实现路径**：`Assets/_Game/`
+- **上游策划**：[羊群 MVP 策划案](../design/羊群MVP策划案.md)
+- **Agent 入口**：[`AGENTS.md`](../../AGENTS.md)
 
 ## 1. 目标
 
@@ -42,7 +44,7 @@
 2. HUD 显示 `找到羊：0/5` 和 `族群：1`。
 3. 玩家使用 WASD 在草地中移动。
 4. 玩家接触一只带随机名称的待招募羊，对方加入并开始跟随。
-5. HUD 更新任务进度和族群数量，并显示 `一只羊加入了族群！`。
+5. HUD 更新任务进度和族群数量，并显示 `“{羊名}”加入了族群！`。
 6. 玩家可以按 Space 拉屎；技能进入短暂冷却。
 7. 找到第 5 只羊后显示完成面板，列出成员名称、族群规模、拉屎次数和游戏用时。
 8. 玩家可以重新开始本关。
@@ -94,6 +96,8 @@ Assets/_Game/
 当前主分支没有 asmdef，现有 `SceneLoader`、`AudioManager` 和 `PauseManager` 都属于 `Assembly-CSharp`。本 MVP 暂不新增 asmdef，以免新程序集无法引用这些现有类型。
 
 当前仓库实际目录名是 `Perfabs`。本文暂时沿用该路径，避免同时出现 `Prefabs` 和 `Perfabs` 两套目录；后续如需纠正拼写，必须由目录 owner 在 Unity Project 窗口内统一移动并保留 GUID。
+
+现有 `PixelArtImporter` 只匹配路径中包含 `Art/Sprites` 的图片，而当前羊美术计划放在 `Art/Characters/Sheep`。占位图需要在 Inspector 中手动设置 Point Filter、无压缩、无 Mipmap 和16 PPU；是否扩展导入器由美术管线 owner 另行决定。
 
 首轮功能开发在独立 Dev Scene 中完成。通过验收后，由 `Level_01` Scene owner 将 Prefab 和 HUD 集成到现有 `Level_01`，不修改 `SampleScene`。
 
