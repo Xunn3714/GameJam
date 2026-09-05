@@ -16,12 +16,14 @@ public static class WolfTestSceneSetup
 {
     private const string SceneFolder = "Assets/_Game/Scenes/Dev";
     private const string ScenePath = SceneFolder + "/TestWolf.unity";
-    private const string SmartScenePath = SceneFolder + "/TestSmartWolf.unity";
-    private const string PackParallelScenePath = SceneFolder + "/TestPackParallel.unity";
-    private const string PackSequentialScenePath = SceneFolder + "/TestPackSequential.unity";
-    private const string PackEscortScenePath = SceneFolder + "/TestPackEscort.unity";
-    private const string PackPentagramScenePath = SceneFolder + "/TestPackPentagram.unity";
-    private const string PackPerpendicularScenePath = SceneFolder + "/TestPackPerpendicular.unity";
+    /// <summary>狼群测试场景（聪明狼 / 多狼编队）统一放在 Scenes/Test 下。</summary>
+    private const string TestSceneFolder = "Assets/_Game/Scenes/Test";
+    private const string SmartScenePath = TestSceneFolder + "/TestSmartWolf.unity";
+    private const string PackParallelScenePath = TestSceneFolder + "/TestPackParallel.unity";
+    private const string PackSequentialScenePath = TestSceneFolder + "/TestPackSequential.unity";
+    private const string PackEscortScenePath = TestSceneFolder + "/TestPackEscort.unity";
+    private const string PackPentagramScenePath = TestSceneFolder + "/TestPackPentagram.unity";
+    private const string PackPerpendicularScenePath = TestSceneFolder + "/TestPackPerpendicular.unity";
     private const string SceneTemplatePath = "Assets/Settings/Scenes/URP2DSceneTemplate.unity";
 
     private const string PrototypeFolder = "Assets/_Game/Content/Art/Prototype";
@@ -127,6 +129,7 @@ public static class WolfTestSceneSetup
     private static void BuildTestScene(string scenePath, int sheepCount, bool smartWolfWindows, WolfFormationType formation)
     {
         EnsureFolder(SceneFolder);
+        EnsureFolder(TestSceneFolder);
         EnsureFolder(PrototypeFolder);
         EnsureFolder(WolfPrefabFolder);
 
@@ -178,9 +181,9 @@ public static class WolfTestSceneSetup
     public static void ApplyFastWolfRhythmToOpenScene()
     {
         Scene scene = SceneManager.GetActiveScene();
-        if (!scene.path.StartsWith(SceneFolder))
+        if (!scene.path.StartsWith(SceneFolder) && !scene.path.StartsWith(TestSceneFolder))
         {
-            Debug.LogWarning($"Fast wolf rhythm is only for scenes under {SceneFolder}; the open scene is {scene.path}.");
+            Debug.LogWarning($"Fast wolf rhythm is only for scenes under {SceneFolder} or {TestSceneFolder}; the open scene is {scene.path}.");
             return;
         }
 

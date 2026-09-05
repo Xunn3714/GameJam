@@ -261,6 +261,11 @@ public sealed class WolfEventDirector : MonoBehaviour
             case WolfEventPhase.Retreat:
                 phaseDuration = retreatDuration;
                 SetHuddle(false);
+                // 攻击超时兜底进来时编队可能还在放狼，必须一起停掉，否则空挡阶段还会继续出狼。
+                if (formationRunner != null)
+                {
+                    formationRunner.Stop();
+                }
                 formationActive = false;
                 CurrentAttackName = string.Empty;
                 break;
