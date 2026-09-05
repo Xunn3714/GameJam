@@ -8,6 +8,7 @@ public static class MovementBlocking
     public const string BlockingLayerName = "Blocking";
 
     private static readonly List<Collider2D> overlapResults = new List<Collider2D>(8);
+    private static readonly RaycastHit2D[] lineHits = new RaycastHit2D[1];
 
     public static LayerMask DefaultMask()
     {
@@ -38,6 +39,22 @@ public static class MovementBlocking
             return yOnly;
 
         return from;
+    }
+
+    /// <summary>两点之间是否隔着实体阻挡（围栏）；只看非 Trigger 碰撞体。</summary>
+    public static bool IsLineBlocked(Vector2 from, Vector2 to, LayerMask blockingMask)
+    {
+        if (blockingMask.value == 0)
+            return false;
+
+        ContactFilter2D filter = new ContactFilter2D
+        {
+            useLayerMask = true,
+            layerMask = blockingMask,
+            useTriggers = false,
+        };
+
+        return Physics2D.Linecast(from, to, filter, lineHits) > 0;
     }
 
     public static bool IsFree(Vector2 position, float radius, LayerMask blockingMask)

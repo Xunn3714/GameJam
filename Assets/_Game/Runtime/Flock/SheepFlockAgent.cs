@@ -43,6 +43,10 @@ public sealed class SheepFlockAgent : MonoBehaviour
     [Header("Blocking")]
     [SerializeField] private LayerMask blockingLayers;
     [SerializeField, Min(0f)] private float blockingRadius = 0f;
+    [Tooltip("被围栏挡住且离羊群中心较远时，多少秒后直接“翻过去”回到羊群旁。")]
+    [SerializeField, Min(0.2f)] private float stuckTimeout = 1.2f;
+    [Tooltip("离中心超过舒适半径的这个倍数才算“掉队被卡住”。")]
+    [SerializeField, Min(1f)] private float stuckDistanceFactor = 1.5f;
 
     private Rigidbody2D body;
     private FlockController flock;
@@ -52,6 +56,7 @@ public sealed class SheepFlockAgent : MonoBehaviour
     private Vector2 fallbackSeparationDirection;
     private float wanderTimer;
     private float followDelay;
+    private float stuckTimer;
 
     public Vector2 Velocity => velocity;
     public bool IsLeader => flock != null && flock.Leader != null && flock.Leader.gameObject == gameObject;
@@ -95,8 +100,9 @@ public sealed class SheepFlockAgent : MonoBehaviour
 
         Vector2 driveVelocity = flock.GetMovementVelocity(followDelay);
         bool flockIsMoving = driveVelocity.sqrMagnitude > 0.0001f;
+        float speedScale = flock.SpeedMultiplier;
         Vector2 steeringVelocity = CalculateSteeringVelocity(driveVelocity, flockIsMoving, isLeader, deltaTime);
-        float response = flockIsMoving ? acceleration : idleBraking;
+        float response = (flockIsMoving ? acceleration : idleBraking) * speedScale;
         velocity = Vector2.MoveTowards(velocity, steeringVelocity, response * deltaTime);
 
         if (!flockIsMoving
@@ -108,11 +114,20 @@ public sealed class SheepFlockAgent : MonoBehaviour
         }
 
         Vector2 from = body.position;
+        Vector2 desiredStep = velocity * deltaTime;
         Vector2 target = MovementBlocking.ResolveMove(
             from,
-            from + velocity * deltaTime,
+            from + desiredStep,
             blockingRadius,
             blockingLayers);
+
+        // 轴向滑动都不行时，沿垂直于前进方向、更靠近羊群中心的那一侧贴着障碍走。
+        if (target == from && desiredStep.sqrMagnitude > 0.000001f)
+        {
+            target = TrySlideAroundObstacle(from, desiredStep);
+        }
+
+        UpdateStuckState(from, desiredStep, target, deltaTime);
 
         // 把实际走出去的位移反算回速度，避免贴墙的羊把"想走但没走成"的速度
         // 通过 alignment 传染给邻居，导致整群往墙里挤。
@@ -122,6 +137,79 @@ public sealed class SheepFlockAgent : MonoBehaviour
             return;
 
         body.MovePosition(target);
+    }
+
+    private Vector2 TrySlideAroundObstacle(Vector2 from, Vector2 desiredStep)
+    {
+        Vector2 direction = desiredStep.normalized;
+        float length = desiredStep.magnitude * 0.8f;
+        Vector2 tangent = new Vector2(-direction.y, direction.x);
+        Vector2 toCenter = flock.Center - from;
+        if (Vector2.Dot(tangent, toCenter) < 0f)
+            tangent = -tangent;
+
+        Vector2 candidate = from + tangent * length;
+        if (MovementBlocking.IsFree(candidate, blockingRadius, blockingLayers))
+            return candidate;
+
+        candidate = from - tangent * length;
+        if (MovementBlocking.IsFree(candidate, blockingRadius, blockingLayers))
+            return candidate;
+
+        return from;
+    }
+
+    /// <summary>
+    /// 被围栏卡住又离羊群太远（例如羊群穿过缺口后它留在另一边）时，
+    /// 等一小会儿直接把它挪到羊群中心附近的空位——当作它自己翻过了栏杆。
+    /// </summary>
+    private void UpdateStuckState(Vector2 from, Vector2 desiredStep, Vector2 target, float deltaTime)
+    {
+        float wanted = desiredStep.magnitude;
+        float achieved = (target - from).magnitude;
+        bool blocked = wanted > 0.01f && achieved < wanted * 0.15f;
+        float farDistance = GetComfortableRadius() * stuckDistanceFactor + blockingRadius;
+        bool farFromFlock = (flock.Center - from).sqrMagnitude > farDistance * farDistance;
+
+        if (!blocked || !farFromFlock)
+        {
+            stuckTimer = 0f;
+            return;
+        }
+
+        stuckTimer += deltaTime;
+        if (stuckTimer < stuckTimeout)
+            return;
+
+        stuckTimer = 0f;
+        if (TryFindFreeSpotNearCenter(out Vector2 spot))
+        {
+            body.position = spot;
+            velocity = Vector2.zero;
+        }
+    }
+
+    private bool TryFindFreeSpotNearCenter(out Vector2 spot)
+    {
+        Vector2 center = flock.Center;
+        float radius = Mathf.Max(blockingRadius * 2f, GetComfortableRadius() * 0.6f);
+        for (int ring = 0; ring < 3; ring++)
+        {
+            float ringRadius = radius * (0.5f + ring * 0.5f);
+            for (int index = 0; index < 8; index++)
+            {
+                float angle = index * Mathf.PI * 0.25f + ring * 0.3f;
+                Vector2 candidate = center + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * ringRadius;
+                if (MovementBlocking.IsFree(candidate, blockingRadius, blockingLayers))
+                {
+                    spot = candidate;
+                    return true;
+                }
+            }
+        }
+
+        spot = center;
+        return MovementBlocking.IsFree(center, blockingRadius, blockingLayers);
     }
 
     private Vector2 CalculateSteeringVelocity(
@@ -144,7 +232,7 @@ public sealed class SheepFlockAgent : MonoBehaviour
         {
             float outsideDistance = centerDistance - activeRadius;
             desiredVelocity += centerOffset.normalized
-                * Mathf.Min(outsideDistance * cohesionWeight, maximumSpeed);
+                * Mathf.Min(outsideDistance * cohesionWeight, maximumSpeed * flock.SpeedMultiplier);
         }
 
         Vector2 separation = Vector2.zero;
@@ -206,7 +294,7 @@ public sealed class SheepFlockAgent : MonoBehaviour
                 wanderTurnSpeed * deltaTime);
         }
 
-        return Vector2.ClampMagnitude(desiredVelocity, maximumSpeed);
+        return Vector2.ClampMagnitude(desiredVelocity, maximumSpeed * flock.SpeedMultiplier);
     }
 
     /// <summary>舒适半径随羊数增长，保证羊多了也有足够空间彼此分开。</summary>

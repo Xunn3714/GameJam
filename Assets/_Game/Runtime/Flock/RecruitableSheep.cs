@@ -32,13 +32,26 @@ public sealed class RecruitableSheep : MonoBehaviour
         TryRecruitByContact(other);
     }
 
+    private static LayerMask blockingMask;
+    private static bool blockingMaskResolved;
+
     private void TryRecruitByContact(Collider2D other)
     {
         SheepMember member = other.GetComponentInParent<SheepMember>();
-        if (member != null && member.Flock != null)
+        if (member == null || member.Flock == null)
+            return;
+
+        // 隔着围栏不能招募，否则被招进来的羊会卡在栏杆另一边。
+        if (!blockingMaskResolved)
         {
-            TryRecruit(member.Flock);
+            blockingMask = MovementBlocking.DefaultMask();
+            blockingMaskResolved = true;
         }
+
+        if (MovementBlocking.IsLineBlocked(member.transform.position, transform.position, blockingMask))
+            return;
+
+        TryRecruit(member.Flock);
     }
 
     public bool TryRecruit(FlockController flock)

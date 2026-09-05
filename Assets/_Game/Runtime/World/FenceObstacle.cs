@@ -12,6 +12,8 @@ public sealed class FenceObstacle : MonoBehaviour
     private const string InteractActionName = "Player/Interact";
 
     [SerializeField] private BreakableObstacle breakable;
+    [Tooltip("大于 0 时覆盖 ObstacleDefinition 里的门槛（例如外围围栏由关卡控制器统一配置）。")]
+    [SerializeField, Min(0)] private int requiredCountOverride;
 
     private readonly HashSet<Collider2D> collidersInRange = new HashSet<Collider2D>();
     private InputAction interactAction;
@@ -19,10 +21,24 @@ public sealed class FenceObstacle : MonoBehaviour
     private bool wasInteractable;
 
     public bool IsFlockInRange => flockInRange != null;
-    public int CurrentFlockCount => flockInRange != null ? flockInRange.MemberCount : 0;
-    public int RequiredFlockCount => breakable != null && breakable.Definition != null
-        ? breakable.Definition.RequiredFlockCount
-        : 1;
+    public int CurrentFlockCount => flockInRange == null
+        ? 0
+        : (breakable != null && breakable.Definition != null
+            && breakable.Definition.CountSource == ObstacleCountSource.HighestFlockCountThisRun
+            ? flockInRange.HighestMemberCount
+            : flockInRange.MemberCount);
+    public int RequiredFlockCount => requiredCountOverride > 0
+        ? requiredCountOverride
+        : (breakable != null && breakable.Definition != null
+            ? breakable.Definition.RequiredFlockCount
+            : 1);
+    public BreakableObstacle Breakable => breakable;
+
+    public void SetRequiredCountOverride(int count)
+    {
+        requiredCountOverride = Mathf.Max(0, count);
+        NotifyIfChanged(force: true);
+    }
     public bool CanBreak => IsFlockInRange && CurrentFlockCount >= RequiredFlockCount;
 
     public event Action<FenceObstacle> StateChanged;

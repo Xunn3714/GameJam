@@ -70,6 +70,9 @@ public sealed class WolfSpawner : MonoBehaviour
 
     public Wolf SpawnWolf()
     {
+        if (wolfPrefab == null || flock == null)
+            return null;
+
         Vector2 direction = UnityEngine.Random.insideUnitCircle.normalized;
         if (direction.sqrMagnitude < 0.001f)
         {

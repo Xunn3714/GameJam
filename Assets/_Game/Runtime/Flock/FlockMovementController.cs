@@ -11,6 +11,17 @@ public sealed class FlockMovementController : MonoBehaviour
 
     [SerializeField, Min(0f)] private float moveSpeed = 4f;
 
+    private float speedMultiplier = 1f;
+
+    /// <summary>当前实际移动速度（基础速度 × 倍率）。</summary>
+    public float CurrentMoveSpeed => moveSpeed * speedMultiplier;
+
+    /// <summary>随羊群规模 / 镜头放大整体提速。</summary>
+    public void SetSpeedMultiplier(float multiplier)
+    {
+        speedMultiplier = Mathf.Max(0.1f, multiplier);
+    }
+
     [Header("Blocking")]
     [SerializeField] private LayerMask blockingLayers;
     [SerializeField, Min(0f)] private float blockingRadius = 0f;
@@ -26,7 +37,7 @@ public sealed class FlockMovementController : MonoBehaviour
 
     public Vector2 LastMoveDirection { get; private set; } = Vector2.down;
     public bool IsMoving => controlEnabled && moveInput.sqrMagnitude > 0.0001f;
-    public Vector2 DesiredVelocity => IsMoving ? moveInput * moveSpeed : Vector2.zero;
+    public Vector2 DesiredVelocity => IsMoving ? moveInput * CurrentMoveSpeed : Vector2.zero;
 
     private void Awake()
     {
@@ -75,7 +86,7 @@ public sealed class FlockMovementController : MonoBehaviour
 
         positionBeforeFixedMove = body.position;
         movedThisStep = true;
-        Vector2 displacement = moveInput * moveSpeed * Time.fixedDeltaTime;
+        Vector2 displacement = moveInput * CurrentMoveSpeed * Time.fixedDeltaTime;
         Vector2 targetPosition = body.position + displacement;
 
         if (restrictToMovementBounds)

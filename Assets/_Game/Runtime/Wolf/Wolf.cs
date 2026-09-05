@@ -42,6 +42,14 @@ public sealed class Wolf : MonoBehaviour
     [Tooltip("没撞到中心时，路线两侧多宽范围内的羊会被擦撞开。")]
     [SerializeField, Min(0f)] private float grazeRadius = 1.1f;
 
+    [Header("Guaranteed Catch")]
+    [Tooltip("勾选后不论是否正面撞进中心，只要碰到羊群就一定叼走一只；冲锋途中还会朝最近的羊微调方向。")]
+    [SerializeField] private bool alwaysCaptureOne = true;
+    [Tooltip("冲锋途中朝最近的羊转向的速度（度/秒），0 = 不转向。")]
+    [SerializeField, Min(0f)] private float homingTurnSpeed = 110f;
+    [Tooltip("只追这个距离内的羊。")]
+    [SerializeField, Min(0f)] private float homingRange = 14f;
+
     [Header("Impact")]
     [SerializeField, Min(0f)] private float scatterSpeed = 7.5f;
     [SerializeField, Range(0f, 1f)] private float scatterRandomness = 0.45f;
@@ -155,6 +163,11 @@ public sealed class Wolf : MonoBehaviour
         {
             case State.Charging:
             {
+                if (alwaysCaptureOne && !attackResolved && !pendingCenterHit)
+                {
+                    HomeTowardNearestSheep(deltaTime);
+                }
+
                 float step = chargeSpeed * deltaTime;
                 Vector2 nextPosition = body.position + chargeDirection * step;
                 if (longSweep != null)
@@ -186,6 +199,49 @@ public sealed class Wolf : MonoBehaviour
                 body.MovePosition(fleePosition);
                 break;
         }
+    }
+
+    /// <summary>冲锋途中朝最近的羊慢慢转向，保证至少撞上一只。</summary>
+    private void HomeTowardNearestSheep(float deltaTime)
+    {
+        if (flock == null || homingTurnSpeed <= 0f)
+            return;
+
+        Vector2 position = body.position;
+        SheepMember nearest = null;
+        float nearestDistance = homingRange * homingRange;
+        foreach (SheepMember member in flock.Members)
+        {
+            if (member == null)
+                continue;
+
+            Vector2 offset = (Vector2)member.transform.position - position;
+            // 已经跑过去的羊不追，避免原地打转。
+            if (Vector2.Dot(offset, chargeDirection) < 0f)
+                continue;
+
+            float distance = offset.sqrMagnitude;
+            if (distance < nearestDistance)
+            {
+                nearestDistance = distance;
+                nearest = member;
+            }
+        }
+
+        if (nearest == null)
+            return;
+
+        Vector2 desired = ((Vector2)nearest.transform.position - position).normalized;
+        float currentAngle = Mathf.Atan2(chargeDirection.y, chargeDirection.x) * Mathf.Rad2Deg;
+        float desiredAngle = Mathf.Atan2(desired.y, desired.x) * Mathf.Rad2Deg;
+        float newAngle = Mathf.MoveTowardsAngle(currentAngle, desiredAngle, homingTurnSpeed * deltaTime);
+        if (Mathf.Approximately(newAngle, currentAngle))
+            return;
+
+        chargeDirection = new Vector2(Mathf.Cos(newAngle * Mathf.Deg2Rad), Mathf.Sin(newAngle * Mathf.Deg2Rad));
+        chargeOrigin = position;
+        // 目标还在前面就把冲锋距离补足，别在追上之前就转入逃离。
+        chargeLength = Mathf.Max(chargeLength, chargeTravelled + Mathf.Sqrt(nearestDistance) + chargeOverrun);
     }
 
     private void UpdateWarning()
@@ -325,7 +381,7 @@ public sealed class Wolf : MonoBehaviour
         }
 
         SheepMember captured = null;
-        if (centerHit)
+        if (centerHit || alwaysCaptureOne)
         {
             captured = PickNearest(knocked.Count > 0 ? knocked : members);
             if (captured != null)

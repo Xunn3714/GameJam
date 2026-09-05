@@ -43,6 +43,8 @@ public sealed class WolfEventHudView : MonoBehaviour
     [Tooltip("{0} = 当前羊数，{1} = 门槛。")]
     [SerializeField] private string dormantText = "羊群还小，狼群尚未出现（{0}/{1}）";
     [SerializeField] private bool hideIconWhenDormant = true;
+    [Tooltip("勾选后只在狼嚎 / 攻击 / 狼跑路期间显示，平静和蛰伏阶段整块隐藏。")]
+    [SerializeField] private bool showOnlyDuringEvent;
 
     [Header("Howl Flash")]
     [SerializeField, Min(0f)] private float howlFlashFrequency = 3f;
@@ -147,6 +149,16 @@ public sealed class WolfEventHudView : MonoBehaviour
             iconImage.sprite = sprite;
             iconImage.color = sprite != null ? Color.white : color;
             iconImage.gameObject.SetActive(!(hideIconWhenDormant && phase == WolfEventPhase.Dormant));
+        }
+
+        if (showOnlyDuringEvent)
+        {
+            bool eventActive = phase == WolfEventPhase.Howl
+                || phase == WolfEventPhase.Attack
+                || phase == WolfEventPhase.Retreat;
+            if (iconImage != null) iconImage.gameObject.SetActive(eventActive);
+            if (phaseText != null) phaseText.gameObject.SetActive(eventActive);
+            if (countdownText != null) countdownText.gameObject.SetActive(eventActive);
         }
 
         if (placeholderGlyph != null)

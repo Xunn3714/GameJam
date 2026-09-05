@@ -28,6 +28,9 @@ public sealed class FlockController : MonoBehaviour
     public int RecruitedCount { get; private set; }
     public int MemberCount => members.Count;
 
+    /// <summary>本局达到过的最大羊数（只升不降），供围栏门槛、阶段等使用。</summary>
+    public int HighestMemberCount { get; private set; }
+
     public Vector2 Center => movementController != null
         ? (Vector2)movementController.transform.position
         : (Vector2)transform.position;
@@ -50,6 +53,18 @@ public sealed class FlockController : MonoBehaviour
 
     /// <summary>是否处于抱团状态（目标值；实际半径会平滑过渡）。</summary>
     public bool IsHuddling { get; private set; }
+
+    /// <summary>整体速度倍率：中心移动速度和每只羊的最大速度 / 加速度都乘它。</summary>
+    public float SpeedMultiplier { get; private set; } = 1f;
+
+    public void SetSpeedMultiplier(float multiplier)
+    {
+        SpeedMultiplier = Mathf.Max(0.1f, multiplier);
+        if (movementController != null)
+        {
+            movementController.SetSpeedMultiplier(SpeedMultiplier);
+        }
+    }
 
     public event Action<RecruitableSheep, int> SheepRecruited;
     public event Action<int> MemberCountChanged;
@@ -296,6 +311,11 @@ public sealed class FlockController : MonoBehaviour
         member.SetAgent(agent);
 
         agent.SetFlock(this);
+
+        if (members.Count > HighestMemberCount)
+        {
+            HighestMemberCount = members.Count;
+        }
 
         if (Leader == null)
         {
