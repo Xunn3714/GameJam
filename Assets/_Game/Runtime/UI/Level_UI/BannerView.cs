@@ -11,42 +11,53 @@ public class BannerView : MonoBehaviour
 
     private Coroutine hideCoroutine;
 
-
     private void Awake()
     {
-        gameObject.SetActive(false);
+        // 不要关闭整个 GameObject。
+        // AlphaBannerView 需要保持激活才能运行队列和淡入淡出。
+
+        if (bannerIcon != null)
+        {
+            bannerIcon.enabled = false;
+        }
     }
 
-
-    public void Show(string message, Sprite icon = null)
+    public void Show(
+        string message,
+        Sprite icon = null)
     {
         if (bannerText != null)
+        {
             bannerText.text = message;
+        }
 
         if (bannerIcon != null)
         {
             bannerIcon.sprite = icon;
             bannerIcon.enabled = icon != null;
         }
-
-        gameObject.SetActive(true);
     }
-
 
     public void ShowTemporary(
         string message,
         float duration = 3f,
         Sprite icon = null)
     {
-        Show(message, icon);
+        Show(
+            message,
+            icon
+        );
 
         if (hideCoroutine != null)
+        {
             StopCoroutine(hideCoroutine);
+        }
 
         hideCoroutine =
-            StartCoroutine(HideAfterDelay(duration));
+            StartCoroutine(
+                HideAfterDelay(duration)
+            );
     }
-
 
     public void Hide()
     {
@@ -56,16 +67,26 @@ public class BannerView : MonoBehaviour
             hideCoroutine = null;
         }
 
-        gameObject.SetActive(false);
+        if (bannerIcon != null)
+        {
+            bannerIcon.enabled = false;
+        }
+
+        if (bannerText != null)
+        {
+            bannerText.text = "";
+        }
     }
 
-
-    private IEnumerator HideAfterDelay(float duration)
+    private IEnumerator HideAfterDelay(
+        float duration)
     {
-        yield return new WaitForSecondsRealtime(duration);
-
-        Hide();
+        yield return new WaitForSecondsRealtime(
+            duration
+        );
 
         hideCoroutine = null;
+
+        Hide();
     }
 }

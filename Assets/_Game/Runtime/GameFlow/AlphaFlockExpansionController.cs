@@ -14,26 +14,37 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     [SerializeField] private FlockMovementController flockMovement;
     [SerializeField] private ProgressiveSheepSpawner sheepSpawner;
     [SerializeField] private CameraFollow2D cameraFollow;
+
     [Tooltip("狼群节奏（生长空挡 → 狼嚎 → 攻击 → 跑路）。有它时狼由它掌控；为空则退回旧的 WolfSpawner 定时。")]
     [SerializeField] private WolfEventDirector wolfDirector;
+
     [SerializeField] private WolfSpawner wolfSpawner;
     [SerializeField] private BorderFenceRing borderRing;
     [SerializeField] private TutorialPen tutorialPen;
     [SerializeField] private AlphaBannerView bannerView;
+
     [Tooltip("结算页挂到这个 Canvas 下。")]
     [SerializeField] private Canvas uiCanvas;
 
+
     [Header("Level UI (复用 Level_01 的界面)")]
+
     [Tooltip("任务列表 + 族群数（Level_01 的 SheepHUD）。")]
     [SerializeField] private MvpHudView hudView;
+
     [Tooltip("“xx 加入了族群”提示。")]
     [SerializeField] private JoinToastView joinToastView;
+
     [SerializeField] private PauseManager pauseManager;
+
     [Tooltip("仓库里的 ResultPanel 预制体；留空则用 Alpha 自己的占位结算页。")]
     [SerializeField] private ResultPanelView resultPanelPrefab;
 
+
     [Header("Progression")]
-    [SerializeField] private FlockGrowthStage[] stages =
+
+    [SerializeField]
+    private FlockGrowthStage[] stages =
     {
         new("孤羊", 1, 1, 1, 5f),
         new("小群", 5, 2, 3, 7f),
@@ -41,184 +52,351 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         new("暴力扩张", 50, 10, 15, 14f),
         new("羊潮", 100, 20, 30, 18f)
     };
+
     [Tooltip("镜头放大时整体提速：倍率 = (当前相机尺寸 / 第一阶段相机尺寸) ^ 指数。0 = 不提速。")]
-    [SerializeField, Range(0f, 1.5f)] private float speedScaleExponent = 0.75f;
+    [SerializeField, Range(0f, 1.5f)]
+    private float speedScaleExponent = 0.75f;
+
     [Tooltip("没有 WolfEventDirector 时，旧式狼生成器在这个羊数后启动。有 Director 时以 Director 的 Required Member Count 为准。")]
-    [SerializeField, Min(1)] private int wolfUnlockFlockSize = 6;
-    [SerializeField, Min(0.1f)] private float failedSpawnRetryDelay = 1.5f;
+    [SerializeField, Min(1)]
+    private int wolfUnlockFlockSize = 6;
+
+    [SerializeField, Min(0.1f)]
+    private float failedSpawnRetryDelay = 1.5f;
+
 
     [Header("Exit")]
+
     [Tooltip("历史最高羊数达到这个值后永久解锁外围围栏。")]
-    [SerializeField, Min(1)] private int exitUnlockFlockSize = 100;
+    [SerializeField, Min(1)]
+    private int exitUnlockFlockSize = 100;
+
     [Tooltip("羊群中心越过地图边界多远算成功冲出。")]
-    [SerializeField, Min(0.5f)] private float exitMargin = 2.5f;
+    [SerializeField, Min(0.5f)]
+    private float exitMargin = 2.5f;
+
     [Tooltip("解锁后移动 / 相机边界向外放宽多少，让羊群能穿过围栏缺口。")]
-    [SerializeField, Min(1f)] private float exitBoundsExpansion = 10f;
-    [SerializeField, Min(0f)] private float fenceBreakShakeAmplitude = 0.35f;
-    [SerializeField, Min(0f)] private float fenceBreakShakeDuration = 0.45f;
+    [SerializeField, Min(1f)]
+    private float exitBoundsExpansion = 10f;
+
+    [SerializeField, Min(0f)]
+    private float fenceBreakShakeAmplitude = 0.35f;
+
+    [SerializeField, Min(0f)]
+    private float fenceBreakShakeDuration = 0.45f;
+
 
     [Header("Nearby Wild Sheep")]
-    [SerializeField, Min(0.1f)] private float populationRefreshInterval = 0.4f;
-    [SerializeField, Min(0.1f)] private float nearbySheepPerCameraSize = 2.5f;
-    [SerializeField, Min(1f)] private float nearbyRadiusMultiplier = 4f;
-    [SerializeField, Min(1f)] private float retentionRadiusMultiplier = 1.6f;
-    [SerializeField, Min(1)] private int maximumBatchesPerRefresh = 16;
+
+    [SerializeField, Min(0.1f)]
+    private float populationRefreshInterval = 0.4f;
+
+    [SerializeField, Min(0.1f)]
+    private float nearbySheepPerCameraSize = 2.5f;
+
+    [SerializeField, Min(1f)]
+    private float nearbyRadiusMultiplier = 4f;
+
+    [SerializeField, Min(1f)]
+    private float retentionRadiusMultiplier = 1.6f;
+
+    [SerializeField, Min(1)]
+    private int maximumBatchesPerRefresh = 16;
+
     [Tooltip("单次刷新最多生成多少只，避免阶段升级瞬间一帧生成太多。")]
-    [SerializeField, Min(1)] private int maximumSheepPerRefresh = 12;
+    [SerializeField, Min(1)]
+    private int maximumSheepPerRefresh = 12;
+
 
     [Header("Debug HUD")]
+
     [Tooltip("左上角开发者调试信息；只在 Inspector 里勾选才显示，正常游玩不要开。")]
-    [SerializeField] private bool showDebugHud;
+    [SerializeField]
+    private bool showDebugHud;
+
 
     private AlphaProgression progression;
     private AlphaRunStats stats;
     private AlphaResultView resultView;
+
     private bool wolvesUnlocked;
     private bool wolvesAnnounced;
     private bool initialized;
     private bool ended;
     private bool showStatsOverlay;
+
     private bool penOpened;
     private bool borderBroken;
     private bool escaped;
+
     private int specialRecruits;
-    private readonly List<MvpObjectiveSnapshot> objectiveScratch = new List<MvpObjectiveSnapshot>();
+
+    private readonly List<MvpObjectiveSnapshot> objectiveScratch =
+        new List<MvpObjectiveSnapshot>();
+
     private float nextPopulationRefreshTime;
     private float runStartTime;
-    private readonly List<string> typeScratch = new List<string>();
 
-    public int CurrentStageIndex => progression != null ? progression.StageIndex : 0;
-    public int HighestFlockSize => progression != null ? progression.HighestFlockSize : 0;
-    public bool WolvesUnlocked => wolvesUnlocked;
-    public bool ExitUnlocked => progression != null && progression.ExitUnlocked;
-    public bool HasEnded => ended;
-    public AlphaRunStats Stats => stats;
+    private readonly List<string> typeScratch =
+        new List<string>();
+
+
+    public int CurrentStageIndex =>
+        progression != null
+            ? progression.StageIndex
+            : 0;
+
+    public int HighestFlockSize =>
+        progression != null
+            ? progression.HighestFlockSize
+            : 0;
+
+    public bool WolvesUnlocked =>
+        wolvesUnlocked;
+
+    public bool ExitUnlocked =>
+        progression != null &&
+        progression.ExitUnlocked;
+
+    public bool HasEnded =>
+        ended;
+
+    public AlphaRunStats Stats =>
+        stats;
+
 
     private void Awake()
     {
-        if (flock != null && flockMovement == null)
-            flockMovement = flock.GetComponent<FlockMovementController>();
+        if (flock != null &&
+            flockMovement == null)
+        {
+            flockMovement =
+                flock.GetComponent<FlockMovementController>();
+        }
     }
+
 
     private void OnEnable()
     {
         if (flock != null)
         {
-            flock.MemberCountChanged += HandleMemberCountChanged;
-            flock.SheepRecruited += HandleSheepRecruited;
+            flock.MemberCountChanged +=
+                HandleMemberCountChanged;
+
+            flock.SheepRecruited +=
+                HandleSheepRecruited;
         }
 
         if (wolfDirector != null)
         {
-            wolfDirector.PhaseChanged += HandleWolfPhaseChanged;
-            wolfDirector.WolfReleased += HandleWolfReleased;
+            wolfDirector.PhaseChanged +=
+                HandleWolfPhaseChanged;
+
+            wolfDirector.WolfReleased +=
+                HandleWolfReleased;
         }
 
         if (borderRing != null)
-            borderRing.FenceBroken += HandleBorderFenceBroken;
+        {
+            borderRing.FenceBroken +=
+                HandleBorderFenceBroken;
+        }
 
         if (tutorialPen != null)
         {
-            tutorialPen.Opened += HandleTutorialPenOpened;
-            tutorialPen.HintRequested += ShowBanner;
+            tutorialPen.Opened +=
+                HandleTutorialPenOpened;
+
+            tutorialPen.HintRequested +=
+                ShowBanner;
         }
     }
+
 
     private void OnDisable()
     {
         if (flock != null)
         {
-            flock.MemberCountChanged -= HandleMemberCountChanged;
-            flock.SheepRecruited -= HandleSheepRecruited;
+            flock.MemberCountChanged -=
+                HandleMemberCountChanged;
+
+            flock.SheepRecruited -=
+                HandleSheepRecruited;
         }
 
         if (wolfDirector != null)
         {
-            wolfDirector.PhaseChanged -= HandleWolfPhaseChanged;
-            wolfDirector.WolfReleased -= HandleWolfReleased;
+            wolfDirector.PhaseChanged -=
+                HandleWolfPhaseChanged;
+
+            wolfDirector.WolfReleased -=
+                HandleWolfReleased;
         }
 
         if (borderRing != null)
-            borderRing.FenceBroken -= HandleBorderFenceBroken;
+        {
+            borderRing.FenceBroken -=
+                HandleBorderFenceBroken;
+        }
 
         if (tutorialPen != null)
         {
-            tutorialPen.Opened -= HandleTutorialPenOpened;
-            tutorialPen.HintRequested -= ShowBanner;
+            tutorialPen.Opened -=
+                HandleTutorialPenOpened;
+
+            tutorialPen.HintRequested -=
+                ShowBanner;
         }
     }
 
+
     private void Start()
     {
-        if (flock == null || sheepSpawner == null || stages == null || stages.Length == 0)
+        if (flock == null ||
+            sheepSpawner == null ||
+            stages == null ||
+            stages.Length == 0)
         {
-            Debug.LogError("Alpha 羊群扩张场景缺少必要引用或阶段配置。", this);
+            Debug.LogError(
+                "Alpha 羊群扩张场景缺少必要引用或阶段配置。",
+                this
+            );
+
             enabled = false;
             return;
         }
 
         runStartTime = Time.time;
-        stats = new AlphaRunStats();
-        progression = new AlphaProgression(stages, exitUnlockFlockSize, Mathf.Max(1, flock.MemberCount));
 
-        // 有节奏控制器时狼由它管（含 6 只门槛、狼嚎抱团）；否则退回旧的定时生成器。
+        stats =
+            new AlphaRunStats();
+
+        progression =
+            new AlphaProgression(
+                stages,
+                exitUnlockFlockSize,
+                Mathf.Max(
+                    1,
+                    flock.MemberCount
+                )
+            );
+
+        // 有节奏控制器时狼由它管（含 6 只门槛、狼嚎抱团）；
+        // 否则退回旧的定时生成器。
         if (wolfDirector == null)
-            wolfSpawner?.StopSpawning();
-
-        sheepSpawner.Initialize();
-        if (tutorialPen != null)
         {
-            Rect pen = tutorialPen.PenRect;
-            sheepSpawner.SetExclusionZones(new Rect(pen.xMin - 2f, pen.yMin - 2f, pen.width + 4f, pen.height + 4f));
+            wolfSpawner?.StopSpawning();
         }
 
-        Rect worldRect = borderRing != null ? borderRing.WorldRect : sheepSpawner.SpawnBounds;
-        flockMovement?.ConfigureMovementBounds(worldRect);
-        cameraFollow?.ConfigureBounds(worldRect);
-        borderRing?.ApplyRequiredCount(exitUnlockFlockSize);
+        sheepSpawner.Initialize();
 
-        if (uiCanvas != null && resultPanelPrefab == null)
-            resultView = AlphaResultView.Create(uiCanvas.transform);
+        if (tutorialPen != null)
+        {
+            Rect pen =
+                tutorialPen.PenRect;
+
+            sheepSpawner.SetExclusionZones(
+                new Rect(
+                    pen.xMin - 2f,
+                    pen.yMin - 2f,
+                    pen.width + 4f,
+                    pen.height + 4f
+                )
+            );
+        }
+
+        Rect worldRect =
+            borderRing != null
+                ? borderRing.WorldRect
+                : sheepSpawner.SpawnBounds;
+
+        flockMovement?.ConfigureMovementBounds(
+            worldRect
+        );
+
+        cameraFollow?.ConfigureBounds(
+            worldRect
+        );
+
+        borderRing?.ApplyRequiredCount(
+            exitUnlockFlockSize
+        );
+
+        if (uiCanvas != null &&
+            resultPanelPrefab == null)
+        {
+            resultView =
+                AlphaResultView.Create(
+                    uiCanvas.transform
+                );
+        }
 
         ApplyStage(true);
+
         RefreshComposition();
+
         MaintainNearbyPopulation();
+
         initialized = true;
+
         RefreshObjectives();
 
-        // 还在出生羊圈里时不放狼（不然羊圈里的羊会被叼光，永远凑不够）；羊圈打开后再开始狼群节奏。
-        if (wolfDirector != null && (tutorialPen == null || tutorialPen.IsOpen))
+        // 还在出生羊圈里时不放狼；
+        // 羊圈打开后再开始狼群节奏。
+        if (wolfDirector != null &&
+            (tutorialPen == null ||
+             tutorialPen.IsOpen))
+        {
             wolfDirector.Run();
+        }
     }
+
 
     private void Update()
     {
         if (!initialized)
             return;
 
-        // Tab：切换左下角的按类型统计面板（游玩中的统计入口）。
-        Keyboard keyboard = Keyboard.current;
-        if (keyboard != null && keyboard.tabKey.wasPressedThisFrame)
-            showStatsOverlay = !showStatsOverlay;
+        // Tab：切换左下角按类型统计面板
+        Keyboard keyboard =
+            Keyboard.current;
+
+        if (keyboard != null &&
+            keyboard.tabKey.wasPressedThisFrame)
+        {
+            showStatsOverlay =
+                !showStatsOverlay;
+        }
 
         if (ended)
             return;
 
-        stats.SurvivalSeconds = Time.time - runStartTime;
+        stats.SurvivalSeconds =
+            Time.time - runStartTime;
 
         if (CheckEscaped())
             return;
 
-        if (Time.unscaledTime >= nextPopulationRefreshTime)
+        if (Time.unscaledTime >=
+            nextPopulationRefreshTime)
+        {
             MaintainNearbyPopulation();
+        }
     }
 
-    // ---------------------------------------------------------------- flock events
 
-    private void HandleMemberCountChanged(int memberCount)
+    // ============================================================
+    // FLOCK EVENTS
+    // ============================================================
+
+    private void HandleMemberCountChanged(
+        int memberCount)
     {
-        if (!initialized || ended)
+        if (!initialized ||
+            ended)
+        {
             return;
+        }
 
         RefreshComposition();
 
@@ -228,87 +406,217 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
             return;
         }
 
-        AlphaProgression.Change change = progression.Observe(memberCount);
+        AlphaProgression.Change change =
+            progression.Observe(
+                memberCount
+            );
+
         RefreshObjectives();
+
         if (!change.HighestChanged)
             return;
 
         if (change.StageChanged)
         {
             ApplyStage(false);
-            FlockGrowthStage stage = progression.CurrentStage;
-            ShowBanner($"阶段 {progression.StageIndex + 1} · {stage.DisplayName}");
-            Debug.Log($"羊群升级到阶段 {progression.StageIndex + 1}：{stage.DisplayName}。", this);
+
+            FlockGrowthStage stage =
+                progression.CurrentStage;
+
+            ShowBanner(
+                $"阶段 {progression.StageIndex + 1} · {stage.DisplayName}"
+            );
+
+            Debug.Log(
+                $"羊群升级到阶段 {progression.StageIndex + 1}：{stage.DisplayName}。",
+                this
+            );
         }
 
         if (change.ExitJustUnlocked)
+        {
             UnlockExit();
+        }
 
-        if (wolfDirector == null && !wolvesUnlocked && progression.HighestFlockSize >= wolfUnlockFlockSize)
+        if (wolfDirector == null &&
+            !wolvesUnlocked &&
+            progression.HighestFlockSize >=
+            wolfUnlockFlockSize)
         {
             wolvesUnlocked = true;
+
             wolfSpawner?.StartSpawning();
+
             AnnounceWolves();
         }
     }
 
-    private void HandleSheepRecruited(RecruitableSheep sheep, int recruitedCount)
+
+    private void HandleSheepRecruited(
+        RecruitableSheep sheep,
+        int recruitedCount)
     {
-        if (!initialized || sheep == null)
+        if (!initialized ||
+            sheep == null)
+        {
             return;
+        }
 
         // 被狼撞散后捡回来的老成员不算新招募。
-        ScatteredSheep scattered = sheep.GetComponent<ScatteredSheep>();
-        if (scattered != null && scattered.IsScattered)
+        ScatteredSheep scattered =
+            sheep.GetComponent<ScatteredSheep>();
+
+        if (scattered != null &&
+            scattered.IsScattered)
+        {
             return;
+        }
 
-        SheepIdentity identity = sheep.GetComponent<SheepIdentity>();
-        string typeId = identity != null ? identity.SheepTypeId : MvpSheepCatalog.DefaultTypeId;
-        stats.RecordRecruit(typeId);
 
-        string sheepName = identity != null && !string.IsNullOrWhiteSpace(identity.DisplayName) ? identity.DisplayName : "";
-        if (joinToastView != null && !string.IsNullOrEmpty(sheepName))
-            joinToastView.Show(sheepName);
+        SheepIdentity identity =
+            sheep.GetComponent<SheepIdentity>();
 
-        if (!string.Equals(typeId, MvpSheepCatalog.DefaultTypeId, System.StringComparison.Ordinal))
+        string typeId =
+            identity != null
+                ? identity.SheepTypeId
+                : MvpSheepCatalog.DefaultTypeId;
+
+
+        stats.RecordRecruit(
+            typeId
+        );
+
+
+        string sheepName =
+            identity != null &&
+            !string.IsNullOrWhiteSpace(
+                identity.DisplayName
+            )
+                ? identity.DisplayName
+                : "";
+
+
+        if (joinToastView != null &&
+            !string.IsNullOrEmpty(
+                sheepName
+            ))
+        {
+            joinToastView.Show(
+                sheepName
+            );
+        }
+
+
+        // ========================================================
+        // 特殊羊提示
+        // ========================================================
+
+        if (!string.Equals(
+            typeId,
+            MvpSheepCatalog.DefaultTypeId,
+            System.StringComparison.Ordinal))
         {
             specialRecruits++;
-            ShowBanner($"特殊羊加入：{sheepSpawner.GetTypeDisplayName(typeId)} {sheepName}".TrimEnd());
+
+
+            // 直接读取当前被招募特殊羊的 Sprite
+            Sprite sheepSprite = null;
+
+            SpriteRenderer spriteRenderer =
+                sheep.GetComponent<SpriteRenderer>();
+
+            if (spriteRenderer == null)
+            {
+                spriteRenderer =
+                    sheep.GetComponentInChildren<SpriteRenderer>(
+                        true
+                    );
+            }
+
+            if (spriteRenderer != null)
+            {
+                sheepSprite =
+                    spriteRenderer.sprite;
+            }
+
+
+            string typeName =
+                sheepSpawner.GetTypeDisplayName(
+                    typeId
+                );
+
+
+            string message =
+                $"Special Sheep Joined! {typeName} {sheepName}"
+                    .TrimEnd();
+
+
+            // 特殊羊：传文字 + 对应图片
+            ShowBanner(
+                message,
+                sheepSprite
+            );
+
+
             RefreshObjectives();
         }
 
-        if (sheepSpawner.MarkRecruited(sheep))
+
+        if (sheepSpawner.MarkRecruited(
+            sheep))
+        {
             MaintainNearbyPopulation();
+        }
     }
+
 
     private void RefreshComposition()
     {
         typeScratch.Clear();
-        foreach (SheepMember member in flock.Members)
+
+        foreach (SheepMember member in
+                 flock.Members)
         {
             if (member == null)
                 continue;
 
-            SheepIdentity identity = member.GetComponent<SheepIdentity>();
-            typeScratch.Add(identity != null ? identity.SheepTypeId : MvpSheepCatalog.DefaultTypeId);
+            SheepIdentity identity =
+                member.GetComponent<SheepIdentity>();
+
+            typeScratch.Add(
+                identity != null
+                    ? identity.SheepTypeId
+                    : MvpSheepCatalog.DefaultTypeId
+            );
         }
 
-        stats.ObserveComposition(typeScratch);
+        stats.ObserveComposition(
+            typeScratch
+        );
     }
 
-    // ---------------------------------------------------------------- wolves
 
-    private void HandleWolfPhaseChanged(WolfEventPhase phase)
+    // ============================================================
+    // WOLVES
+    // ============================================================
+
+    private void HandleWolfPhaseChanged(
+        WolfEventPhase phase)
     {
-        if (phase == WolfEventPhase.Dormant)
+        if (phase ==
+            WolfEventPhase.Dormant)
+        {
             return;
+        }
 
         if (!wolvesUnlocked)
         {
             wolvesUnlocked = true;
+
             AnnounceWolves();
         }
     }
+
 
     private void AnnounceWolves()
     {
@@ -316,316 +624,909 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
             return;
 
         wolvesAnnounced = true;
-        ShowBanner("狼群盯上了你的羊群……听到狼嚎就抱紧！");
-        Debug.Log("狼开始进攻。", this);
+
+        ShowBanner(
+            "狼群盯上了你的羊群……听到狼嚎就抱紧！"
+        );
+
+        Debug.Log(
+            "狼开始进攻。",
+            this
+        );
     }
 
-    private void HandleWolfReleased(Wolf wolf)
+
+    private void HandleWolfReleased(
+        Wolf wolf)
     {
         if (wolf != null)
-            wolf.Attacked += HandleWolfAttacked;
+        {
+            wolf.Attacked +=
+                HandleWolfAttacked;
+        }
     }
 
-    private void HandleWolfAttacked(Wolf wolf, WolfAttackResult result)
+
+    private void HandleWolfAttacked(
+        Wolf wolf,
+        WolfAttackResult result)
     {
         if (result.CapturedSheep == null)
             return;
 
-        SheepIdentity identity = result.CapturedSheep.GetComponent<SheepIdentity>();
-        stats.RecordTaken(identity != null ? identity.SheepTypeId : MvpSheepCatalog.DefaultTypeId);
+        SheepIdentity identity =
+            result.CapturedSheep
+                .GetComponent<SheepIdentity>();
+
+        stats.RecordTaken(
+            identity != null
+                ? identity.SheepTypeId
+                : MvpSheepCatalog.DefaultTypeId
+        );
     }
 
-    // ---------------------------------------------------------------- exit
+
+    // ============================================================
+    // EXIT
+    // ============================================================
 
     private void UnlockExit()
     {
-        borderRing?.ApplyRequiredCount(exitUnlockFlockSize);
+        borderRing?.ApplyRequiredCount(
+            exitUnlockFlockSize
+        );
+
         ExpandBoundsForExit();
-        ShowBanner($"历史最高达到 {exitUnlockFlockSize} 只！带羊群到外围围栏，按 E 撞开冲出草原");
-        Debug.Log("出口已解锁。", this);
+
+        ShowBanner(
+            $"历史最高达到 {exitUnlockFlockSize} 只！带羊群到外围围栏，按 E 撞开冲出草原"
+        );
+
+        Debug.Log(
+            "出口已解锁。",
+            this
+        );
     }
+
 
     private void ExpandBoundsForExit()
     {
-        Rect worldRect = borderRing != null ? borderRing.WorldRect : sheepSpawner.SpawnBounds;
-        Rect expanded = new Rect(
-            worldRect.xMin - exitBoundsExpansion,
-            worldRect.yMin - exitBoundsExpansion,
-            worldRect.width + exitBoundsExpansion * 2f,
-            worldRect.height + exitBoundsExpansion * 2f);
-        flockMovement?.ConfigureMovementBounds(expanded);
-        cameraFollow?.ConfigureBounds(expanded);
+        Rect worldRect =
+            borderRing != null
+                ? borderRing.WorldRect
+                : sheepSpawner.SpawnBounds;
+
+        Rect expanded =
+            new Rect(
+                worldRect.xMin -
+                exitBoundsExpansion,
+
+                worldRect.yMin -
+                exitBoundsExpansion,
+
+                worldRect.width +
+                exitBoundsExpansion * 2f,
+
+                worldRect.height +
+                exitBoundsExpansion * 2f
+            );
+
+        flockMovement?.ConfigureMovementBounds(
+            expanded
+        );
+
+        cameraFollow?.ConfigureBounds(
+            expanded
+        );
     }
 
-    private void HandleBorderFenceBroken(FenceObstacle fence)
+
+    private void HandleBorderFenceBroken(
+        FenceObstacle fence)
     {
         borderBroken = true;
-        cameraFollow?.Shake(fenceBreakShakeAmplitude, fenceBreakShakeDuration);
+
+        cameraFollow?.Shake(
+            fenceBreakShakeAmplitude,
+            fenceBreakShakeDuration
+        );
+
         ExpandBoundsForExit();
-        ShowBanner("围栏破了！带着羊群冲出去！");
+
+        ShowBanner(
+            "围栏破了！带着羊群冲出去！"
+        );
+
         RefreshObjectives();
     }
 
+
     private bool CheckEscaped()
     {
-        if (!ExitUnlocked || borderRing == null || !borderRing.AnyBroken)
+        if (!ExitUnlocked ||
+            borderRing == null ||
+            !borderRing.AnyBroken)
+        {
             return false;
+        }
 
-        Rect worldRect = borderRing.WorldRect;
-        Vector2 center = flock.Center;
-        bool outside = center.x < worldRect.xMin - exitMargin
-            || center.x > worldRect.xMax + exitMargin
-            || center.y < worldRect.yMin - exitMargin
-            || center.y > worldRect.yMax + exitMargin;
+        Rect worldRect =
+            borderRing.WorldRect;
+
+        Vector2 center =
+            flock.Center;
+
+        bool outside =
+            center.x <
+            worldRect.xMin - exitMargin
+
+            ||
+
+            center.x >
+            worldRect.xMax + exitMargin
+
+            ||
+
+            center.y <
+            worldRect.yMin - exitMargin
+
+            ||
+
+            center.y >
+            worldRect.yMax + exitMargin;
+
 
         if (!outside)
             return false;
 
         EndRun(true);
+
         return true;
     }
 
-    // ---------------------------------------------------------------- tutorial
+
+    // ============================================================
+    // TUTORIAL
+    // ============================================================
 
     private void HandleTutorialPenOpened()
     {
         penOpened = true;
+
         if (wolfDirector != null)
+        {
             wolfDirector.Run();
-        cameraFollow?.Shake(fenceBreakShakeAmplitude * 0.6f, fenceBreakShakeDuration);
+        }
+
+        cameraFollow?.Shake(
+            fenceBreakShakeAmplitude * 0.6f,
+            fenceBreakShakeDuration
+        );
+
         sheepSpawner.SetExclusionZones();
-        ShowBanner("羊圈打开了！去草原上壮大羊群吧");
+
+        ShowBanner(
+            "羊圈打开了！去草原上壮大羊群吧"
+        );
+
         RefreshObjectives();
     }
 
-    /// <summary>把 Alpha 的进度翻译成 Level_01 任务列表 HUD 能显示的条目。</summary>
+
+    /// <summary>
+    /// 把 Alpha 的进度翻译成任务 HUD 能显示的条目。
+    /// </summary>
     private void RefreshObjectives()
     {
-        if (hudView == null || progression == null)
+        if (hudView == null ||
+            progression == null)
+        {
             return;
+        }
 
-        int members = flock != null ? flock.MemberCount : 0;
-        int penNeed = wolfDirector != null ? Mathf.Max(1, wolfDirector.RequiredMemberCount) : wolfUnlockFlockSize;
+        int members =
+            flock != null
+                ? flock.MemberCount
+                : 0;
+
+
+        int penNeed =
+            wolfDirector != null
+                ? Mathf.Max(
+                    1,
+                    wolfDirector.RequiredMemberCount
+                )
+                : wolfUnlockFlockSize;
+
 
         objectiveScratch.Clear();
-        objectiveScratch.Add(new MvpObjectiveSnapshot(
-            "alpha.pen", "凑够羊，按 E 撞开羊圈", true, false, penOpened,
-            Mathf.Min(members, penNeed), penNeed));
-        objectiveScratch.Add(new MvpObjectiveSnapshot(
-            "alpha.exit_unlock", $"羊群壮大到 {exitUnlockFlockSize} 只", true, false, progression.ExitUnlocked,
-            Mathf.Min(progression.HighestFlockSize, exitUnlockFlockSize), exitUnlockFlockSize));
-        objectiveScratch.Add(new MvpObjectiveSnapshot(
-            "alpha.escape", "撞开外围围栏，冲出草原", true, progression.ExitUnlocked && !borderBroken, escaped,
-            borderBroken ? 1 : 0, 1));
-        objectiveScratch.Add(new MvpObjectiveSnapshot(
-            "alpha.special", "招募一只特殊羊", false, false, specialRecruits > 0,
-            Mathf.Min(specialRecruits, 1), 1));
 
-        hudView.UpdateObjectives(objectiveScratch, members);
+
+        objectiveScratch.Add(
+            new MvpObjectiveSnapshot(
+                "alpha.pen",
+                "凑够羊，按 E 撞开羊圈",
+                true,
+                false,
+                penOpened,
+                Mathf.Min(
+                    members,
+                    penNeed
+                ),
+                penNeed
+            )
+        );
+
+
+        objectiveScratch.Add(
+            new MvpObjectiveSnapshot(
+                "alpha.exit_unlock",
+                $"羊群壮大到 {exitUnlockFlockSize} 只",
+                true,
+                false,
+                progression.ExitUnlocked,
+                Mathf.Min(
+                    progression.HighestFlockSize,
+                    exitUnlockFlockSize
+                ),
+                exitUnlockFlockSize
+            )
+        );
+
+
+        objectiveScratch.Add(
+            new MvpObjectiveSnapshot(
+                "alpha.escape",
+                "撞开外围围栏，冲出草原",
+                true,
+                progression.ExitUnlocked &&
+                !borderBroken,
+                escaped,
+                borderBroken ? 1 : 0,
+                1
+            )
+        );
+
+
+        objectiveScratch.Add(
+            new MvpObjectiveSnapshot(
+                "alpha.special",
+                "招募一只特殊羊",
+                false,
+                false,
+                specialRecruits > 0,
+                Mathf.Min(
+                    specialRecruits,
+                    1
+                ),
+                1
+            )
+        );
+
+
+        hudView.UpdateObjectives(
+            objectiveScratch,
+            members
+        );
     }
 
-    // ---------------------------------------------------------------- end of run
 
-    private void EndRun(bool victory)
+    // ============================================================
+    // END OF RUN
+    // ============================================================
+
+    private void EndRun(
+        bool victory)
     {
         if (ended)
             return;
 
         ended = true;
+
         escaped = victory;
-        stats.SurvivalSeconds = Time.time - runStartTime;
+
+        stats.SurvivalSeconds =
+            Time.time -
+            runStartTime;
 
         wolfDirector?.Stop();
+
         wolfSpawner?.StopSpawning();
-        flockMovement?.SetControlEnabled(false);
+
+        flockMovement?.SetControlEnabled(
+            false
+        );
+
         if (pauseManager != null)
-            pauseManager.SetResultLocked(true);
+        {
+            pauseManager.SetResultLocked(
+                true
+            );
+        }
+
         RefreshObjectives();
+
         Time.timeScale = 0f;
 
-        // 狼叼走最后一只羊时，Remove 先触发归零，Attacked 事件还在后面；晚一帧再结算，统计才完整。
-        StartCoroutine(FinishEndRun(victory));
+        // 狼叼走最后一只羊时，
+        // Remove 先触发归零，
+        // Attacked 事件还在后面；
+        // 晚一帧再结算。
+        StartCoroutine(
+            FinishEndRun(
+                victory
+            )
+        );
     }
 
-    private System.Collections.IEnumerator FinishEndRun(bool victory)
+
+    private System.Collections.IEnumerator FinishEndRun(
+        bool victory)
     {
         yield return null;
+
         RefreshComposition();
 
-        string report = stats.BuildReport(sheepSpawner.GetTypeDisplayName);
-        string description = victory
-            ? $"羊群带着 {flock.MemberCount} 只羊冲出了草原（历史最高 {stats.HighestFlockSize} 只）"
-            : "最后一只羊也没了……";
 
-        Debug.Log((victory ? "胜利：" : "失败：") + description + "\n" + report, this);
+        string report =
+            stats.BuildReport(
+                sheepSpawner
+                    .GetTypeDisplayName
+            );
 
-        if (resultPanelPrefab != null && uiCanvas != null)
+
+        string description =
+            victory
+                ? $"羊群带着 {flock.MemberCount} 只羊冲出了草原（历史最高 {stats.HighestFlockSize} 只）"
+                : "最后一只羊也没了……";
+
+
+        Debug.Log(
+            (victory
+                ? "胜利："
+                : "失败：")
+            +
+            description
+            +
+            "\n"
+            +
+            report,
+            this
+        );
+
+
+        if (resultPanelPrefab != null &&
+            uiCanvas != null)
         {
-            ResultPanelView panel = Instantiate(resultPanelPrefab, uiCanvas.transform);
+            ResultPanelView panel =
+                Instantiate(
+                    resultPanelPrefab,
+                    uiCanvas.transform
+                );
+
             panel.transform.SetAsLastSibling();
-            panel.ReturnTitleRequested += ReturnToTitle;
-            string panelDescription = description + "\n" + report + "\n按 R 再来一局";
+
+            panel.ReturnTitleRequested +=
+                ReturnToTitle;
+
+
+            string panelDescription =
+                description
+                +
+                "\n"
+                +
+                report
+                +
+                "\n按 R 再来一局";
+
+
             if (victory)
-                panel.ShowVictory(panelDescription, flock.MemberCount, stats.HighestFlockSize, stats.TotalRecruited, stats.TotalTaken, stats.SurvivalSeconds);
+            {
+                panel.ShowVictory(
+                    panelDescription,
+                    flock.MemberCount,
+                    stats.HighestFlockSize,
+                    stats.TotalRecruited,
+                    stats.TotalTaken,
+                    stats.SurvivalSeconds
+                );
+            }
             else
-                panel.ShowDefeat(panelDescription, 0, stats.HighestFlockSize, stats.TotalRecruited, stats.TotalTaken, stats.SurvivalSeconds);
+            {
+                panel.ShowDefeat(
+                    panelDescription,
+                    0,
+                    stats.HighestFlockSize,
+                    stats.TotalRecruited,
+                    stats.TotalTaken,
+                    stats.SurvivalSeconds
+                );
+            }
+
             resultPanelShown = true;
         }
         else if (resultView != null)
         {
-            if (victory) resultView.ShowVictory(description, report);
-            else resultView.ShowDefeat(description, report);
+            if (victory)
+            {
+                resultView.ShowVictory(
+                    description,
+                    report
+                );
+            }
+            else
+            {
+                resultView.ShowDefeat(
+                    description,
+                    report
+                );
+            }
         }
     }
 
+
     private bool resultPanelShown;
+
 
     private void LateUpdate()
     {
-        // 仓库的 ResultPanel 只有返回标题按钮；这里补一个 R 快速重开。
+        // 仓库的 ResultPanel 只有返回标题按钮；
+        // 这里补一个 R 快速重开。
         if (!resultPanelShown)
             return;
 
-        Keyboard keyboard = Keyboard.current;
-        if (keyboard != null && keyboard.rKey.wasPressedThisFrame)
+        Keyboard keyboard =
+            Keyboard.current;
+
+        if (keyboard != null &&
+            keyboard.rKey.wasPressedThisFrame)
+        {
             SceneReloadUtility.ReloadActiveScene();
+        }
     }
+
 
     private static void ReturnToTitle()
     {
         Time.timeScale = 1f;
+
         if (SceneLoader.Instance != null)
+        {
             SceneLoader.Instance.LoadMainMenu();
+        }
         else
-            UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu");
+        {
+            UnityEngine
+                .SceneManagement
+                .SceneManager
+                .LoadScene(
+                    "MainMenu"
+                );
+        }
     }
 
-    // ---------------------------------------------------------------- helpers
 
-    private void ApplyStage(bool immediateCamera)
+    // ============================================================
+    // HELPERS
+    // ============================================================
+
+    private void ApplyStage(
+        bool immediateCamera)
     {
-        FlockGrowthStage stage = progression.CurrentStage;
+        FlockGrowthStage stage =
+            progression.CurrentStage;
+
         if (stage == null)
             return;
 
-        cameraFollow?.SetOrthographicSize(stage.CameraSize, immediateCamera);
 
-        float baseCameraSize = stages[0] != null ? stages[0].CameraSize : stage.CameraSize;
-        float multiplier = speedScaleExponent <= 0f
-            ? 1f
-            : Mathf.Pow(stage.CameraSize / Mathf.Max(0.1f, baseCameraSize), speedScaleExponent);
-        flock.SetSpeedMultiplier(multiplier);
+        cameraFollow?.SetOrthographicSize(
+            stage.CameraSize,
+            immediateCamera
+        );
+
+
+        float baseCameraSize =
+            stages[0] != null
+                ? stages[0].CameraSize
+                : stage.CameraSize;
+
+
+        float multiplier =
+            speedScaleExponent <= 0f
+                ? 1f
+                : Mathf.Pow(
+                    stage.CameraSize /
+                    Mathf.Max(
+                        0.1f,
+                        baseCameraSize
+                    ),
+                    speedScaleExponent
+                );
+
+
+        flock.SetSpeedMultiplier(
+            multiplier
+        );
     }
 
-    public float CurrentSpeedMultiplier => flock != null ? flock.SpeedMultiplier : 1f;
 
-    private void ShowBanner(string message)
+    public float CurrentSpeedMultiplier =>
+        flock != null
+            ? flock.SpeedMultiplier
+            : 1f;
+
+
+    /// <summary>
+    /// 普通 Banner：
+    /// 只有文字，没有图片。
+    /// 出生羊圈尚未打开时不显示，避免 TutorialPen 的提示反复闪烁。
+    /// 羊圈打开后，阶段升级 / 狼群 / 出口 / 围栏等普通提示恢复正常。
+    /// </summary>
+    private void ShowBanner(
+        string message)
+    {
+        if (tutorialPen != null &&
+            !tutorialPen.IsOpen &&
+            !penOpened)
+        {
+            return;
+        }
+
+        if (bannerView != null)
+        {
+            bannerView.Show(
+                message
+            );
+        }
+    }
+
+
+    /// <summary>
+    /// 带图片 Banner：
+    /// 目前主要用于特殊羊。
+    /// </summary>
+    private void ShowBanner(
+        string message,
+        Sprite icon)
     {
         if (bannerView != null)
-            bannerView.Show(message);
+        {
+            bannerView.Show(
+                message,
+                icon
+            );
+        }
     }
+
 
     private void MaintainNearbyPopulation()
     {
-        FlockGrowthStage stage = progression.CurrentStage;
+        FlockGrowthStage stage =
+            progression.CurrentStage;
+
         if (stage == null)
             return;
 
-        Vector2 center = flock.Center;
-        float nearbyRadius = stage.CameraSize * nearbyRadiusMultiplier;
-        float retentionRadius = nearbyRadius * retentionRadiusMultiplier;
-        int desiredNearbySheep = Mathf.CeilToInt(stage.CameraSize * nearbySheepPerCameraSize);
 
-        sheepSpawner.DespawnWildSheepFartherThan(center, retentionRadius);
-        int nearbySheep = sheepSpawner.CountWildSheepNear(center, nearbyRadius);
+        Vector2 center =
+            flock.Center;
+
+
+        float nearbyRadius =
+            stage.CameraSize *
+            nearbyRadiusMultiplier;
+
+
+        float retentionRadius =
+            nearbyRadius *
+            retentionRadiusMultiplier;
+
+
+        int desiredNearbySheep =
+            Mathf.CeilToInt(
+                stage.CameraSize *
+                nearbySheepPerCameraSize
+            );
+
+
+        sheepSpawner
+            .DespawnWildSheepFartherThan(
+                center,
+                retentionRadius
+            );
+
+
+        int nearbySheep =
+            sheepSpawner
+                .CountWildSheepNear(
+                    center,
+                    nearbyRadius
+                );
+
+
         int batchesSpawned = 0;
-        int spawnedBefore = sheepSpawner.TotalSpawned;
 
-        while (nearbySheep < desiredNearbySheep
-            && batchesSpawned < maximumBatchesPerRefresh
-            && sheepSpawner.TotalSpawned - spawnedBefore < maximumSheepPerRefresh)
+        int spawnedBefore =
+            sheepSpawner.TotalSpawned;
+
+
+        while (
+            nearbySheep <
+            desiredNearbySheep
+
+            &&
+
+            batchesSpawned <
+            maximumBatchesPerRefresh
+
+            &&
+
+            sheepSpawner.TotalSpawned -
+            spawnedBefore <
+            maximumSheepPerRefresh)
         {
-            if (!sheepSpawner.SpawnBatch(stage.MinimumBatchSize, stage.MaximumBatchSize))
+            if (!sheepSpawner.SpawnBatch(
+                stage.MinimumBatchSize,
+                stage.MaximumBatchSize))
             {
-                nextPopulationRefreshTime = Time.unscaledTime + failedSpawnRetryDelay;
+                nextPopulationRefreshTime =
+                    Time.unscaledTime +
+                    failedSpawnRetryDelay;
+
                 return;
             }
 
+
             batchesSpawned++;
-            nearbySheep = sheepSpawner.CountWildSheepNear(center, nearbyRadius);
+
+
+            nearbySheep =
+                sheepSpawner
+                    .CountWildSheepNear(
+                        center,
+                        nearbyRadius
+                    );
         }
 
-        nextPopulationRefreshTime = Time.unscaledTime + populationRefreshInterval;
+
+        nextPopulationRefreshTime =
+            Time.unscaledTime +
+            populationRefreshInterval;
     }
+
 
     private void OnGUI()
     {
         if (progression == null)
             return;
 
-        if (showStatsOverlay && stats != null)
+
+        if (showStatsOverlay &&
+            stats != null)
+        {
             DrawStatsOverlay();
+        }
+
 
         if (!showDebugHud)
             return;
 
-        FlockGrowthStage stage = progression.CurrentStage;
-        int currentFlock = flock != null ? flock.MemberCount : 0;
-        int wildSheep = sheepSpawner != null ? sheepSpawner.ActiveWildSheepCount : 0;
-        int desiredNearbySheep = stage != null ? Mathf.CeilToInt(stage.CameraSize * nearbySheepPerCameraSize) : 0;
 
-        GUIStyle labelStyle = new GUIStyle(GUI.skin.label)
-        {
-            fontSize = 19,
-            richText = true
-        };
-        labelStyle.normal.textColor = Color.white;
+        FlockGrowthStage stage =
+            progression.CurrentStage;
+
+
+        int currentFlock =
+            flock != null
+                ? flock.MemberCount
+                : 0;
+
+
+        int wildSheep =
+            sheepSpawner != null
+                ? sheepSpawner
+                    .ActiveWildSheepCount
+                : 0;
+
+
+        int desiredNearbySheep =
+            stage != null
+                ? Mathf.CeilToInt(
+                    stage.CameraSize *
+                    nearbySheepPerCameraSize
+                )
+                : 0;
+
+
+        GUIStyle labelStyle =
+            new GUIStyle(
+                GUI.skin.label
+            )
+            {
+                fontSize = 19,
+                richText = true
+            };
+
+
+        labelStyle.normal.textColor =
+            Color.white;
+
 
         string wolfLine;
+
+
         if (wolfDirector != null)
         {
-            wolfLine = wolfDirector.Phase == WolfEventPhase.Dormant
-                ? $"狼：羊群达到 {wolfDirector.RequiredMemberCount} 只后出现"
-                : $"狼：已出没（第 {wolfDirector.RoundIndex} 轮）";
+            wolfLine =
+                wolfDirector.Phase ==
+                WolfEventPhase.Dormant
+
+                    ? $"狼：羊群达到 {wolfDirector.RequiredMemberCount} 只后出现"
+
+                    : $"狼：已出没（第 {wolfDirector.RoundIndex} 轮）";
         }
         else
         {
-            int wolves = wolfSpawner != null ? wolfSpawner.AliveCount : 0;
-            wolfLine = wolvesUnlocked ? $"狼：已解锁（场上 {wolves}）" : $"狼：达到 {wolfUnlockFlockSize} 只后出现";
+            int wolves =
+                wolfSpawner != null
+                    ? wolfSpawner.AliveCount
+                    : 0;
+
+
+            wolfLine =
+                wolvesUnlocked
+
+                    ? $"狼：已解锁（场上 {wolves}）"
+
+                    : $"狼：达到 {wolfUnlockFlockSize} 只后出现";
         }
 
-        string exitLine = ExitUnlocked
-            ? (borderRing != null && borderRing.AnyBroken ? "出口：围栏已破，冲出去！" : "出口：已解锁，去外围围栏按 E")
-            : $"出口：历史最高 {progression.HighestFlockSize}/{exitUnlockFlockSize}";
 
-        GUI.Box(new Rect(12f, 12f, 390f, 200f), GUIContent.none);
-        GUILayout.BeginArea(new Rect(24f, 20f, 370f, 190f));
-        GUILayout.Label($"阶段 {progression.StageIndex + 1} · <b>{(stage != null ? stage.DisplayName : "")}</b>", labelStyle);
-        GUILayout.Label($"羊群：<b>{currentFlock}</b>　历史最高：{progression.HighestFlockSize}　速度 ×{CurrentSpeedMultiplier:0.00}", labelStyle);
-        GUILayout.Label($"周围野生羊：{wildSheep}　密度目标：约 {desiredNearbySheep}", labelStyle);
-        GUILayout.Label(wolfLine, labelStyle);
-        GUILayout.Label(exitLine, labelStyle);
-        GUILayout.Label("WASD 移动 · E 撞栅栏 · Tab 统计", labelStyle);
+        string exitLine =
+            ExitUnlocked
+
+                ? (
+                    borderRing != null &&
+                    borderRing.AnyBroken
+
+                        ? "出口：围栏已破，冲出去！"
+
+                        : "出口：已解锁，去外围围栏按 E"
+                  )
+
+                : $"出口：历史最高 {progression.HighestFlockSize}/{exitUnlockFlockSize}";
+
+
+        GUI.Box(
+            new Rect(
+                12f,
+                12f,
+                390f,
+                200f
+            ),
+            GUIContent.none
+        );
+
+
+        GUILayout.BeginArea(
+            new Rect(
+                24f,
+                20f,
+                370f,
+                190f
+            )
+        );
+
+
+        GUILayout.Label(
+            $"阶段 {progression.StageIndex + 1} · <b>{(stage != null ? stage.DisplayName : "")}</b>",
+            labelStyle
+        );
+
+
+        GUILayout.Label(
+            $"羊群：<b>{currentFlock}</b>　历史最高：{progression.HighestFlockSize}　速度 ×{CurrentSpeedMultiplier:0.00}",
+            labelStyle
+        );
+
+
+        GUILayout.Label(
+            $"周围野生羊：{wildSheep}　密度目标：约 {desiredNearbySheep}",
+            labelStyle
+        );
+
+
+        GUILayout.Label(
+            wolfLine,
+            labelStyle
+        );
+
+
+        GUILayout.Label(
+            exitLine,
+            labelStyle
+        );
+
+
+        GUILayout.Label(
+            "WASD 移动 · E 撞栅栏 · Tab 统计",
+            labelStyle
+        );
+
+
         GUILayout.EndArea();
     }
 
+
     private void DrawStatsOverlay()
     {
-        GUIStyle labelStyle = new GUIStyle(GUI.skin.label)
-        {
-            fontSize = 17,
-            richText = true
-        };
-        labelStyle.normal.textColor = Color.white;
+        GUIStyle labelStyle =
+            new GUIStyle(
+                GUI.skin.label
+            )
+            {
+                fontSize = 17,
+                richText = true
+            };
 
-        const float width = 520f;
-        const float height = 140f;
-        float x = 12f;
-        float y = Screen.height - height - 12f;
-        GUI.Box(new Rect(x, y, width, height), GUIContent.none);
-        GUILayout.BeginArea(new Rect(x + 12f, y + 8f, width - 24f, height - 16f));
-        GUILayout.Label("<b>本局统计</b>（Tab 关闭）", labelStyle);
-        GUILayout.Label(stats.BuildReport(sheepSpawner.GetTypeDisplayName), labelStyle);
+
+        labelStyle.normal.textColor =
+            Color.white;
+
+
+        const float width =
+            520f;
+
+        const float height =
+            140f;
+
+
+        float x =
+            12f;
+
+        float y =
+            Screen.height -
+            height -
+            12f;
+
+
+        GUI.Box(
+            new Rect(
+                x,
+                y,
+                width,
+                height
+            ),
+            GUIContent.none
+        );
+
+
+        GUILayout.BeginArea(
+            new Rect(
+                x + 12f,
+                y + 8f,
+                width - 24f,
+                height - 16f
+            )
+        );
+
+
+        GUILayout.Label(
+            "<b>本局统计</b>（Tab 关闭）",
+            labelStyle
+        );
+
+
+        GUILayout.Label(
+            stats.BuildReport(
+                sheepSpawner
+                    .GetTypeDisplayName
+            ),
+            labelStyle
+        );
+
+
         GUILayout.EndArea();
     }
 }
