@@ -48,8 +48,9 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     [SerializeField, Min(0.1f)] private float failedSpawnRetryDelay = 1.5f;
 
     [Header("Impact Feedback")]
-    [SerializeField, Min(0f)] private float impactShakeAmplitude = 0.1f;
-    [SerializeField, Min(0f)] private float impactShakeDuration = 0.14f;
+    [Tooltip("第一阶段镜头尺寸下的 E 冲撞振幅；实际值会随当前视野等比放大。")]
+    [SerializeField, Min(0f)] private float impactShakeAmplitude = 0.16f;
+    [SerializeField, Min(0f)] private float impactShakeDuration = 0.2f;
     [SerializeField, Min(0.02f)] private float impactFeedbackInterval = 0.12f;
 
     [Header("Exit")]
@@ -296,6 +297,13 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
 
         nextImpactFeedbackTime = Time.unscaledTime + impactFeedbackInterval;
         float amplitude = hardImpact ? impactShakeAmplitude : impactShakeAmplitude * 0.65f;
+        float referenceSize = stages != null && stages.Length > 0 && stages[0] != null
+            ? Mathf.Max(0.1f, stages[0].CameraSize)
+            : 5f;
+        float currentSize = cameraFollow != null
+            ? Mathf.Max(referenceSize, cameraFollow.CurrentOrthographicSize)
+            : referenceSize;
+        amplitude *= currentSize / referenceSize;
         cameraFollow?.Shake(amplitude, impactShakeDuration);
     }
 

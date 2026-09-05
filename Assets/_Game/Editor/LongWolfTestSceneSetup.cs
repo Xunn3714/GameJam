@@ -9,9 +9,9 @@ using Object = UnityEngine.Object;
 /// <summary>Creates a separate long-wolf Dev Scene without rebuilding TestWolf or its shared prefab.</summary>
 public static class LongWolfTestSceneSetup
 {
-    public const string ScenePath = "Assets/_Game/Scenes/Dev/TestLongWolf.unity";
+    public const string ScenePath = "Assets/_Game/Scenes/Old/Tests/TestLongWolf.unity";
     public const string PrefabPath = "Assets/_Game/Content/Perfabs/Wolf/LongWolf.prefab";
-    private const string SourceScene = "Assets/_Game/Scenes/Dev/TestWolf.unity";
+    private const string SourceScene = "Assets/_Game/Scenes/Old/Tests/TestWolf.unity";
     private const string SourcePrefab = "Assets/_Game/Content/Perfabs/Wolf/Wolf.prefab";
 
     [MenuItem("Game Jam/Wolf Test/Create TestLongWolf Scene")]

@@ -1,12 +1,13 @@
 # 《找到另一只羊》MVP 技术方案
 
-- **状态**：MVP 原型实现（已集成 `Level_01`）
+- **状态**：历史 MVP 原型（当前主玩法已转为 `AlphaFlockExpansion`）
 - **Owner**：TBD
 - **最后更新**：2026-09-04
 - **目标版本**：Unity 6000.5.9f1
 - **表现形式**：URP 2D 俯视角
 - **首轮平台**：Windows，WASD 键盘操作
-- **玩法场景**：`Assets/_Game/Scenes/Level_01.unity`
+- **历史场景**：`Assets/_Game/Scenes/Old/Legacy/Level_01.unity`
+- **当前主场景**：`Assets/_Game/Scenes/AlphaFlockExpansion.unity`
 - **实现路径**：`Assets/_Game/`、`Assets/Art/SheepSprites/`
 - **上游策划**：[羊群 MVP 策划案](../design/羊群MVP策划案.md)
 - **Agent 入口**：[`AGENTS.md`](../../AGENTS.md)
@@ -100,7 +101,7 @@ Assets/_Game/
 │       ├── SpecialSheep_RedBow.prefab
 │       ├── SpecialSheep_Horned.prefab
 │       └── SpecialSheep_Black.prefab
-└── Scenes/Level_01.unity
+└── Scenes/Old/Legacy/Level_01.unity
 
 Assets/Art/SheepSprites/
 ├── Sheep_Normal.png
@@ -212,6 +213,7 @@ SheepFlock
 
 成员移动目标被实体障碍截断时会触发撞击反馈：可破坏障碍为短促挤压，当前不能破坏或没有破坏规则的障碍会触发后弹、变红和连续抖动。
 上述成员表现不驱动全局镜头；围栏镜头抖动只由玩家在交互范围内按 E 主动冲撞时触发。
+围栏冲撞使用确定峰值的衰减振荡，并按当前正交相机尺寸相对第一阶段进行缩放，保证不同羊群阶段具有接近的屏幕反馈强度。
 
 ### 6.5 FlockSizeObstacle
 

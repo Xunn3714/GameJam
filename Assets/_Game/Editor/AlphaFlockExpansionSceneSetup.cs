@@ -8,13 +8,13 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 /// <summary>
-/// Builds the isolated AlphaFlockExpansion development scene without touching Level_01.
+/// Builds the primary AlphaFlockExpansion gameplay scene without modifying the legacy Level_01.
 /// 240x140 的草原、外圈围栏、出生羊圈（5 只教程羊 + 地面教程标识）、种子驱动的可破坏物、狼群节奏与 HUD。
 /// 可重复执行：只重建由它管理的对象。
 /// </summary>
 public static class AlphaFlockExpansionSceneSetup
 {
-    private const string SceneFolder = "Assets/_Game/Scenes/Dev";
+    private const string SceneFolder = "Assets/_Game/Scenes";
     private const string ScenePath = SceneFolder + "/AlphaFlockExpansion.unity";
     private const string SceneTemplatePath = "Assets/Settings/Scenes/URP2DSceneTemplate.unity";
     private const string GrassBackgroundPath = "Assets/Art/WorldSprites/Tiles/草原_背景.png";
@@ -24,7 +24,7 @@ public static class AlphaFlockExpansionSceneSetup
     private const string SpecialSheepFolder = "Assets/_Game/Content/Perfabs/Sheep";
     private const string WolfPrefabPath = "Assets/_Game/Content/Perfabs/Wolf/Wolf.prefab";
     private const string NamePoolPath = "Assets/_Game/Content/Data/SheepNamePool.asset";
-    private const string Level01ScenePath = "Assets/_Game/Scenes/Level_01.unity";
+    private const string Level01ScenePath = "Assets/_Game/Scenes/Old/Legacy/Level_01.unity";
     private const string BannerPrefabPath = "Assets/_Game/Content/Perfabs/UI/BannerSystem.prefab";
     private const string ResultPanelPrefabPath = "Assets/_Game/Content/Perfabs/UI/ResultPanel.prefab";
 
