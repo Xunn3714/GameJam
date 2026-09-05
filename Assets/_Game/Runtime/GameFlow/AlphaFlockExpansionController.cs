@@ -371,7 +371,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     {
         borderRing?.ApplyRequiredCount(exitUnlockFlockSize);
         ExpandBoundsForExit();
-        ShowBanner($"历史最高达到 {exitUnlockFlockSize} 只！按 F 撞栏，或用 E 冲刺突破后冲出草原");
+        ShowBanner($"历史最高达到 {exitUnlockFlockSize} 只！按 E 让整群蓄势冲刺，撞开围栏后冲出草原");
         Debug.Log("出口已解锁。", this);
     }
 
@@ -439,7 +439,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
 
         objectiveScratch.Clear();
         objectiveScratch.Add(new MvpObjectiveSnapshot(
-            "alpha.pen", "凑够羊，按 F 撞开羊圈", true, false, penOpened,
+            "alpha.pen", "凑够羊，按 E 整群冲刺撞开羊圈", true, false, penOpened,
             Mathf.Min(members, penNeed), penNeed));
         objectiveScratch.Add(new MvpObjectiveSnapshot(
             "alpha.exit_unlock", $"羊群壮大到 {exitUnlockFlockSize} 只", true, false, progression.ExitUnlocked,
@@ -632,7 +632,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         }
 
         string exitLine = ExitUnlocked
-            ? (borderRing != null && borderRing.AnyBroken ? "出口：围栏已破，冲出去！" : "出口：已解锁，按 F 或用 E 冲刺破栏")
+            ? (borderRing != null && borderRing.AnyBroken ? "出口：围栏已破，冲出去！" : "出口：已解锁，按 E 整群冲刺破栏")
             : $"出口：历史最高 {progression.HighestFlockSize}/{exitUnlockFlockSize}";
 
         GUI.Box(new Rect(12f, 12f, 390f, 200f), GUIContent.none);
@@ -642,7 +642,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         GUILayout.Label($"周围野生羊：{wildSheep}　密度目标：约 {desiredNearbySheep}", labelStyle);
         GUILayout.Label(wolfLine, labelStyle);
         GUILayout.Label(exitLine, labelStyle);
-        GUILayout.Label("WASD 移动 · E 冲刺/蓄力 · F 撞栏 · Q 收拢 · Tab 统计", labelStyle);
+        GUILayout.Label("WASD 移动 · E 整群后退蓄势冲刺 · Q 收拢 · Tab 统计", labelStyle);
         GUILayout.EndArea();
     }
 

@@ -1,72 +1,36 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public enum FlockDashChargeTier
+public enum FlockActionPhase
 {
-    Tap,
-    HalfSecond,
-    OneSecond,
-    OnePointFiveSeconds,
-    TwoSeconds,
-}
-
-public readonly struct FlockDashProfile
-{
-    public FlockDashProfile(
-        FlockDashChargeTier tier,
-        float speed,
-        float distance,
-        float impactMultiplier)
-    {
-        Tier = tier;
-        Speed = speed;
-        Distance = distance;
-        ImpactMultiplier = impactMultiplier;
-    }
-
-    public FlockDashChargeTier Tier { get; }
-    public float Speed { get; }
-    public float Distance { get; }
-    public float ImpactMultiplier { get; }
+    Idle,
+    Retreating,
+    Windup,
+    Dashing,
+    ImpactStun,
 }
 
 /// <summary>
-/// Alpha 羊群主动动作：E 短按/蓄力冲刺，Q 持续收拢队形。
-/// 围栏的贴身撞击仍由 FenceObstacle 处理，并绑定到 F。
+/// Alpha 羊群主动动作：按下 E 后整群后退、停顿蓄势，再向前冲刺；Q 持续收拢队形。
 /// </summary>
 [DisallowMultipleComponent]
 [DefaultExecutionOrder(-75)]
 [RequireComponent(typeof(FlockController), typeof(FlockMovementController))]
 public sealed class FlockActionController : MonoBehaviour
 {
-    public const float MaximumChargeSeconds = 2f;
-
     [Header("References")]
     [SerializeField] private FlockController flock;
     [SerializeField] private FlockMovementController movement;
 
-    [Header("Charge")]
-    [SerializeField, Range(0.05f, 1f)] private float chargingMoveSpeedMultiplier = 0.35f;
-
-    [Header("Dash Speed And Distance")]
-    [SerializeField, Min(0.1f)] private float tapDashSpeed = 8f;
-    [SerializeField, Min(0.1f)] private float tapDashDistance = 2.2f;
-    [SerializeField, Min(0.1f)] private float halfSecondDashSpeed = 10f;
-    [SerializeField, Min(0.1f)] private float halfSecondDashDistance = 3f;
-    [SerializeField, Min(0.1f)] private float oneSecondDashSpeed = 12f;
-    [SerializeField, Min(0.1f)] private float oneSecondDashDistance = 4f;
-    [SerializeField, Min(0.1f)] private float onePointFiveSecondDashSpeed = 14f;
-    [SerializeField, Min(0.1f)] private float onePointFiveSecondDashDistance = 5.25f;
-    [SerializeField, Min(0.1f)] private float twoSecondDashSpeed = 16f;
-    [SerializeField, Min(0.1f)] private float twoSecondDashDistance = 7f;
-
-    [Header("Charge Impact Multipliers")]
-    [Tooltip("蓄力达到 1 秒时的冲撞力度倍率。")]
-    [SerializeField, Min(0f)] private float oneSecondImpactMultiplier = 1f;
-    [Tooltip("蓄力达到 1.5 秒时的冲撞力度倍率。")]
-    [SerializeField, Min(0f)] private float onePointFiveSecondImpactMultiplier = 1f;
-    [Tooltip("蓄力达到 2 秒时的冲撞力度倍率。")]
-    [SerializeField, Min(0f)] private float twoSecondImpactMultiplier = 1f;
+    [Header("E Group Dash")]
+    [Tooltip("冲刺前整群向反方向退开的速度。")]
+    [SerializeField, Min(0f)] private float retreatSpeed = 3f;
+    [Tooltip("冲刺前整群向反方向退开的距离。")]
+    [SerializeField, Min(0f)] private float retreatDistance = 0.65f;
+    [Tooltip("后退结束后原地蓄势的时间。")]
+    [SerializeField, Min(0f)] private float windupDuration = 0.3f;
+    [SerializeField, Min(0.1f)] private float dashSpeed = 8f;
+    [SerializeField, Min(0.1f)] private float dashDistance = 2.2f;
 
     [Header("Q Compression")]
     [SerializeField, Range(0.2f, 1f)] private float minimumManualCompactness = 0.45f;
@@ -75,22 +39,19 @@ public sealed class FlockActionController : MonoBehaviour
     [SerializeField, Range(0.05f, 1f)] private float compactedMoveSpeedMultiplier = 0.58f;
 
     private bool controlEnabled = true;
-    private bool isCharging;
     private bool compressionHeld;
-    private bool isDashing;
-    private float chargeStartedAt;
     private float manualCompactness = 1f;
+    private float remainingRetreatDistance;
+    private float remainingWindupTime;
     private float remainingDashDistance;
     private float currentDashSpeed;
     private float currentImpactForce;
     private Vector2 dashDirection = Vector2.right;
+    private FlockActionPhase phase;
 
-    public bool IsCharging => isCharging;
-    public bool IsDashing => isDashing;
-    public float ChargeSeconds => isCharging
-        ? Mathf.Clamp(Time.time - chargeStartedAt, 0f, MaximumChargeSeconds)
-        : 0f;
-    public float ChargeProgress => ChargeSeconds / MaximumChargeSeconds;
+    public FlockActionPhase Phase => phase;
+    public bool IsActing => phase != FlockActionPhase.Idle;
+    public bool IsDashing => phase == FlockActionPhase.Dashing;
     public float ManualCompactness => manualCompactness;
     public float CurrentImpactForce => currentImpactForce;
 
@@ -111,7 +72,7 @@ public sealed class FlockActionController : MonoBehaviour
     {
         if (!controlEnabled || movement == null || !movement.ControlEnabled)
         {
-            CancelCharge();
+            FinishAction();
             SetCompressionHeld(false);
             UpdateCompression(Time.deltaTime);
             UpdateMovementSpeedScale();
@@ -119,20 +80,14 @@ public sealed class FlockActionController : MonoBehaviour
         }
 
         if (Time.timeScale == 0f)
-        {
-            CancelCharge();
             return;
-        }
 
         Keyboard keyboard = Keyboard.current;
         if (keyboard != null)
         {
             SetCompressionHeld(keyboard.qKey.isPressed);
-
             if (keyboard.eKey.wasPressedThisFrame)
-                BeginCharge();
-            if (keyboard.eKey.wasReleasedThisFrame)
-                ReleaseCharge();
+                StartGroupDash();
         }
 
         UpdateCompression(Time.deltaTime);
@@ -141,61 +96,51 @@ public sealed class FlockActionController : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (!isDashing || movement == null || flock == null || Time.timeScale == 0f)
+        if (!IsActing || movement == null || flock == null || Time.timeScale == 0f)
             return;
 
-        float requestedDistance = Mathf.Min(
-            remainingDashDistance,
-            currentDashSpeed * Time.fixedDeltaTime);
-        float movedDistance = movement.MoveExternalStep(
-            dashDirection,
-            requestedDistance,
-            out MovementBlockResult blockResult);
-        remainingDashDistance = Mathf.Max(0f, remainingDashDistance - movedDistance);
-
-        if (blockResult.WasBlocked)
+        if (flock.TryConsumeGroupActionMemberBlock(out Collider2D memberBlocker))
         {
-            bool brokeObstacle = TryBreakObstacle(blockResult.Blocker);
-            PlayLeaderImpact(hardImpact: !brokeObstacle);
-            if (!brokeObstacle)
+            if (phase == FlockActionPhase.Retreating)
             {
-                FinishDash();
+                BeginWindup();
                 return;
             }
+
+            if (phase == FlockActionPhase.Dashing && !HandleDashBlock(memberBlocker))
+                return;
         }
 
-        if (remainingDashDistance <= 0.001f)
-            FinishDash();
+        switch (phase)
+        {
+            case FlockActionPhase.Retreating:
+                UpdateRetreat();
+                break;
+            case FlockActionPhase.Windup:
+                UpdateWindup();
+                break;
+            case FlockActionPhase.Dashing:
+                UpdateDash();
+                break;
+            case FlockActionPhase.ImpactStun:
+                movement.HoldExternalMovement();
+                if (!flock.HasMovementLockedMembers())
+                    FinishAction();
+                break;
+        }
     }
 
-    public bool BeginCharge()
+    /// <summary>供键盘、未来手柄或 UI 输入共同调用；一次调用执行完整的后退、蓄势和冲刺。</summary>
+    public bool StartGroupDash()
     {
-        if (!controlEnabled || isCharging || isDashing || flock == null || movement == null)
+        if (!controlEnabled
+            || IsActing
+            || flock == null
+            || movement == null
+            || flock.MemberCount <= 0
+            || flock.HasMovementLockedMembers())
             return false;
 
-        isCharging = true;
-        chargeStartedAt = Time.time;
-        return true;
-    }
-
-    public bool ReleaseCharge()
-    {
-        if (!isCharging)
-            return false;
-
-        float heldSeconds = ChargeSeconds;
-        isCharging = false;
-        return StartDash(heldSeconds);
-    }
-
-    /// <summary>供未来手柄/UI 输入复用；chargeSeconds 会限制在 0～2 秒。</summary>
-    public bool StartDash(float chargeSeconds)
-    {
-        if (!controlEnabled || isDashing || flock == null || movement == null || flock.MemberCount <= 0)
-            return false;
-
-        isCharging = false;
-        FlockDashProfile profile = GetDashProfile(chargeSeconds);
         Vector2 inputDirection = movement.MoveInput;
         dashDirection = inputDirection.sqrMagnitude > 0.0001f
             ? inputDirection.normalized
@@ -204,15 +149,24 @@ public sealed class FlockActionController : MonoBehaviour
             dashDirection = Vector2.right;
 
         float stageScale = movement.SpeedMultiplier;
-        currentDashSpeed = profile.Speed * stageScale;
-        remainingDashDistance = profile.Distance * stageScale;
-        currentImpactForce = CalculateImpactForce(flock.MemberCount, profile.ImpactMultiplier);
-        isDashing = true;
+        remainingRetreatDistance = Mathf.Max(0f, retreatDistance) * stageScale;
+        remainingWindupTime = Mathf.Max(0f, windupDuration);
+        currentDashSpeed = Mathf.Max(0.1f, dashSpeed) * stageScale;
+        remainingDashDistance = Mathf.Max(0.1f, dashDistance) * stageScale;
+        currentImpactForce = CalculateImpactForce(flock.MemberCount);
 
         movement.BeginExternalMovement();
-        float memberFollowMultiplier = currentDashSpeed
+        float fastestActionSpeed = Mathf.Max(retreatSpeed * stageScale, currentDashSpeed);
+        float memberSpeedMultiplier = fastestActionSpeed
             / Mathf.Max(0.1f, movement.UnmodifiedCurrentSpeedLimit);
-        flock.SetActionMemberSpeedMultiplier(memberFollowMultiplier);
+        flock.SetActionMemberSpeedMultiplier(memberSpeedMultiplier);
+        phase = remainingRetreatDistance > 0.001f && retreatSpeed > 0f
+            ? FlockActionPhase.Retreating
+            : FlockActionPhase.Windup;
+        flock.SetGroupActionState(true, phase == FlockActionPhase.Windup, dashDirection);
+
+        if (phase == FlockActionPhase.Windup)
+            movement.HoldExternalMovement();
         return true;
     }
 
@@ -227,47 +181,16 @@ public sealed class FlockActionController : MonoBehaviour
         if (enabled)
             return;
 
-        CancelCharge();
-        FinishDash();
+        FinishAction();
         compressionHeld = false;
         manualCompactness = 1f;
         flock?.SetManualCompactness(1f);
         movement?.SetActionSpeedScale(1f);
     }
 
-    public FlockDashProfile GetDashProfile(float chargeSeconds)
+    public static float CalculateImpactForce(int memberCount)
     {
-        FlockDashChargeTier tier = ResolveChargeTier(chargeSeconds);
-        return tier switch
-        {
-            FlockDashChargeTier.HalfSecond => new FlockDashProfile(
-                tier, halfSecondDashSpeed, halfSecondDashDistance, 1f),
-            FlockDashChargeTier.OneSecond => new FlockDashProfile(
-                tier, oneSecondDashSpeed, oneSecondDashDistance, oneSecondImpactMultiplier),
-            FlockDashChargeTier.OnePointFiveSeconds => new FlockDashProfile(
-                tier,
-                onePointFiveSecondDashSpeed,
-                onePointFiveSecondDashDistance,
-                onePointFiveSecondImpactMultiplier),
-            FlockDashChargeTier.TwoSeconds => new FlockDashProfile(
-                tier, twoSecondDashSpeed, twoSecondDashDistance, twoSecondImpactMultiplier),
-            _ => new FlockDashProfile(tier, tapDashSpeed, tapDashDistance, 1f),
-        };
-    }
-
-    public static FlockDashChargeTier ResolveChargeTier(float chargeSeconds)
-    {
-        float duration = Mathf.Clamp(chargeSeconds, 0f, MaximumChargeSeconds);
-        if (duration >= 2f) return FlockDashChargeTier.TwoSeconds;
-        if (duration >= 1.5f) return FlockDashChargeTier.OnePointFiveSeconds;
-        if (duration >= 1f) return FlockDashChargeTier.OneSecond;
-        if (duration >= 0.5f) return FlockDashChargeTier.HalfSecond;
-        return FlockDashChargeTier.Tap;
-    }
-
-    public static float CalculateImpactForce(int memberCount, float multiplier)
-    {
-        return Mathf.Max(0, memberCount) * Mathf.Max(0f, multiplier);
+        return Mathf.Max(0, memberCount);
     }
 
     public static bool MeetsBreakThreshold(float impactForce, int requiredForce)
@@ -284,6 +207,86 @@ public sealed class FlockActionController : MonoBehaviour
         float amount = Mathf.Clamp01(
             (1f - compactness) / Mathf.Max(0.0001f, 1f - minimumCompactness));
         return Mathf.Lerp(1f, Mathf.Clamp(minimumSpeedScale, 0.05f, 1f), amount);
+    }
+
+    private void UpdateRetreat()
+    {
+        float requestedDistance = Mathf.Min(
+            remainingRetreatDistance,
+            Mathf.Max(0f, retreatSpeed) * movement.SpeedMultiplier * Time.fixedDeltaTime);
+        float movedDistance = movement.MoveExternalStep(
+            -dashDirection,
+            requestedDistance,
+            out MovementBlockResult blockResult);
+        remainingRetreatDistance = Mathf.Max(0f, remainingRetreatDistance - movedDistance);
+
+        if (blockResult.WasBlocked || remainingRetreatDistance <= 0.001f || requestedDistance <= 0f)
+            BeginWindup();
+    }
+
+    private void BeginWindup()
+    {
+        phase = FlockActionPhase.Windup;
+        movement.HoldExternalMovement();
+        flock.SetGroupActionState(true, true, dashDirection);
+        if (remainingWindupTime <= 0f)
+            BeginDash();
+    }
+
+    private void UpdateWindup()
+    {
+        movement.HoldExternalMovement();
+        remainingWindupTime -= Time.fixedDeltaTime;
+        if (remainingWindupTime <= 0f)
+            BeginDash();
+    }
+
+    private void BeginDash()
+    {
+        phase = FlockActionPhase.Dashing;
+        flock.SetGroupActionState(true, false, dashDirection);
+    }
+
+    private void UpdateDash()
+    {
+        float requestedDistance = Mathf.Min(
+            remainingDashDistance,
+            currentDashSpeed * Time.fixedDeltaTime);
+        float movedDistance = movement.MoveExternalStep(
+            dashDirection,
+            requestedDistance,
+            out MovementBlockResult blockResult);
+        remainingDashDistance = Mathf.Max(0f, remainingDashDistance - movedDistance);
+
+        if (blockResult.WasBlocked)
+        {
+            if (!HandleDashBlock(blockResult.Blocker))
+                return;
+        }
+
+        if (remainingDashDistance <= 0.001f)
+            FinishAction();
+    }
+
+    private void BeginImpactStun()
+    {
+        phase = FlockActionPhase.ImpactStun;
+        movement.HoldExternalMovement();
+        flock.SetGroupActionState(true, true, dashDirection);
+    }
+
+    private bool HandleDashBlock(Collider2D blocker)
+    {
+        bool brokeObstacle = TryBreakObstacle(blocker);
+        bool impactAnimationStarted = PlayFlockImpact(hardImpact: !brokeObstacle);
+        if (brokeObstacle)
+            return true;
+
+        if (impactAnimationStarted)
+            BeginImpactStun();
+        else
+            FinishAction();
+        return false;
     }
 
     private void UpdateCompression(float deltaTime)
@@ -306,8 +309,7 @@ public sealed class FlockActionController : MonoBehaviour
             flock != null ? flock.Compactness : manualCompactness,
             minimumManualCompactness,
             compactedMoveSpeedMultiplier);
-        float chargeScale = isCharging ? chargingMoveSpeedMultiplier : 1f;
-        movement.SetActionSpeedScale(compressionScale * chargeScale);
+        movement.SetActionSpeedScale(compressionScale);
     }
 
     private bool TryBreakObstacle(Collider2D blocker)
@@ -340,34 +342,44 @@ public sealed class FlockActionController : MonoBehaviour
         return canBreak;
     }
 
-    private void PlayLeaderImpact(bool hardImpact)
+    private bool PlayFlockImpact(bool hardImpact)
     {
-        SheepMember leader = flock != null ? flock.Leader : null;
-        leader?.GetComponent<SheepVisualAnimator>()?.PlayObstacleImpact(hardImpact, dashDirection);
+        bool played = false;
+        if (flock == null)
+            return false;
+
+        for (int index = 0; index < flock.Members.Count; index++)
+        {
+            SheepMember member = flock.Members[index];
+            SheepVisualAnimator animator = member != null
+                ? member.GetComponent<SheepVisualAnimator>()
+                : null;
+            played |= animator != null
+                && animator.PlayObstacleImpact(hardImpact, dashDirection);
+        }
+
+        return played;
     }
 
-    private void CancelCharge()
+    private void FinishAction()
     {
-        isCharging = false;
-    }
-
-    private void FinishDash()
-    {
-        if (!isDashing)
+        if (!IsActing)
             return;
 
-        isDashing = false;
+        phase = FlockActionPhase.Idle;
+        remainingRetreatDistance = 0f;
+        remainingWindupTime = 0f;
         remainingDashDistance = 0f;
         currentDashSpeed = 0f;
         currentImpactForce = 0f;
         movement?.EndExternalMovement();
         flock?.SetActionMemberSpeedMultiplier(1f);
+        flock?.SetGroupActionState(false, false, dashDirection);
     }
 
     private void OnDisable()
     {
-        CancelCharge();
-        FinishDash();
+        FinishAction();
         compressionHeld = false;
         manualCompactness = 1f;
         flock?.SetManualCompactness(1f);
@@ -376,13 +388,10 @@ public sealed class FlockActionController : MonoBehaviour
 
     private void OnValidate()
     {
-        halfSecondDashSpeed = Mathf.Max(tapDashSpeed, halfSecondDashSpeed);
-        oneSecondDashSpeed = Mathf.Max(halfSecondDashSpeed, oneSecondDashSpeed);
-        onePointFiveSecondDashSpeed = Mathf.Max(oneSecondDashSpeed, onePointFiveSecondDashSpeed);
-        twoSecondDashSpeed = Mathf.Max(onePointFiveSecondDashSpeed, twoSecondDashSpeed);
-        halfSecondDashDistance = Mathf.Max(tapDashDistance, halfSecondDashDistance);
-        oneSecondDashDistance = Mathf.Max(halfSecondDashDistance, oneSecondDashDistance);
-        onePointFiveSecondDashDistance = Mathf.Max(oneSecondDashDistance, onePointFiveSecondDashDistance);
-        twoSecondDashDistance = Mathf.Max(onePointFiveSecondDashDistance, twoSecondDashDistance);
+        retreatSpeed = Mathf.Max(0f, retreatSpeed);
+        retreatDistance = Mathf.Max(0f, retreatDistance);
+        windupDuration = Mathf.Max(0f, windupDuration);
+        dashSpeed = Mathf.Max(0.1f, dashSpeed);
+        dashDistance = Mathf.Max(0.1f, dashDistance);
     }
 }

@@ -192,7 +192,7 @@ public sealed class FlockMovementController : MonoBehaviour
         velocity = Vector2.ClampMagnitude(velocity, CurrentSpeedLimit);
     }
 
-    /// <summary>为蓄力和收拢状态提供平滑移速倍率，不改变阶段提供的基础速度倍率。</summary>
+    /// <summary>为收拢状态提供平滑移速倍率，不改变阶段提供的基础速度倍率。</summary>
     public void SetActionSpeedScale(float scale)
     {
         actionSpeedScale = Mathf.Clamp(scale, 0.05f, 1f);
@@ -203,6 +203,16 @@ public sealed class FlockMovementController : MonoBehaviour
     public void BeginExternalMovement()
     {
         externalMovementActive = true;
+        movedThisStep = false;
+        velocity = Vector2.zero;
+    }
+
+    /// <summary>在外部动作仍占用移动控制时，让羊群中心原地停住。</summary>
+    public void HoldExternalMovement()
+    {
+        if (!externalMovementActive)
+            return;
+
         movedThisStep = false;
         velocity = Vector2.zero;
     }

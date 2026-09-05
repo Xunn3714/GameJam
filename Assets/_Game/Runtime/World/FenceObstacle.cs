@@ -1,16 +1,15 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
-/// 围栏：F 在贴身范围内按数量规则撞击；E 冲刺命中时按实际冲撞力度判定。
+/// 围栏：E 的整群冲刺命中时按实际冲撞力度判定。
 /// 数量或力度不够时由 Blocking 层实体碰撞体截停羊群。
 [DisallowMultipleComponent]
 [RequireComponent(typeof(BreakableObstacle))]
 public sealed class FenceObstacle : MonoBehaviour
 {
     [SerializeField] private BreakableObstacle breakable;
-    [Tooltip("勾选：羊群数量够了碰到就碎；不勾：数量够了还要贴近并按 F。")]
+    [Tooltip("勾选：羊群数量够了碰到就碎；不勾：只能由 E 整群冲刺撞碎。")]
     [SerializeField] private bool breakOnContact = true;
     [Tooltip("大于 0 时覆盖 ObstacleDefinition 里的门槛（例如外围围栏由关卡控制器统一配置）。")]
     [SerializeField, Min(0)] private int requiredCountOverride;
@@ -72,10 +71,6 @@ public sealed class FenceObstacle : MonoBehaviour
 
         PruneDestroyedColliders();
 
-        bool interactPressed = ManualImpactPressedThisFrame();
-        if (interactPressed)
-            TryManualImpact();
-
         if (CanBreak && breakOnContact)
         {
             breakable.Break();
@@ -83,23 +78,7 @@ public sealed class FenceObstacle : MonoBehaviour
         }
     }
 
-    /// <summary>F 的贴身撞击。只依赖交互 Trigger，羊群中心静止时同样有效。</summary>
-    public bool TryManualImpact()
-    {
-        if (flockInRange == null)
-            return false;
-
-        bool canBreak = CanBreak;
-        flockInRange.ReportFenceChargeImpact(hardImpact: !canBreak);
-        if (!canBreak)
-            return false;
-
-        breakable.Break();
-        ClearRange();
-        return true;
-    }
-
-    /// <summary>E 冲刺传入本次实际力度，不要求预先停留在交互 Trigger 内。</summary>
+    /// <summary>E 整群冲刺传入本次实际力度，不要求预先停留在交互 Trigger 内。</summary>
     public bool ReceiveDashImpact(FlockController sourceFlock, float impactForce)
     {
         if (sourceFlock == null || breakable == null || breakable.IsBroken)
@@ -207,11 +186,5 @@ public sealed class FenceObstacle : MonoBehaviour
         {
             ClearRange();
         }
-    }
-
-    private static bool ManualImpactPressedThisFrame()
-    {
-        Keyboard keyboard = Keyboard.current;
-        return keyboard != null && keyboard.fKey.wasPressedThisFrame;
     }
 }

@@ -108,7 +108,7 @@ public static class WorldObstaclePrefabBuilder
             FenceObstacle fence = root.AddComponent<FenceObstacle>();
             SerializedObject fenceSerialized = new SerializedObject(fence);
             fenceSerialized.FindProperty("breakable").objectReferenceValue = breakable;
-            // 羊圈 / 外围围栏要贴近后按 F 才碎；E 留给移动中的冲刺。
+            // 羊圈 / 外围围栏不靠普通接触破坏，只响应 E 整群冲刺。
             SerializedProperty breakOnContact = fenceSerialized.FindProperty("breakOnContact");
             if (breakOnContact != null)
                 breakOnContact.boolValue = false;

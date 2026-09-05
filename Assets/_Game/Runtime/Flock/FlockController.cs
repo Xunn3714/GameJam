@@ -10,10 +10,6 @@ public sealed class FlockController : MonoBehaviour
     [SerializeField] private FlockMovementController movementController;
     [SerializeField] private SheepMember[] startingMembers;
 
-    [Header("Leader Ripple")]
-    [Tooltip("保留多少秒的移动速度历史，供外围的羊延迟跟随领头羊。")]
-    [SerializeField, Min(0.1f)] private float velocityHistorySeconds = 2f;
-
     [Header("Huddle")]
     [Tooltip("抱团时羊群半径缩小到原来的多少倍（狼嚎提示期间）。")]
     [SerializeField, Range(0.2f, 1f)] private float huddleCompactness = 0.55f;
@@ -37,7 +33,7 @@ public sealed class FlockController : MonoBehaviour
     [SerializeField, Range(1, 6)] private int largeSteeringInterval = 3;
 
     [Header("Recruited Idle Pacing")]
-    [Tooltip("停下后允许左右踱步的非领头羊比例。")]
+    [Tooltip("停下后允许左右踱步的成员比例。")]
     [SerializeField, Range(0f, 1f)] private float idlePacingRatio = 0.2f;
     [SerializeField, Min(0)] private int maximumIdlePacingMembers = 24;
 
@@ -45,9 +41,6 @@ public sealed class FlockController : MonoBehaviour
     private readonly Dictionary<Vector2Int, List<SheepMember>> memberGrid =
         new Dictionary<Vector2Int, List<SheepMember>>();
     private readonly List<List<SheepMember>> memberGridBucketPool = new List<List<SheepMember>>();
-    private Vector2[] velocityHistory;
-    private int historyHead = -1;
-    private int historyCount;
     private bool deferMemberCountChanged;
     private bool memberGridDirty = true;
     private int fixedStepIndex;
@@ -59,6 +52,9 @@ public sealed class FlockController : MonoBehaviour
     private bool facingCommittedThisHold;
     private float manualCompactness = 1f;
     private float actionMemberSpeedMultiplier = 1f;
+    private Vector2 groupActionDirection = Vector2.right;
+    private Collider2D pendingGroupActionBlocker;
+    private bool hasPendingGroupActionBlock;
 
     public int RecruitedCount { get; private set; }
     public int MemberCount => members.Count;
@@ -82,14 +78,14 @@ public sealed class FlockController : MonoBehaviour
     public bool HasActiveFacingIntent { get; private set; }
     public bool FacingIntentLeft { get; private set; }
     public int FacingIntentRevision => facingIntentRevision;
+    public bool IsGroupActionActive { get; private set; }
+    public bool IsGroupActionHolding { get; private set; }
+    public Vector2 GroupActionDirection => groupActionDirection;
 
     /// <summary>羊群椭圆长轴方向；停止移动后保留最后方向，避免外形突然转回水平。</summary>
     public Vector2 ShapeForward => shapeForward;
 
     public IReadOnlyList<SheepMember> Members => members;
-
-    /// <summary>玩家直接操控的那只羊：贴着羊群中心移动，其余羊以它为起点向外扩散跟随。</summary>
-    public SheepMember Leader { get; private set; }
 
     /// <summary>当前紧凑程度：1 = 松散的一大群，越小越抱团。由 SheepFlockAgent 读取来缩放半径。</summary>
     public float Compactness { get; private set; } = 1f;
@@ -119,15 +115,62 @@ public sealed class FlockController : MonoBehaviour
         manualCompactness = Mathf.Clamp(compactness, 0.2f, 1f);
     }
 
-    /// <summary>冲刺期间临时提高成员追随速度，使整群能跟上中心。</summary>
+    /// <summary>整群主动动作期间临时提高成员速度，使所有羊与中心同步。</summary>
     public void SetActionMemberSpeedMultiplier(float multiplier)
     {
         actionMemberSpeedMultiplier = Mathf.Max(1f, multiplier);
     }
 
+    internal void SetGroupActionState(bool active, bool holding, Vector2 forwardDirection)
+    {
+        if (!active || !IsGroupActionActive)
+        {
+            pendingGroupActionBlocker = null;
+            hasPendingGroupActionBlock = false;
+        }
+        IsGroupActionActive = active;
+        IsGroupActionHolding = active && holding;
+        if (forwardDirection.sqrMagnitude > 0.0001f)
+            groupActionDirection = forwardDirection.normalized;
+    }
+
+    internal void ReportGroupActionMemberBlocked(Collider2D blocker)
+    {
+        if (IsGroupActionActive && !IsGroupActionHolding && !hasPendingGroupActionBlock)
+        {
+            pendingGroupActionBlocker = blocker;
+            hasPendingGroupActionBlock = true;
+        }
+    }
+
+    internal bool TryConsumeGroupActionMemberBlock(out Collider2D blocker)
+    {
+        if (!hasPendingGroupActionBlock)
+        {
+            blocker = null;
+            return false;
+        }
+
+        blocker = pendingGroupActionBlocker;
+        pendingGroupActionBlocker = null;
+        hasPendingGroupActionBlock = false;
+        return true;
+    }
+
+    internal bool HasMovementLockedMembers()
+    {
+        for (int index = 0; index < members.Count; index++)
+        {
+            SheepFlockAgent agent = members[index] != null ? members[index].Agent : null;
+            if (agent != null && agent.IsMovementLocked)
+                return true;
+        }
+
+        return false;
+    }
+
     public event Action<RecruitableSheep, int> SheepRecruited;
     public event Action<int> MemberCountChanged;
-    public event Action<SheepMember> LeaderChanged;
     public event Action<bool> FenceChargeImpact;
 
 
@@ -143,15 +186,12 @@ public sealed class FlockController : MonoBehaviour
         {
             AddMember(member);
         }
-
-        SelectLeader();
     }
 
 
     private void FixedUpdate()
     {
         fixedStepIndex = (fixedStepIndex + 1) & int.MaxValue;
-        RecordMovementVelocity(MovementVelocity);
         UpdateFacingIntent();
         UpdateShapeForward();
 
@@ -165,33 +205,11 @@ public sealed class FlockController : MonoBehaviour
         RebuildMemberGrid();
     }
 
-
-    /// <summary>
-    /// 速度大小继续使用历史形成柔性跟随，但方向始终采用当前输入/中心速度。
-    /// 中心已经停下时丢弃历史尾巴，避免一次轻点在很久后传到外围。
-    /// </summary>
-    public Vector2 GetDelayedDriveVelocity(float secondsAgo)
-    {
-        Vector2 currentVelocity = MovementVelocity;
-        Vector2 input = movementController != null ? movementController.MoveInput : Vector2.zero;
-        if (input.sqrMagnitude <= 0.0001f && currentVelocity.sqrMagnitude <= 0.0001f)
-            return Vector2.zero;
-
-        Vector2 historicalVelocity = GetMovementVelocity(secondsAgo);
-        float delayedSpeed = historicalVelocity.magnitude;
-        if (delayedSpeed <= 0.0001f)
-            return Vector2.zero;
-
-        Vector2 currentDirection = currentVelocity.sqrMagnitude > 0.0001f
-            ? currentVelocity.normalized
-            : input.normalized;
-        return currentDirection * delayedSpeed;
-    }
-
-
     private void UpdateFacingIntent()
     {
-        Vector2 input = movementController != null ? movementController.MoveInput : Vector2.zero;
+        Vector2 input = IsGroupActionActive
+            ? groupActionDirection
+            : (movementController != null ? movementController.MoveInput : Vector2.zero);
         if (Mathf.Abs(input.x) < 0.15f)
         {
             HasActiveFacingIntent = false;
@@ -228,7 +246,9 @@ public sealed class FlockController : MonoBehaviour
 
     private void UpdateShapeForward()
     {
-        Vector2 movementVelocity = MovementVelocity;
+        Vector2 movementVelocity = IsGroupActionActive
+            ? groupActionDirection
+            : MovementVelocity;
         if (movementVelocity.sqrMagnitude <= 0.0001f)
             return;
 
@@ -282,9 +302,9 @@ public sealed class FlockController : MonoBehaviour
 
 
     /// <summary>大羊群只错峰重算转向；实际位移仍在每个物理帧执行。</summary>
-    public bool ShouldUpdateSteering(int simulationSlot, bool isLeader)
+    public bool ShouldUpdateSteering(int simulationSlot)
     {
-        if (isLeader)
+        if (IsGroupActionActive)
             return true;
 
         int interval = GetSteeringUpdateInterval();
@@ -304,19 +324,16 @@ public sealed class FlockController : MonoBehaviour
 
 
     /// <summary>把 idle 移动平均分散在羊群里，并严格限制同时具备资格的数量。</summary>
-    public bool CanIdlePace(int simulationSlot, bool isLeader)
+    public bool CanIdlePace(int simulationSlot)
     {
-        if (isLeader || IsMoving || IsHuddling || maximumIdlePacingMembers <= 0)
+        if (IsMoving || IsHuddling || IsGroupActionActive || maximumIdlePacingMembers <= 0)
             return false;
 
-        int eligibleCount = Mathf.Max(0, MemberCount - (Leader != null ? 1 : 0));
+        int eligibleCount = MemberCount;
         if (eligibleCount == 0)
             return false;
 
-        int leaderSlot = Leader != null && Leader.Agent != null
-            ? Leader.Agent.SimulationSlot
-            : -1;
-        int eligibleIndex = simulationSlot > leaderSlot ? simulationSlot - 1 : simulationSlot;
+        int eligibleIndex = simulationSlot;
         if (eligibleIndex < 0 || eligibleIndex >= eligibleCount)
             return false;
 
@@ -386,64 +403,6 @@ public sealed class FlockController : MonoBehaviour
     {
         IsHuddling = huddle;
     }
-
-
-    /// <summary>
-    /// 取 secondsAgo 秒之前的羊群移动速度。外围的羊用它来延迟跟随，形成从领头羊向外扩散的效果。
-    /// </summary>
-    public Vector2 GetMovementVelocity(float secondsAgo)
-    {
-        if (historyCount == 0 || secondsAgo <= 0f)
-            return MovementVelocity;
-
-        int stepsAgo = Mathf.RoundToInt(secondsAgo / Time.fixedDeltaTime);
-        stepsAgo = Mathf.Clamp(stepsAgo, 0, historyCount - 1);
-        int index = (historyHead - stepsAgo + velocityHistory.Length) % velocityHistory.Length;
-        return velocityHistory[index];
-    }
-
-
-    private void RecordMovementVelocity(Vector2 velocity)
-    {
-        if (velocityHistory == null)
-        {
-            int capacity = Mathf.Max(2, Mathf.CeilToInt(velocityHistorySeconds / Time.fixedDeltaTime) + 1);
-            velocityHistory = new Vector2[capacity];
-        }
-
-        historyHead = (historyHead + 1) % velocityHistory.Length;
-        velocityHistory[historyHead] = velocity;
-        historyCount = Mathf.Min(historyCount + 1, velocityHistory.Length);
-    }
-
-
-    /// <summary>选离羊群中心最近的成员当领头羊。</summary>
-    private void SelectLeader()
-    {
-        SheepMember best = null;
-        float bestDistance = float.MaxValue;
-        Vector2 center = Center;
-
-        foreach (SheepMember member in members)
-        {
-            if (member == null)
-                continue;
-
-            float distance = ((Vector2)member.transform.position - center).sqrMagnitude;
-            if (distance < bestDistance)
-            {
-                bestDistance = distance;
-                best = member;
-            }
-        }
-
-        if (best == Leader)
-            return;
-
-        Leader = best;
-        LeaderChanged?.Invoke(Leader);
-    }
-
 
     public bool TryRecruit(RecruitableSheep sheep)
     {
@@ -557,11 +516,6 @@ public sealed class FlockController : MonoBehaviour
         memberGridDirty = true;
         RefreshSimulationSlots(index);
 
-        if (member == Leader)
-        {
-            SelectLeader();
-        }
-
         MemberCountChanged?.Invoke(MemberCount);
 
         return true;
@@ -620,11 +574,6 @@ public sealed class FlockController : MonoBehaviour
         if (members.Count > HighestMemberCount)
         {
             HighestMemberCount = members.Count;
-        }
-
-        if (Leader == null)
-        {
-            SelectLeader();
         }
 
         if (!deferMemberCountChanged)

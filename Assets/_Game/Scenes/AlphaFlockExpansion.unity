@@ -6278,7 +6278,6 @@ MonoBehaviour:
   movementController: {fileID: 493499558}
   startingMembers:
   - {fileID: 993925166}
-  velocityHistorySeconds: 2
   huddleCompactness: 0.55
   huddleTransitionSpeed: 1.2
 --- !u!114 &493499562
@@ -6295,20 +6294,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FlockActionController
   flock: {fileID: 493499559}
   movement: {fileID: 493499558}
-  chargingMoveSpeedMultiplier: 0.35
-  tapDashSpeed: 8
-  tapDashDistance: 2.2
-  halfSecondDashSpeed: 10
-  halfSecondDashDistance: 3
-  oneSecondDashSpeed: 12
-  oneSecondDashDistance: 4
-  onePointFiveSecondDashSpeed: 14
-  onePointFiveSecondDashDistance: 5.25
-  twoSecondDashSpeed: 16
-  twoSecondDashDistance: 7
-  oneSecondImpactMultiplier: 1
-  onePointFiveSecondImpactMultiplier: 1
-  twoSecondImpactMultiplier: 1
+  retreatSpeed: 3
+  retreatDistance: 0.65
+  windupDuration: 0.3
+  dashSpeed: 8
+  dashDistance: 2.2
   minimumManualCompactness: 0.45
   compactingSpeed: 0.45
   restoringSpeed: 0.2
@@ -11053,7 +11043,7 @@ MonoBehaviour:
     height: 10
   signFadeDuration: 1.5
   notEnoughHint: "\u7F8A\u7FA4\u8FD8\u4E0D\u591F\uFF08{0}/{1}\uFF09\uFF0C\u518D\u53BB\u78B0\u51E0\u53EA\u7F8A"
-  readyHint: "\u7F8A\u7FA4\u591F\u4E86\uFF01\u8D34\u8FD1\u540E\u6309 F \u649E\u5F00\u6805\u680F"
+  readyHint: "\u7F8A\u7FA4\u591F\u4E86\uFF01\u6309 E \u540E\u9000\u84C4\u52BF\uFF0C\u6574\u7FA4\u51B2\u523A\u649E\u5F00\u6805\u680F"
 --- !u!4 &834937429
 Transform:
   m_ObjectHideFlags: 0
@@ -15942,7 +15932,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: F
+  m_text: E
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}

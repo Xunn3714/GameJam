@@ -411,10 +411,10 @@ public static class AlphaFlockExpansionSceneSetup
         CreateWorldText(signs.transform, "Recruit_Title", "碰到羊 → 加入羊群", recruitOrigin + new Vector2(0f, 1.6f), 0.9f, chalk);
         CreateWorldText(signs.transform, "Recruit_Hint", "把它们都收进来", recruitOrigin + new Vector2(0f, 0.7f), 0.6f, chalk);
 
-        // 3. 贴身撞栅栏（E 已用于冲刺）
+        // 3. E 整群后退蓄势后撞栅栏
         Vector2 fenceOrigin = new Vector2(5.2f, -3.2f);
         CreateWorldText(signs.transform, "Fence_Title", "羊够 6 只 → 撞开栅栏", fenceOrigin + new Vector2(-1.2f, 1.2f), 0.85f, chalk);
-        CreateKeycap(signs.transform, keycapSprite, "F", fenceOrigin + new Vector2(0.4f, 0f), chalk);
+        CreateKeycap(signs.transform, keycapSprite, "E", fenceOrigin + new Vector2(0.4f, 0f), chalk);
         CreateWorldText(signs.transform, "Fence_Arrow", "→", fenceOrigin + new Vector2(2.0f, 0f), 1.4f, chalk);
 
         return signs;
