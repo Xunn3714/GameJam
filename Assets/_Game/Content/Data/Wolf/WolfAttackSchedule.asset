@@ -1,0 +1,83 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0bf4f1e0a09f9ac42928c37da8e74f9c, type: 3}
+  m_Name: WolfAttackSchedule
+  m_EditorClassIdentifier: Assembly-CSharp::WolfAttackSchedule
+  stages:
+  - displayName: "\u9636\u6BB50 \u6559\u5B66"
+    minMemberCount: 0
+    singleWeight: 0
+    packWeight: 0
+    mostLossWeight: 0
+    straightWolfWeight: 100
+    smartWolfWeight: 0
+    longWolfWeight: 0
+    parallelSequentialWeight: 0
+    parallelSimultaneousWeight: 0
+    perpendicularChainWeight: 0
+    escortsWeight: 0
+    pentagramWeight: 0
+  - displayName: "\u9636\u6BB5\u4E00"
+    minMemberCount: 6
+    singleWeight: 100
+    packWeight: 0
+    mostLossWeight: 0
+    straightWolfWeight: 100
+    smartWolfWeight: 0
+    longWolfWeight: 0
+    parallelSequentialWeight: 0
+    parallelSimultaneousWeight: 0
+    perpendicularChainWeight: 0
+    escortsWeight: 0
+    pentagramWeight: 0
+  - displayName: "\u9636\u6BB5\u4E8C"
+    minMemberCount: 20
+    singleWeight: 60
+    packWeight: 40
+    mostLossWeight: 0
+    straightWolfWeight: 10
+    smartWolfWeight: 45
+    longWolfWeight: 45
+    parallelSequentialWeight: 40
+    parallelSimultaneousWeight: 40
+    perpendicularChainWeight: 15
+    escortsWeight: 5
+    pentagramWeight: 0
+  - displayName: "\u9636\u6BB5\u4E09"
+    minMemberCount: 50
+    singleWeight: 20
+    packWeight: 80
+    mostLossWeight: 0
+    straightWolfWeight: 0
+    smartWolfWeight: 50
+    longWolfWeight: 50
+    parallelSequentialWeight: 30
+    parallelSimultaneousWeight: 30
+    perpendicularChainWeight: 25
+    escortsWeight: 15
+    pentagramWeight: 0
+  - displayName: "\u9636\u6BB5\u56DB"
+    minMemberCount: 90
+    singleWeight: 20
+    packWeight: 65
+    mostLossWeight: 15
+    straightWolfWeight: 0
+    smartWolfWeight: 45
+    longWolfWeight: 55
+    parallelSequentialWeight: 20
+    parallelSimultaneousWeight: 20
+    perpendicularChainWeight: 30
+    escortsWeight: 30
+    pentagramWeight: 5
+  scareThreshold: 50
+  pentagramOnEnterStage: 4
+  wolfSpeedExponent: 1.3

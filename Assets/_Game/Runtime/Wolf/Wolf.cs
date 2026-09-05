@@ -15,11 +15,20 @@ public sealed class Wolf : MonoBehaviour
         Idle,
         Warning,
         Charging,
-        Fleeing
+        Fleeing,
+        /// <summary>被羊群踹飞：高速飞出画面，不再与任何东西互动。</summary>
+        Kicked
     }
 
     [Header("Visuals")]
     [SerializeField] private SpriteRenderer bodyRenderer;
+    [Tooltip("单狼外观；留空时保留原有表现。由美术导入工具绑定，长狼不使用。")]
+    [SerializeField] private Sprite idleSprite;
+    [SerializeField] private Sprite downSprite;
+    [SerializeField] private Sprite walkSprite1;
+    [SerializeField] private Sprite walkSprite2;
+    [SerializeField] private Sprite attackSprite;
+    [SerializeField, Min(1f)] private float walkFramesPerSecond = 10f;
     [Tooltip("预警长方形。要求 sprite 为 1x1 单位、pivot 在左侧中点，脚本会按冲锋路径拉伸。")]
     [SerializeField] private SpriteRenderer warningRenderer;
 
@@ -70,6 +79,15 @@ public sealed class Wolf : MonoBehaviour
     [Tooltip("预警 / 撤退期间羊主动碰到狼也会结算：狼嘴里有羊 → 把碰上来的羊踢开（散落，可捡回）；嘴里没羊 → 叼走碰上来的那只。玩家没有救羊的手段。")]
     [SerializeField] private bool sheepContactInteraction = true;
 
+    [Header("Scared (被吓跑的狼)")]
+    [Tooltip("吓跑模式：预警后冲到离羊群中心这么近就掉头逃跑。")]
+    [SerializeField, Min(0f)] private float scareTurnDistance = 4f;
+    [Tooltip("吓跑后的逃跑速度 = 羊群当前速度上限 × 这个系数（略慢于羊，让玩家追得上）。")]
+    [SerializeField, Range(0.1f, 1.5f)] private float scaredFleeSpeedRatio = 0.85f;
+    [Tooltip("被羊群踹飞的速度。")]
+    [SerializeField, Min(0f)] private float kickedSpeed = 24f;
+    [SerializeField, Min(0f)] private float kickedSpinDegreesPerSecond = 720f;
+
     [Header("Flee")]
     [SerializeField, Min(0f)] private float fleeSpeed = 9f;
     [Tooltip("离羊群中心超过这个距离后销毁。")]
@@ -103,21 +121,44 @@ public sealed class Wolf : MonoBehaviour
     private float fixedRouteTravel;
     private float activeWarningDuration;
     private float activeChargeSpeed;
+    private float speedScale = 1f;
+    private bool predictionAllowed = true;
+    private bool scared;
+    private bool scaredTurned;
+    private float kickedTimer;
     private LongWolfSweep longSweep;
 
     /// <summary>每次实际捕获或撞散成员时触发。</summary>
     public event Action<Wolf, WolfAttackResult> Attacked;
 
+    /// <summary>吓跑模式的狼在羊群面前掉头逃跑的那一刻触发。</summary>
+    public event Action<Wolf> Scared;
+
+    /// <summary>吓跑的狼被羊群碰到、被踹飞时触发。</summary>
+    public event Action<Wolf> Kicked;
+
     /// <summary>狼离开并销毁前触发。</summary>
     public event Action<Wolf> Finished;
 
     public bool IsCarryingSheep => carriedSheep != null;
+    /// <summary>这只狼是不是"被吓跑"模式（不叼羊，露面后掉头逃跑，碰到羊群会被踹飞）。</summary>
+    public bool IsScared => scared;
+    public bool IsLongWolf => longSweep != null || GetComponent<LongWolfSweep>() != null;
+    /// <summary>用于统计归属的攻击方式（由生成方设置）。</summary>
+    public WolfAttackType AttackType { get; set; } = WolfAttackType.SmartWolf;
     /// <summary>这只狼是否走编队指定的固定路线（不瞄准羊群、不做预判）。</summary>
     public bool IsOnFixedRoute => fixedRoute;
     public float ChargeOverrun => chargeOverrun;
     public Vector2 ChargeDirection => chargeDirection;
-    /// <summary>本次进攻实际使用的冲锋速度（编队可以覆盖 prefab 的值）。</summary>
-    public float ChargeSpeed => activeChargeSpeed > 0f ? activeChargeSpeed : chargeSpeed;
+    /// <summary>本次进攻实际使用的冲锋速度（编队可以覆盖 prefab 的值，再乘以速度倍率）。</summary>
+    public float ChargeSpeed => (activeChargeSpeed > 0f ? activeChargeSpeed : chargeSpeed) * speedScale;
+    public float SpeedScale => speedScale;
+
+    /// <summary>随羊群规模放大狼的速度（冲锋和撤退都乘）。在 Launch 之前或之后调用都行。</summary>
+    public void SetSpeedScale(float scale)
+    {
+        speedScale = Mathf.Max(0.1f, scale);
+    }
     /// <summary>冲锋阶段已经冲出的距离（不在冲锋时为 0）。</summary>
     public float ChargeTravelled => state == State.Charging ? chargeTravelled : 0f;
 
@@ -187,7 +228,28 @@ public sealed class Wolf : MonoBehaviour
     /// <summary>开始进攻，并接入狼群共享的躲避记忆（可为 null）。</summary>
     public void Launch(FlockController target, WolfDodgeMemory memory)
     {
+        Launch(target, memory, true);
+    }
+
+    /// <param name="allowPrediction">false = "只会直线攻击的狼"：仍然记录躲避角度，但不做预判。</param>
+    public void Launch(FlockController target, WolfDodgeMemory memory, bool allowPrediction)
+    {
         dodgeMemory = memory;
+        predictionAllowed = allowPrediction;
+        scared = false;
+        Launch(target);
+    }
+
+    /// <summary>
+    /// 吓跑模式：正常预警、冲向羊群，冲到 scareTurnDistance 内就掉头以略慢于羊的速度逃走；
+    /// 不叼羊、不撞散；逃跑途中被羊群碰到会被踹飞。
+    /// </summary>
+    public void LaunchScared(FlockController target, WolfDodgeMemory memory)
+    {
+        dodgeMemory = memory;
+        predictionAllowed = true;
+        scared = true;
+        scaredTurned = false;
         Launch(target);
     }
 
@@ -287,6 +349,19 @@ public sealed class Wolf : MonoBehaviour
                     Finish();
                 }
                 break;
+            case State.Kicked:
+                kickedTimer += Time.deltaTime;
+                if (bodyRenderer != null)
+                {
+                    bodyRenderer.transform.Rotate(0f, 0f, kickedSpinDegreesPerSecond * Time.deltaTime);
+                }
+                if (kickedTimer >= 1.5f
+                    || flock == null
+                    || ((Vector2)transform.position - flock.Center).magnitude >= despawnDistance)
+                {
+                    Finish();
+                }
+                break;
         }
     }
 
@@ -312,6 +387,15 @@ public sealed class Wolf : MonoBehaviour
                 body.MovePosition(nextPosition);
                 chargeTravelled += step;
 
+                // 吓跑模式：冲到羊群面前就掉头逃跑。
+                if (scared && !scaredTurned && flock != null
+                    && ((flock.Center - nextPosition).magnitude <= scareTurnDistance
+                        || Vector2.Dot(flock.Center - nextPosition, chargeDirection) <= 0f))
+                {
+                    TurnAndRunAway();
+                    break;
+                }
+
                 // 狼的投影越过羊群中心的那一刻，记录这次玩家躲到了哪边。
                 if (!dodgeRecorded && flock != null
                     && Vector2.Dot(flock.Center - nextPosition, chargeDirection) <= 0f)
@@ -327,12 +411,60 @@ public sealed class Wolf : MonoBehaviour
                 break;
             }
             case State.Fleeing:
-                Vector2 fleePosition = body.position + chargeDirection * ((longSweep != null ? ChargeSpeed : fleeSpeed) * deltaTime);
+            {
+                float currentFleeSpeed = longSweep != null
+                    ? ChargeSpeed
+                    : scared ? ScaredFleeSpeed() : fleeSpeed * speedScale;
+                Vector2 fleePosition = body.position + chargeDirection * (currentFleeSpeed * deltaTime);
                 if (longSweep != null)
                     longSweep.Sweep(this, flock, body.position, fleePosition, chargeDirection);
                 body.MovePosition(fleePosition);
                 break;
+            }
+            case State.Kicked:
+                body.MovePosition(body.position + chargeDirection * (kickedSpeed * deltaTime));
+                break;
         }
+    }
+
+    /// <summary>吓跑后的逃跑速度：跟着羊群当前速度上限走，始终略慢一点。</summary>
+    private float ScaredFleeSpeed()
+    {
+        float flockSpeed = flock != null ? flock.CurrentSpeedLimit : 4f;
+        return Mathf.Max(0.5f, flockSpeed * scaredFleeSpeedRatio);
+    }
+
+    private void TurnAndRunAway()
+    {
+        scaredTurned = true;
+        dodgeRecorded = true;
+        // 掉头：直接沿来路往回跑。
+        chargeDirection = -chargeDirection;
+        chargeOrigin = body.position;
+        if (bodyRenderer != null)
+        {
+            bodyRenderer.flipX = !bodyRenderer.flipX;
+        }
+        state = State.Fleeing;
+        Scared?.Invoke(this);
+    }
+
+    /// <summary>被羊群踹飞：沿远离踢它那只羊的方向高速飞出，转圈，之后销毁。</summary>
+    private void KickAway(Vector2 kickerPosition)
+    {
+        Vector2 away = body.position - kickerPosition;
+        if (away.sqrMagnitude < 0.0001f)
+            away = flock != null ? body.position - flock.Center : -chargeDirection;
+        chargeDirection = away.sqrMagnitude > 0.0001f ? away.normalized : -chargeDirection;
+
+        foreach (Collider2D collider in GetComponents<Collider2D>())
+            collider.enabled = false;
+        if (warningRenderer != null)
+            warningRenderer.enabled = false;
+
+        state = State.Kicked;
+        kickedTimer = 0f;
+        Kicked?.Invoke(this);
     }
 
     /// <summary>可选追踪转向；速度为 0 时禁用，转向本身不触发捕获。</summary>
@@ -388,6 +520,7 @@ public sealed class Wolf : MonoBehaviour
         }
 
         if (useDodgePrediction
+            && predictionAllowed
             && !fixedRoute
             && !predictionApplied
             && dodgeMemory != null
@@ -536,9 +669,35 @@ public sealed class Wolf : MonoBehaviour
 
     private void LateUpdate()
     {
+        UpdateBodyVisual();
         // Refresh the visible span as the camera follows/zooms, without changing the locked aim.
         if (longSweep != null && state == State.Warning)
             UpdateWarningShape();
+    }
+
+    private void UpdateBodyVisual()
+    {
+        if (longSweep != null || bodyRenderer == null || idleSprite == null || state == State.Kicked)
+            return;
+
+        bool moving = state == State.Charging || state == State.Fleeing;
+        Sprite sprite = idleSprite;
+        bool flip = false;
+        if (moving)
+        {
+            flip = chargeDirection.x < 0f;
+            if (state == State.Charging && !scared && attackSprite != null)
+                sprite = attackSprite;
+            else if (chargeDirection.y < -Mathf.Abs(chargeDirection.x) && downSprite != null)
+            {
+                sprite = downSprite;
+                flip = false;
+            }
+            else
+                sprite = ((int)(lifetime * walkFramesPerSecond) % 2 == 0 ? walkSprite1 : walkSprite2) ?? idleSprite;
+        }
+        bodyRenderer.sprite = sprite;
+        bodyRenderer.flipX = flip;
     }
 
     private void BeginCharge()
@@ -567,7 +726,7 @@ public sealed class Wolf : MonoBehaviour
     {
         if (longSweep != null)
             return;
-        if (state == State.Idle || flock == null || Time.timeScale == 0f)
+        if (state == State.Idle || state == State.Kicked || flock == null || Time.timeScale == 0f)
             return;
 
         // The flock root is a control marker, not a sheep. Only an actual active member can be caught.
@@ -579,6 +738,13 @@ public sealed class Wolf : MonoBehaviour
         ColliderDistance2D contact = GetComponent<CircleCollider2D>().Distance(other);
         if (!contact.isValid || contact.distance > 0.001f)
             return;
+
+        if (scared)
+        {
+            // 吓跑的狼碰到羊群就被踹飞，不叼羊也不撞散。
+            KickAway(contactMember.transform.position);
+            return;
+        }
 
         if (state == State.Charging)
         {

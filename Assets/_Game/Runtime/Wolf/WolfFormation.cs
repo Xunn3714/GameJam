@@ -6,6 +6,8 @@ public enum WolfFormationType
 {
     /// <summary>一只普通狼（原有行为）。</summary>
     Single,
+    /// <summary>一条长狼单独从镜头外扫过羊群。</summary>
+    SingleLong,
     /// <summary>N 条长狼平行同时出击。</summary>
     ParallelSimultaneous,
     /// <summary>N 条长狼平行、随机顺序依次出击：先攻击的一定先出现预警。</summary>
@@ -68,10 +70,36 @@ public sealed class WolfFormation
 
     public string DisplayName => string.IsNullOrEmpty(displayName) ? DefaultName(type) : displayName;
 
+    /// <summary>复制一份参数、换成另一种类型（节奏表按阶段动态生成编队时用）。</summary>
+    public WolfFormation CloneAs(WolfFormationType newType)
+    {
+        return new WolfFormation
+        {
+            displayName = string.Empty,
+            type = newType,
+            wolfPrefab = wolfPrefab,
+            longWolfPrefab = longWolfPrefab,
+            count = count,
+            laneSpacing = laneSpacing,
+            sequentialDelay = sequentialDelay,
+            escortDelay = escortDelay,
+            escortLongWolfWarningDuration = escortLongWolfWarningDuration,
+            escortSameSideChance = escortSameSideChance,
+            escortFanSpread = escortFanSpread,
+            pentagramRadius = pentagramRadius,
+            pentagramUsesLongWolves = pentagramUsesLongWolves,
+            pentagramWarningDuration = pentagramWarningDuration,
+            pentagramStagger = pentagramStagger,
+            pentagramChargeSpeed = pentagramChargeSpeed,
+            chainHandoffDistance = chainHandoffDistance,
+        };
+    }
+
     public static string DefaultName(WolfFormationType type)
     {
         switch (type)
         {
+            case WolfFormationType.SingleLong: return "长狼";
             case WolfFormationType.ParallelSimultaneous: return "长狼并排齐冲";
             case WolfFormationType.ParallelSequential: return "长狼并排轮冲";
             case WolfFormationType.LongWolfWithEscorts: return "长狼包夹";
