@@ -32,6 +32,15 @@ public sealed class FlockMovementController : MonoBehaviour
     private Rect movementBounds;
     private float temporarySpeedLimit;
     private float temporarySpeedLimitExpiresAt;
+    private float speedMultiplier = 1f;
+
+    /// <summary>随羊群规模 / 镜头放大整体提速；速度上限和加速度一起乘。</summary>
+    public void SetSpeedMultiplier(float multiplier)
+    {
+        speedMultiplier = Mathf.Max(0.1f, multiplier);
+    }
+
+    public float SpeedMultiplier => speedMultiplier;
 
     public Vector2 LastMoveDirection { get; private set; } = Vector2.right;
     public bool FacingLeft { get; private set; }
@@ -39,9 +48,9 @@ public sealed class FlockMovementController : MonoBehaviour
     public Vector2 DesiredVelocity => velocity;
     public Vector2 Velocity => velocity;
     public float NormalSpeedLimit => normalSpeedLimit;
-    public float CurrentSpeedLimit => HasTemporarySpeedLimit
+    public float CurrentSpeedLimit => (HasTemporarySpeedLimit
         ? Mathf.Max(normalSpeedLimit, temporarySpeedLimit)
-        : normalSpeedLimit;
+        : normalSpeedLimit) * speedMultiplier;
 
     private bool HasTemporarySpeedLimit =>
         temporarySpeedLimit > normalSpeedLimit &&
@@ -102,9 +111,9 @@ public sealed class FlockMovementController : MonoBehaviour
         Vector2 targetVelocity = controlEnabled
             ? moveInput * speedLimit
             : Vector2.zero;
-        float response = targetVelocity.sqrMagnitude > 0.0001f
+        float response = (targetVelocity.sqrMagnitude > 0.0001f
             ? acceleration
-            : deceleration;
+            : deceleration) * speedMultiplier;
         velocity = Vector2.MoveTowards(velocity, targetVelocity, response * deltaTime);
         velocity = Vector2.ClampMagnitude(velocity, speedLimit);
 

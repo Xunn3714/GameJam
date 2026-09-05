@@ -58,6 +58,7 @@ public sealed class SheepFlockAgent : MonoBehaviour
     private float wanderTimer;
     private float followDelay;
     private float stuckTimer;
+    private float nextImpactFeedbackTime;
 
     public Vector2 Velocity => velocity;
     public bool IsLeader => flock != null && flock.Leader != null && flock.Leader.gameObject == gameObject;
@@ -154,6 +155,30 @@ public sealed class SheepFlockAgent : MonoBehaviour
         body.MovePosition(target);
     }
 
+    /// <summary>撞上的障碍是不是羊群现在就能撞碎的（决定播软 / 硬撞击动画）。</summary>
+    private bool CanBreakOnContact(Collider2D blocker)
+    {
+        if (blocker == null)
+            return false;
+
+        BreakableObstacle obstacle = blocker.GetComponentInParent<BreakableObstacle>();
+        if (obstacle == null || obstacle.Definition == null)
+            return false;
+
+        if (obstacle.Definition.BreakRule == ObstacleBreakRule.OnAnyContact)
+            return true;
+
+        if (flock == null)
+            return false;
+
+        FenceObstacle fence = obstacle.GetComponent<FenceObstacle>();
+        int required = fence != null ? fence.RequiredFlockCount : obstacle.Definition.RequiredFlockCount;
+        int count = obstacle.Definition.CountSource == ObstacleCountSource.HighestFlockCountThisRun
+            ? flock.HighestMemberCount
+            : flock.MemberCount;
+        return count >= required;
+    }
+
     private Vector2 TrySlideAroundObstacle(Vector2 from, Vector2 desiredStep)
     {
         Vector2 direction = desiredStep.normalized;
@@ -185,8 +210,11 @@ public sealed class SheepFlockAgent : MonoBehaviour
         bool blocked = wanted > 0.01f && achieved < wanted * 0.15f;
         float farDistance = GetComfortableRadius() * stuckDistanceFactor + blockingRadius;
         bool farFromFlock = (flock.Center - from).sqrMagnitude > farDistance * farDistance;
+        // 离得不远但中间隔着围栏（例如卡在角落、羊群在栏杆另一侧）也算掉队。
+        bool separatedByWall = !farFromFlock
+            && MovementBlocking.IsLineBlocked(from, flock.Center, blockingLayers);
 
-        if (!blocked || !farFromFlock)
+        if (!blocked || !(farFromFlock || separatedByWall))
         {
             stuckTimer = 0f;
             return;

@@ -76,3 +76,12 @@
 
 - EditMode 测试：`Assets/_Game/Editor/Tests/AlphaProgressionTests.cs`（阶段不降级、100 只解锁出口、门槛可配）、`AlphaRunStatsTests.cs`（统计准确）。
 - 菜单：`Game Jam → Alpha Flock Expansion → Setup Scene`（会先执行 `Game Jam → World → Build Obstacle Prefabs`）。
+
+### 2026-09-05 第二轮调整
+
+- 狼群节奏在**羊圈打开后**才启动（羊圈里不放狼）；狼冲锋途中会朝最近的羊微调方向，碰到羊群一定叼走一只（`Wolf.alwaysCaptureOne`）。
+- 镜头随阶段放大时整体提速：倍率 = (相机尺寸 / 第一阶段相机尺寸)^0.75（`speedScaleExponent`）。
+- 羊被围栏卡住：不能隔着围栏招募；被挡时沿围栏切线滑动；被卡且与羊群隔墙 / 离得远超过 1.2s 会自动"翻过栏杆"回到羊群旁。
+- 可破坏物碎裂时立刻切到 Background 层，不再压在羊上面；散布密度提高到 1.5 / 100 平方单位（上限 520）。
+- Alpha 场景直接复用 Level_01 的 GameCanvas（任务列表 / 族群数 / 入队提示 / 暂停 + 设置）、BannerSystem 横幅和 ResultPanel 结算（R 快速重开），生成脚本会临时加载 Level_01 复制这些对象。
+- 左上角调试信息默认关闭，Tab 切换。

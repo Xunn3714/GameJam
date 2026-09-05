@@ -11,6 +11,8 @@ using UnityEngine.UI;
 [RequireComponent(typeof(RectTransform))]
 public sealed class AlphaBannerView : MonoBehaviour
 {
+    [Tooltip("指定后改用仓库里的 BannerSystem 预制体（BannerView）来显示，不再自建元素。")]
+    [SerializeField] private BannerView bannerView;
     [SerializeField] private Image background;
     [SerializeField] private TMP_Text label;
     [SerializeField, Min(0.1f)] private float holdDuration = 2.2f;
@@ -27,6 +29,13 @@ public sealed class AlphaBannerView : MonoBehaviour
         if (group == null)
             group = gameObject.AddComponent<CanvasGroup>();
         group.alpha = 0f;
+
+        if (bannerView != null)
+        {
+            bannerView.SetIcon(null);
+            bannerView.Show();
+            return;
+        }
 
         RectTransform root = (RectTransform)transform;
         if (background == null)
@@ -61,7 +70,11 @@ public sealed class AlphaBannerView : MonoBehaviour
             case 0:
                 if (pending.Count > 0)
                 {
-                    label.text = pending.Dequeue();
+                    string message = pending.Dequeue();
+                    if (bannerView != null)
+                        bannerView.SetText(message);
+                    else
+                        label.text = message;
                     timer = 0f;
                     state = 1;
                 }

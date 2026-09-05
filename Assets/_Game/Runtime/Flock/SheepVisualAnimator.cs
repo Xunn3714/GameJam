@@ -16,6 +16,8 @@ public sealed class SheepVisualAnimator : MonoBehaviour
     [SerializeField, Min(0f)] private float movementStretch = 0.055f;
     [SerializeField, Min(0f)] private float movementBounce = 0.025f;
     [SerializeField, Min(0f)] private float movementTilt = 2f;
+    [Tooltip("走路时的抖动频率（每秒几个周期），x = 慢走，y = 全速。")]
+    [SerializeField] private Vector2 movementFrequencyRange = new Vector2(2.2f, 3.4f);
 
     [Header("Idle")]
     [SerializeField, Min(0f)] private float breathingStrength = 0.012f;
@@ -206,7 +208,10 @@ public sealed class SheepVisualAnimator : MonoBehaviour
 
         if (isMoving)
         {
-            movementPhase += Time.deltaTime * Mathf.Lerp(5f, 9f, Mathf.Clamp01(smoothedSpeed / 5f));
+            movementPhase += Time.deltaTime * Mathf.Lerp(
+                movementFrequencyRange.x,
+                movementFrequencyRange.y,
+                Mathf.Clamp01(smoothedSpeed / 5f));
             float step = Mathf.Sin(movementPhase * Mathf.PI * 2f);
             scaleX += step * movementStretch;
             scaleY -= step * movementStretch * 0.85f;

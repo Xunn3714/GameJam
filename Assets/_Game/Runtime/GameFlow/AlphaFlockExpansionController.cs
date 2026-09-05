@@ -23,6 +23,15 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     [Tooltip("结算页挂到这个 Canvas 下。")]
     [SerializeField] private Canvas uiCanvas;
 
+    [Header("Level UI (复用 Level_01 的界面)")]
+    [Tooltip("任务列表 + 族群数（Level_01 的 SheepHUD）。")]
+    [SerializeField] private MvpHudView hudView;
+    [Tooltip("“xx 加入了族群”提示。")]
+    [SerializeField] private JoinToastView joinToastView;
+    [SerializeField] private PauseManager pauseManager;
+    [Tooltip("仓库里的 ResultPanel 预制体；留空则用 Alpha 自己的占位结算页。")]
+    [SerializeField] private ResultPanelView resultPanelPrefab;
+
     [Header("Progression")]
     [SerializeField] private FlockGrowthStage[] stages =
     {
@@ -58,7 +67,8 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     [SerializeField, Min(1)] private int maximumSheepPerRefresh = 12;
 
     [Header("Debug HUD")]
-    [SerializeField] private bool showDebugHud = true;
+    [Tooltip("左上角开发者调试信息；只在 Inspector 里勾选才显示，正常游玩不要开。")]
+    [SerializeField] private bool showDebugHud;
 
     private AlphaProgression progression;
     private AlphaRunStats stats;
@@ -68,6 +78,11 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     private bool initialized;
     private bool ended;
     private bool showStatsOverlay;
+    private bool penOpened;
+    private bool borderBroken;
+    private bool escaped;
+    private int specialRecruits;
+    private readonly List<MvpObjectiveSnapshot> objectiveScratch = new List<MvpObjectiveSnapshot>();
     private float nextPopulationRefreshTime;
     private float runStartTime;
     private readonly List<string> typeScratch = new List<string>();
@@ -162,13 +177,18 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         cameraFollow?.ConfigureBounds(worldRect);
         borderRing?.ApplyRequiredCount(exitUnlockFlockSize);
 
-        if (uiCanvas != null)
+        if (uiCanvas != null && resultPanelPrefab == null)
             resultView = AlphaResultView.Create(uiCanvas.transform);
 
         ApplyStage(true);
         RefreshComposition();
         MaintainNearbyPopulation();
         initialized = true;
+        RefreshObjectives();
+
+        // 还在出生羊圈里时不放狼（不然羊圈里的羊会被叼光，永远凑不够）；羊圈打开后再开始狼群节奏。
+        if (wolfDirector != null && (tutorialPen == null || tutorialPen.IsOpen))
+            wolfDirector.Run();
     }
 
     private void Update()
@@ -176,6 +196,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         if (!initialized)
             return;
 
+        // Tab：切换左下角的按类型统计面板（游玩中的统计入口）。
         Keyboard keyboard = Keyboard.current;
         if (keyboard != null && keyboard.tabKey.wasPressedThisFrame)
             showStatsOverlay = !showStatsOverlay;
@@ -208,6 +229,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         }
 
         AlphaProgression.Change change = progression.Observe(memberCount);
+        RefreshObjectives();
         if (!change.HighestChanged)
             return;
 
@@ -244,10 +266,15 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         string typeId = identity != null ? identity.SheepTypeId : MvpSheepCatalog.DefaultTypeId;
         stats.RecordRecruit(typeId);
 
+        string sheepName = identity != null && !string.IsNullOrWhiteSpace(identity.DisplayName) ? identity.DisplayName : "";
+        if (joinToastView != null && !string.IsNullOrEmpty(sheepName))
+            joinToastView.Show(sheepName);
+
         if (!string.Equals(typeId, MvpSheepCatalog.DefaultTypeId, System.StringComparison.Ordinal))
         {
-            string sheepName = identity != null && !string.IsNullOrWhiteSpace(identity.DisplayName) ? identity.DisplayName : "";
+            specialRecruits++;
             ShowBanner($"特殊羊加入：{sheepSpawner.GetTypeDisplayName(typeId)} {sheepName}".TrimEnd());
+            RefreshObjectives();
         }
 
         if (sheepSpawner.MarkRecruited(sheep))
@@ -332,9 +359,11 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
 
     private void HandleBorderFenceBroken(FenceObstacle fence)
     {
+        borderBroken = true;
         cameraFollow?.Shake(fenceBreakShakeAmplitude, fenceBreakShakeDuration);
         ExpandBoundsForExit();
         ShowBanner("围栏破了！带着羊群冲出去！");
+        RefreshObjectives();
     }
 
     private bool CheckEscaped()
@@ -360,9 +389,39 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
 
     private void HandleTutorialPenOpened()
     {
+        penOpened = true;
+        if (wolfDirector != null)
+            wolfDirector.Run();
         cameraFollow?.Shake(fenceBreakShakeAmplitude * 0.6f, fenceBreakShakeDuration);
         sheepSpawner.SetExclusionZones();
         ShowBanner("羊圈打开了！去草原上壮大羊群吧");
+        RefreshObjectives();
+    }
+
+    /// <summary>把 Alpha 的进度翻译成 Level_01 任务列表 HUD 能显示的条目。</summary>
+    private void RefreshObjectives()
+    {
+        if (hudView == null || progression == null)
+            return;
+
+        int members = flock != null ? flock.MemberCount : 0;
+        int penNeed = wolfDirector != null ? Mathf.Max(1, wolfDirector.RequiredMemberCount) : wolfUnlockFlockSize;
+
+        objectiveScratch.Clear();
+        objectiveScratch.Add(new MvpObjectiveSnapshot(
+            "alpha.pen", "凑够羊，按 E 撞开羊圈", true, false, penOpened,
+            Mathf.Min(members, penNeed), penNeed));
+        objectiveScratch.Add(new MvpObjectiveSnapshot(
+            "alpha.exit_unlock", $"羊群壮大到 {exitUnlockFlockSize} 只", true, false, progression.ExitUnlocked,
+            Mathf.Min(progression.HighestFlockSize, exitUnlockFlockSize), exitUnlockFlockSize));
+        objectiveScratch.Add(new MvpObjectiveSnapshot(
+            "alpha.escape", "撞开外围围栏，冲出草原", true, progression.ExitUnlocked && !borderBroken, escaped,
+            borderBroken ? 1 : 0, 1));
+        objectiveScratch.Add(new MvpObjectiveSnapshot(
+            "alpha.special", "招募一只特殊羊", false, false, specialRecruits > 0,
+            Mathf.Min(specialRecruits, 1), 1));
+
+        hudView.UpdateObjectives(objectiveScratch, members);
     }
 
     // ---------------------------------------------------------------- end of run
@@ -373,11 +432,15 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
             return;
 
         ended = true;
+        escaped = victory;
         stats.SurvivalSeconds = Time.time - runStartTime;
 
         wolfDirector?.Stop();
         wolfSpawner?.StopSpawning();
         flockMovement?.SetControlEnabled(false);
+        if (pauseManager != null)
+            pauseManager.SetResultLocked(true);
+        RefreshObjectives();
         Time.timeScale = 0f;
 
         // 狼叼走最后一只羊时，Remove 先触发归零，Attacked 事件还在后面；晚一帧再结算，统计才完整。
@@ -396,11 +459,45 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
 
         Debug.Log((victory ? "胜利：" : "失败：") + description + "\n" + report, this);
 
-        if (resultView != null)
+        if (resultPanelPrefab != null && uiCanvas != null)
+        {
+            ResultPanelView panel = Instantiate(resultPanelPrefab, uiCanvas.transform);
+            panel.transform.SetAsLastSibling();
+            panel.ReturnTitleRequested += ReturnToTitle;
+            string panelDescription = description + "\n" + report + "\n按 R 再来一局";
+            if (victory)
+                panel.ShowVictory(panelDescription, flock.MemberCount, stats.HighestFlockSize, stats.TotalRecruited, stats.TotalTaken, stats.SurvivalSeconds);
+            else
+                panel.ShowDefeat(panelDescription, 0, stats.HighestFlockSize, stats.TotalRecruited, stats.TotalTaken, stats.SurvivalSeconds);
+            resultPanelShown = true;
+        }
+        else if (resultView != null)
         {
             if (victory) resultView.ShowVictory(description, report);
             else resultView.ShowDefeat(description, report);
         }
+    }
+
+    private bool resultPanelShown;
+
+    private void LateUpdate()
+    {
+        // 仓库的 ResultPanel 只有返回标题按钮；这里补一个 R 快速重开。
+        if (!resultPanelShown)
+            return;
+
+        Keyboard keyboard = Keyboard.current;
+        if (keyboard != null && keyboard.rKey.wasPressedThisFrame)
+            SceneReloadUtility.ReloadActiveScene();
+    }
+
+    private static void ReturnToTitle()
+    {
+        Time.timeScale = 1f;
+        if (SceneLoader.Instance != null)
+            SceneLoader.Instance.LoadMainMenu();
+        else
+            UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu");
     }
 
     // ---------------------------------------------------------------- helpers
@@ -463,7 +560,13 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
 
     private void OnGUI()
     {
-        if (!showDebugHud || progression == null)
+        if (progression == null)
+            return;
+
+        if (showStatsOverlay && stats != null)
+            DrawStatsOverlay();
+
+        if (!showDebugHud)
             return;
 
         FlockGrowthStage stage = progression.CurrentStage;
@@ -504,13 +607,25 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         GUILayout.Label(exitLine, labelStyle);
         GUILayout.Label("WASD 移动 · E 撞栅栏 · Tab 统计", labelStyle);
         GUILayout.EndArea();
+    }
 
-        if (showStatsOverlay && stats != null)
+    private void DrawStatsOverlay()
+    {
+        GUIStyle labelStyle = new GUIStyle(GUI.skin.label)
         {
-            GUI.Box(new Rect(12f, 222f, 560f, 150f), GUIContent.none);
-            GUILayout.BeginArea(new Rect(24f, 230f, 540f, 140f));
-            GUILayout.Label(stats.BuildReport(sheepSpawner.GetTypeDisplayName), labelStyle);
-            GUILayout.EndArea();
-        }
+            fontSize = 17,
+            richText = true
+        };
+        labelStyle.normal.textColor = Color.white;
+
+        const float width = 520f;
+        const float height = 140f;
+        float x = 12f;
+        float y = Screen.height - height - 12f;
+        GUI.Box(new Rect(x, y, width, height), GUIContent.none);
+        GUILayout.BeginArea(new Rect(x + 12f, y + 8f, width - 24f, height - 16f));
+        GUILayout.Label("<b>本局统计</b>（Tab 关闭）", labelStyle);
+        GUILayout.Label(stats.BuildReport(sheepSpawner.GetTypeDisplayName), labelStyle);
+        GUILayout.EndArea();
     }
 }

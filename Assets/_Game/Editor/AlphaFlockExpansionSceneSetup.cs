@@ -24,6 +24,9 @@ public static class AlphaFlockExpansionSceneSetup
     private const string SpecialSheepFolder = "Assets/_Game/Content/Perfabs/Sheep";
     private const string WolfPrefabPath = "Assets/_Game/Content/Perfabs/Wolf/Wolf.prefab";
     private const string NamePoolPath = "Assets/_Game/Content/Data/SheepNamePool.asset";
+    private const string Level01ScenePath = "Assets/_Game/Scenes/Level_01.unity";
+    private const string BannerPrefabPath = "Assets/_Game/Content/Perfabs/UI/BannerSystem.prefab";
+    private const string ResultPanelPrefabPath = "Assets/_Game/Content/Perfabs/UI/ResultPanel.prefab";
 
     // 地图与羊圈尺寸（世界单位）。
     private static readonly Rect WorldRect = new Rect(-120f, -70f, 240f, 140f);
@@ -55,6 +58,8 @@ public static class AlphaFlockExpansionSceneSetup
         "BorderFence",
         "TutorialPen",
         "AlphaCanvas",
+        "GameCanvas",
+        "PauseManager",
         "EventSystem",
         "AlphaFlockExpansionController"
     };
@@ -65,6 +70,27 @@ public static class AlphaFlockExpansionSceneSetup
         Scene scene = OpenOrCreateScene();
         BuildScene(scene);
         Selection.activeGameObject = scene.GetRootGameObjects().FirstOrDefault(root => root.name == "SheepFlock");
+    }
+
+    /// <summary>把 Alpha 场景加进 Build Settings（主菜单“开始游戏”按名字加载需要它）。</summary>
+    [MenuItem("Game Jam/Alpha Flock Expansion/Add Scene To Build Settings")]
+    public static void AddSceneToBuildSettings()
+    {
+        List<EditorBuildSettingsScene> scenes = new List<EditorBuildSettingsScene>(EditorBuildSettings.scenes);
+        foreach (EditorBuildSettingsScene existing in scenes)
+        {
+            if (existing.path == ScenePath)
+            {
+                existing.enabled = true;
+                EditorBuildSettings.scenes = scenes.ToArray();
+                Debug.Log("AlphaFlockExpansion 已在 Build Settings 里。");
+                return;
+            }
+        }
+
+        scenes.Add(new EditorBuildSettingsScene(ScenePath, true));
+        EditorBuildSettings.scenes = scenes.ToArray();
+        Debug.Log("已把 AlphaFlockExpansion 加进 Build Settings。");
     }
 
     [MenuItem("Game Jam/Alpha Flock Expansion/Open Scene")]
@@ -106,8 +132,8 @@ public static class AlphaFlockExpansionSceneSetup
         ConfigureLighting(scene);
         ProgressiveSheepSpawner sheepSpawner = CreateSheepSpawner(scene, flock, recruitablePrefab, namePool, gameplayCamera, worldSeed);
         CreateWolfSystem(scene, flock, wolfPrefab.GetComponent<Wolf>(), out WolfSpawner wolfSpawner, out WolfEventDirector director);
-        CreateCanvas(scene, director, out Canvas canvas, out AlphaBannerView banner);
-        CreateGameController(scene, flock, movement, sheepSpawner, cameraFollow, wolfSpawner, director, borderRing, tutorialPen, banner, canvas);
+        LevelUi ui = CreateLevelUi(scene, director);
+        CreateGameController(scene, flock, movement, sheepSpawner, cameraFollow, wolfSpawner, director, borderRing, tutorialPen, ui);
 
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene);
@@ -436,6 +462,8 @@ public static class AlphaFlockExpansionSceneSetup
         SetDebrisEntry(entries.GetArrayElementAtIndex(1), rock, 2f, 1.5f);
         SetDebrisEntry(entries.GetArrayElementAtIndex(2), barrel, 1.5f, 1.5f);
         serialized.FindProperty("area").rectValue = WorldRect;
+        serialized.FindProperty("densityPer100SquareUnits").floatValue = 1.5f;
+        serialized.FindProperty("maximumCount").intValue = 520;
         SerializedProperty zones = serialized.FindProperty("exclusionZones");
         zones.arraySize = 1;
         zones.GetArrayElementAtIndex(0).rectValue = Expand(PenRect, 4f);
@@ -570,25 +598,102 @@ public static class AlphaFlockExpansionSceneSetup
         directorSerialized.FindProperty("spawner").objectReferenceValue = spawner;
         directorSerialized.FindProperty("flock").objectReferenceValue = flock;
         directorSerialized.FindProperty("requiredMemberCount").intValue = WolfUnlockFlockSize;
+        // 由关卡控制器在羊圈打开后再启动节奏。
+        directorSerialized.FindProperty("runOnStart").boolValue = false;
         directorSerialized.ApplyModifiedPropertiesWithoutUndo();
     }
 
     // ------------------------------------------------------------------ UI
 
-    private static void CreateCanvas(Scene scene, WolfEventDirector director, out Canvas canvas, out AlphaBannerView banner)
+    private sealed class LevelUi
     {
-        GameObject canvasObject = new GameObject("AlphaCanvas", typeof(RectTransform));
-        SceneManager.MoveGameObjectToScene(canvasObject, scene);
-        canvas = canvasObject.AddComponent<Canvas>();
-        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder = 10;
-        CanvasScaler scaler = canvasObject.AddComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920f, 1080f);
-        scaler.matchWidthOrHeight = 0.5f;
-        canvasObject.AddComponent<GraphicRaycaster>();
+        public Canvas Canvas;
+        public AlphaBannerView Banner;
+        public MvpHudView Hud;
+        public JoinToastView JoinToast;
+        public PauseManager PauseManager;
+        public ResultPanelView ResultPanelPrefab;
+    }
 
-        // Dev Scene 模板里没有 EventSystem，结算页按钮需要它。
+    /// <summary>
+    /// 复用仓库里的关卡 UI：把 Level_01 的 GameCanvas（任务列表 / 族群数 / 入队提示 / 暂停 + 设置）、
+    /// PauseManager、EventSystem 整体复制过来，再挂上狼群 HUD、BannerSystem 横幅，结算用 ResultPanel 预制体。
+    /// Level_01 只是被临时加载读取，不会被保存。
+    /// </summary>
+    private static LevelUi CreateLevelUi(Scene scene, WolfEventDirector director)
+    {
+        LevelUi ui = new LevelUi();
+
+        GameObject canvasObject = CopyLevel01Ui(scene, out ui.PauseManager);
+        if (canvasObject == null)
+        {
+            canvasObject = CreateFallbackCanvas(scene);
+        }
+
+        ui.Canvas = canvasObject.GetComponent<Canvas>();
+        ui.Hud = canvasObject.GetComponentInChildren<MvpHudView>(true);
+
+        // 草地是浅色的，给任务列表垫一块半透明深色底，不然纸色文字看不清。
+        if (ui.Hud != null && ui.Hud.transform.Find("HudBackdrop") == null)
+        {
+            Image backdrop = MvpUiFactory.CreateImage("HudBackdrop", ui.Hud.transform, new Color(0.08f, 0.12f, 0.06f, 0.55f));
+            backdrop.raycastTarget = false;
+            backdrop.transform.SetAsFirstSibling();
+            MvpUiFactory.Anchor(
+                backdrop.rectTransform,
+                new Vector2(0f, 1f),
+                new Vector2(0f, 1f),
+                new Vector2(25f, -50f),
+                new Vector2(480f, 290f));
+        }
+        ui.JoinToast = canvasObject.GetComponentInChildren<JoinToastView>(true);
+
+        // 狼群节奏 HUD：复制过来的可能已经带了一个（Level_01 集成过），没有就新建；都重新指向本场景的 Director。
+        WolfEventHudView hud = canvasObject.GetComponentInChildren<WolfEventHudView>(true);
+        if (hud == null)
+        {
+            RectTransform hudRect = MvpUiFactory.CreateRect("WolfEventHud", canvasObject.transform);
+            MvpUiFactory.Anchor(hudRect, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -16f), new Vector2(560f, 80f));
+            hudRect.pivot = new Vector2(0.5f, 1f);
+            hudRect.anchoredPosition = new Vector2(0f, -16f);
+            hud = hudRect.gameObject.AddComponent<WolfEventHudView>();
+        }
+        SerializedObject hudSerialized = new SerializedObject(hud);
+        hudSerialized.FindProperty("director").objectReferenceValue = director;
+        hudSerialized.FindProperty("showOnlyDuringEvent").boolValue = true;
+        hudSerialized.ApplyModifiedPropertiesWithoutUndo();
+
+        // 横幅：优先用仓库的 BannerSystem 预制体。
+        GameObject bannerPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(BannerPrefabPath);
+        if (bannerPrefab != null)
+        {
+            GameObject bannerObject = (GameObject)PrefabUtility.InstantiatePrefab(bannerPrefab, canvasObject.transform);
+            bannerObject.name = "AlphaBanner";
+            RectTransform bannerRect = bannerObject.GetComponent<RectTransform>();
+            if (bannerRect != null)
+            {
+                bannerRect.anchorMin = new Vector2(0.5f, 1f);
+                bannerRect.anchorMax = new Vector2(0.5f, 1f);
+                bannerRect.pivot = new Vector2(0.5f, 1f);
+                bannerRect.anchoredPosition = new Vector2(0f, -110f);
+            }
+            ui.Banner = bannerObject.AddComponent<AlphaBannerView>();
+            SerializedObject bannerSerialized = new SerializedObject(ui.Banner);
+            bannerSerialized.FindProperty("bannerView").objectReferenceValue = bannerObject.GetComponent<BannerView>();
+            bannerSerialized.ApplyModifiedPropertiesWithoutUndo();
+        }
+        else
+        {
+            RectTransform bannerRect = MvpUiFactory.CreateRect("AlphaBanner", canvasObject.transform);
+            MvpUiFactory.Anchor(bannerRect, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -110f), new Vector2(900f, 64f));
+            bannerRect.pivot = new Vector2(0.5f, 1f);
+            bannerRect.anchoredPosition = new Vector2(0f, -110f);
+            ui.Banner = bannerRect.gameObject.AddComponent<AlphaBannerView>();
+        }
+
+        GameObject resultPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ResultPanelPrefabPath);
+        ui.ResultPanelPrefab = resultPrefab != null ? resultPrefab.GetComponent<ResultPanelView>() : null;
+
         if (Object.FindAnyObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
         {
             GameObject eventSystem = new GameObject("EventSystem");
@@ -597,23 +702,80 @@ public static class AlphaFlockExpansionSceneSetup
             eventSystem.AddComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
         }
 
-        // 狼群节奏 HUD：只在狼嚎 / 攻击 / 跑路期间显示。
-        RectTransform hudRect = MvpUiFactory.CreateRect("WolfEventHud", canvasObject.transform);
-        MvpUiFactory.Anchor(hudRect, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -16f), new Vector2(560f, 80f));
-        hudRect.pivot = new Vector2(0.5f, 1f);
-        hudRect.anchoredPosition = new Vector2(0f, -16f);
-        WolfEventHudView hud = hudRect.gameObject.AddComponent<WolfEventHudView>();
-        SerializedObject hudSerialized = new SerializedObject(hud);
-        hudSerialized.FindProperty("director").objectReferenceValue = director;
-        hudSerialized.FindProperty("showOnlyDuringEvent").boolValue = true;
-        hudSerialized.ApplyModifiedPropertiesWithoutUndo();
+        return ui;
+    }
 
-        // 提示横幅：狼群 HUD 下方。
-        RectTransform bannerRect = MvpUiFactory.CreateRect("AlphaBanner", canvasObject.transform);
-        MvpUiFactory.Anchor(bannerRect, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -110f), new Vector2(900f, 64f));
-        bannerRect.pivot = new Vector2(0.5f, 1f);
-        bannerRect.anchoredPosition = new Vector2(0f, -110f);
-        banner = bannerRect.gameObject.AddComponent<AlphaBannerView>();
+    /// <summary>临时加载 Level_01，把 GameCanvas + PauseManager + EventSystem 打包克隆到当前场景，然后不保存地关闭它。</summary>
+    private static GameObject CopyLevel01Ui(Scene targetScene, out PauseManager pauseManager)
+    {
+        pauseManager = null;
+        if (AssetDatabase.LoadAssetAtPath<SceneAsset>(Level01ScenePath) == null)
+        {
+            Debug.LogWarning($"找不到 {Level01ScenePath}，改用简易 Canvas。");
+            return null;
+        }
+
+        Scene level = EditorSceneManager.OpenScene(Level01ScenePath, OpenSceneMode.Additive);
+        GameObject canvasClone = null;
+        try
+        {
+            GameObject bundle = new GameObject("__UiBundle");
+            SceneManager.MoveGameObjectToScene(bundle, level);
+            string[] wanted = { "GameCanvas", "PauseManager", "EventSystem" };
+            foreach (GameObject root in level.GetRootGameObjects())
+            {
+                if (System.Array.IndexOf(wanted, root.name) >= 0)
+                    root.transform.SetParent(bundle.transform, true);
+            }
+
+            if (bundle.transform.childCount == 0)
+            {
+                Debug.LogWarning("Level_01 里没有找到 GameCanvas，改用简易 Canvas。");
+                return null;
+            }
+
+            // 整包克隆：包内的引用（PauseManager → PausePanel 等）会一起重定向到克隆体。
+            GameObject clone = Object.Instantiate(bundle);
+            clone.name = "__UiBundleClone";
+            SceneManager.MoveGameObjectToScene(clone, targetScene);
+
+            List<Transform> children = new List<Transform>();
+            foreach (Transform child in clone.transform)
+                children.Add(child);
+            foreach (Transform child in children)
+            {
+                child.SetParent(null, true);
+                child.name = child.name.Replace("(Clone)", "");
+                if (child.name == "GameCanvas")
+                    canvasClone = child.gameObject;
+                PauseManager pm = child.GetComponent<PauseManager>();
+                if (pm != null)
+                    pauseManager = pm;
+            }
+            Object.DestroyImmediate(clone);
+        }
+        finally
+        {
+            // 关闭时丢弃对 Level_01 的临时改动（重新父子化）。
+            EditorSceneManager.CloseScene(level, true);
+        }
+
+        return canvasClone;
+    }
+
+    private static GameObject CreateFallbackCanvas(Scene scene)
+    {
+        GameObject canvasObject = new GameObject("GameCanvas", typeof(RectTransform));
+        SceneManager.MoveGameObjectToScene(canvasObject, scene);
+        Canvas canvas = canvasObject.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.sortingOrder = 10;
+        CanvasScaler scaler = canvasObject.AddComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920f, 1080f);
+        scaler.matchWidthOrHeight = 0.5f;
+        canvasObject.AddComponent<GraphicRaycaster>();
+        return canvasObject;
     }
 
     private static void CreateGameController(
@@ -626,8 +788,7 @@ public static class AlphaFlockExpansionSceneSetup
         WolfEventDirector director,
         BorderFenceRing borderRing,
         TutorialPen tutorialPen,
-        AlphaBannerView banner,
-        Canvas canvas)
+        LevelUi ui)
     {
         GameObject controllerObject = new GameObject("AlphaFlockExpansionController");
         SceneManager.MoveGameObjectToScene(controllerObject, scene);
@@ -642,8 +803,12 @@ public static class AlphaFlockExpansionSceneSetup
         serialized.FindProperty("wolfSpawner").objectReferenceValue = wolfSpawner;
         serialized.FindProperty("borderRing").objectReferenceValue = borderRing;
         serialized.FindProperty("tutorialPen").objectReferenceValue = tutorialPen;
-        serialized.FindProperty("bannerView").objectReferenceValue = banner;
-        serialized.FindProperty("uiCanvas").objectReferenceValue = canvas;
+        serialized.FindProperty("bannerView").objectReferenceValue = ui.Banner;
+        serialized.FindProperty("uiCanvas").objectReferenceValue = ui.Canvas;
+        serialized.FindProperty("hudView").objectReferenceValue = ui.Hud;
+        serialized.FindProperty("joinToastView").objectReferenceValue = ui.JoinToast;
+        serialized.FindProperty("pauseManager").objectReferenceValue = ui.PauseManager;
+        serialized.FindProperty("resultPanelPrefab").objectReferenceValue = ui.ResultPanelPrefab;
         serialized.FindProperty("wolfUnlockFlockSize").intValue = WolfUnlockFlockSize;
         serialized.FindProperty("exitUnlockFlockSize").intValue = ExitUnlockFlockSize;
         serialized.ApplyModifiedPropertiesWithoutUndo();

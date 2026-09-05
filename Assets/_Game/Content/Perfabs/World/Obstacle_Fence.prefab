@@ -245,4 +245,5 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FenceObstacle
   breakable: {fileID: 6409431693580361984}
+  breakOnContact: 0
   requiredCountOverride: 0

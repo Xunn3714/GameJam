@@ -46,8 +46,8 @@ public sealed class WorldDebrisSpawner : MonoBehaviour
 
     [Header("Amount")]
     [Tooltip("每 100 平方单位放多少个。")]
-    [SerializeField, Min(0f)] private float densityPer100SquareUnits = 0.7f;
-    [SerializeField, Min(0)] private int maximumCount = 400;
+    [SerializeField, Min(0f)] private float densityPer100SquareUnits = 1.5f;
+    [SerializeField, Min(0)] private int maximumCount = 520;
     [SerializeField, Min(1)] private int placementAttemptsPerItem = 6;
     [SerializeField] private bool spawnOnStart = true;
 

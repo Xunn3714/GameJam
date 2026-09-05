@@ -12,6 +12,8 @@ public sealed class FenceObstacle : MonoBehaviour
     private const string InteractActionName = "Player/Interact";
 
     [SerializeField] private BreakableObstacle breakable;
+    [Tooltip("勾选：羊群数量够了碰到就碎；不勾：数量够了还要按交互键（E）。")]
+    [SerializeField] private bool breakOnContact = true;
     [Tooltip("大于 0 时覆盖 ObstacleDefinition 里的门槛（例如外围围栏由关卡控制器统一配置）。")]
     [SerializeField, Min(0)] private int requiredCountOverride;
 

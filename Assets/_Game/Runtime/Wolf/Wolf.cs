@@ -45,8 +45,8 @@ public sealed class Wolf : MonoBehaviour
     [Header("Guaranteed Catch")]
     [Tooltip("勾选后不论是否正面撞进中心，只要碰到羊群就一定叼走一只；冲锋途中还会朝最近的羊微调方向。")]
     [SerializeField] private bool alwaysCaptureOne = true;
-    [Tooltip("冲锋途中朝最近的羊转向的速度（度/秒），0 = 不转向。")]
-    [SerializeField, Min(0f)] private float homingTurnSpeed = 110f;
+    [Tooltip("冲锋途中朝最近的羊转向的速度（度/秒），0 = 严格沿红色预警框直线冲。")]
+    [SerializeField, Min(0f)] private float homingTurnSpeed = 0f;
     [Tooltip("只追这个距离内的羊。")]
     [SerializeField, Min(0f)] private float homingRange = 14f;
 
@@ -309,10 +309,13 @@ public sealed class Wolf : MonoBehaviour
             return;
 
         bool touchedFlock = other.GetComponent<FlockController>() == flock;
+        SheepMember contactMember = null;
         if (!touchedFlock)
         {
-            SheepMember member = other.GetComponent<SheepMember>();
-            touchedFlock = member != null && member.Flock == flock;
+            contactMember = other.GetComponent<SheepMember>();
+            touchedFlock = contactMember != null && contactMember.Flock == flock;
+            if (!touchedFlock)
+                contactMember = null;
         }
 
         if (!touchedFlock)
@@ -326,7 +329,7 @@ public sealed class Wolf : MonoBehaviour
             return;
         }
 
-        ResolveAttack(false);
+        ResolveAttack(false, contactMember);
     }
 
     /// <summary>
@@ -334,7 +337,7 @@ public sealed class Wolf : MonoBehaviour
     /// 路线穿过中心 → 按路线左右一分为二，少的那一半被撞开，并从中叼走一只；
     /// 否则 → 只把路线上擦到的羊撞开。
     /// </summary>
-    private void ResolveAttack(bool centerHit)
+    private void ResolveAttack(bool centerHit, SheepMember contactMember = null)
     {
         if (attackResolved)
             return;
@@ -381,13 +384,19 @@ public sealed class Wolf : MonoBehaviour
         }
 
         SheepMember captured = null;
-        if (centerHit || alwaysCaptureOne)
+        if (centerHit)
         {
             captured = PickNearest(knocked.Count > 0 ? knocked : members);
-            if (captured != null)
-            {
-                knocked.Remove(captured);
-            }
+        }
+        else if (alwaysCaptureOne)
+        {
+            // 擦边：只叼路线上真正碰到的羊，不去抓远处的。
+            captured = knocked.Count > 0 ? PickNearest(knocked) : contactMember;
+        }
+
+        if (captured != null)
+        {
+            knocked.Remove(captured);
         }
 
         foreach (SheepMember member in knocked)

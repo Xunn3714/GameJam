@@ -108,6 +108,10 @@ public static class WorldObstaclePrefabBuilder
             FenceObstacle fence = root.AddComponent<FenceObstacle>();
             SerializedObject fenceSerialized = new SerializedObject(fence);
             fenceSerialized.FindProperty("breakable").objectReferenceValue = breakable;
+            // 羊圈 / 外围围栏要按 E 才碎（教程里教的就是这个）。
+            SerializedProperty breakOnContact = fenceSerialized.FindProperty("breakOnContact");
+            if (breakOnContact != null)
+                breakOnContact.boolValue = false;
             fenceSerialized.ApplyModifiedPropertiesWithoutUndo();
 
             PrefabUtility.SaveAsPrefabAsset(root, path);
