@@ -24,6 +24,10 @@ public sealed class FlockController : MonoBehaviour
     [Tooltip("羊群长轴转向当前移动方向的速度（弧度/秒）。")]
     [SerializeField, Min(0.1f)] private float shapeDirectionTurnSpeed = 4f;
 
+    [Header("Turning")]
+    [Tooltip("水平输入持续多久后才让整个羊群翻面；过滤轻点造成的全群转向波。")]
+    [SerializeField, Min(0f)] private float facingIntentCommitDelay = 0.1f;
+
     [Header("Performance")]
     [Tooltip("邻居空间网格的单元尺寸；应不小于常用的羊间距。")]
     [SerializeField, Min(0.5f)] private float neighborCellSize = 3.2f;
@@ -48,6 +52,11 @@ public sealed class FlockController : MonoBehaviour
     private bool memberGridDirty = true;
     private int fixedStepIndex;
     private Vector2 shapeForward = Vector2.right;
+    private float pendingFacingDuration;
+    private int facingIntentRevision;
+    private bool pendingFacingLeft;
+    private bool hasPendingFacing;
+    private bool facingCommittedThisHold;
 
     public int RecruitedCount { get; private set; }
     public int MemberCount => members.Count;
@@ -66,6 +75,11 @@ public sealed class FlockController : MonoBehaviour
     public bool IsMoving =>
         movementController != null &&
         movementController.IsMoving;
+
+    public bool HasMoveInput => movementController != null && movementController.HasMoveInput;
+    public bool HasActiveFacingIntent { get; private set; }
+    public bool FacingIntentLeft { get; private set; }
+    public int FacingIntentRevision => facingIntentRevision;
 
     /// <summary>羊群椭圆长轴方向；停止移动后保留最后方向，避免外形突然转回水平。</summary>
     public Vector2 ShapeForward => shapeForward;
@@ -120,6 +134,7 @@ public sealed class FlockController : MonoBehaviour
     {
         fixedStepIndex = (fixedStepIndex + 1) & int.MaxValue;
         RecordMovementVelocity(MovementVelocity);
+        UpdateFacingIntent();
         UpdateShapeForward();
 
         float targetCompactness = IsHuddling ? huddleCompactness : 1f;
@@ -129,6 +144,66 @@ public sealed class FlockController : MonoBehaviour
             huddleTransitionSpeed * Time.fixedDeltaTime);
 
         RebuildMemberGrid();
+    }
+
+
+    /// <summary>
+    /// 速度大小继续使用历史形成柔性跟随，但方向始终采用当前输入/中心速度。
+    /// 中心已经停下时丢弃历史尾巴，避免一次轻点在很久后传到外围。
+    /// </summary>
+    public Vector2 GetDelayedDriveVelocity(float secondsAgo)
+    {
+        Vector2 currentVelocity = MovementVelocity;
+        Vector2 input = movementController != null ? movementController.MoveInput : Vector2.zero;
+        if (input.sqrMagnitude <= 0.0001f && currentVelocity.sqrMagnitude <= 0.0001f)
+            return Vector2.zero;
+
+        Vector2 historicalVelocity = GetMovementVelocity(secondsAgo);
+        float delayedSpeed = historicalVelocity.magnitude;
+        if (delayedSpeed <= 0.0001f)
+            return Vector2.zero;
+
+        Vector2 currentDirection = currentVelocity.sqrMagnitude > 0.0001f
+            ? currentVelocity.normalized
+            : input.normalized;
+        return currentDirection * delayedSpeed;
+    }
+
+
+    private void UpdateFacingIntent()
+    {
+        Vector2 input = movementController != null ? movementController.MoveInput : Vector2.zero;
+        if (Mathf.Abs(input.x) < 0.15f)
+        {
+            HasActiveFacingIntent = false;
+            hasPendingFacing = false;
+            facingCommittedThisHold = false;
+            pendingFacingDuration = 0f;
+            return;
+        }
+
+        bool candidateFacingLeft = input.x < 0f;
+        if (!hasPendingFacing || candidateFacingLeft != pendingFacingLeft)
+        {
+            pendingFacingLeft = candidateFacingLeft;
+            pendingFacingDuration = 0f;
+            hasPendingFacing = true;
+            facingCommittedThisHold = false;
+            HasActiveFacingIntent = false;
+        }
+
+        if (!facingCommittedThisHold)
+        {
+            pendingFacingDuration += Time.fixedDeltaTime;
+            if (pendingFacingDuration < facingIntentCommitDelay)
+                return;
+
+            FacingIntentLeft = pendingFacingLeft;
+            facingIntentRevision = (facingIntentRevision + 1) & int.MaxValue;
+            facingCommittedThisHold = true;
+        }
+
+        HasActiveFacingIntent = true;
     }
 
 

@@ -44,6 +44,8 @@ public sealed class FlockMovementController : MonoBehaviour
 
     public Vector2 LastMoveDirection { get; private set; } = Vector2.right;
     public bool FacingLeft { get; private set; }
+    public Vector2 MoveInput => moveInput;
+    public bool HasMoveInput => moveInput.sqrMagnitude > 0.0001f;
     public bool IsMoving => velocity.sqrMagnitude > StopSpeed * StopSpeed;
     public Vector2 DesiredVelocity => velocity;
     public Vector2 Velocity => velocity;

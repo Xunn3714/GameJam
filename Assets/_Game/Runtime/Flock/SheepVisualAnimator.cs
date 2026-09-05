@@ -46,6 +46,19 @@ public sealed class SheepVisualAnimator : MonoBehaviour
     private bool currentFacingLeft;
     private bool requestedFacingLeft;
     private bool wasMoving;
+    private bool hasFlockFacingIntent;
+    private bool flockFacingIntentLeft;
+
+    public void SetFlockFacingIntent(bool facingLeft)
+    {
+        hasFlockFacingIntent = true;
+        flockFacingIntentLeft = facingLeft;
+    }
+
+    public void ClearFlockFacingIntent()
+    {
+        hasFlockFacingIntent = false;
+    }
 
     public void PlayObstacleImpact(bool cannotBreak, Vector2 movementDirection)
     {
@@ -166,7 +179,11 @@ public sealed class SheepVisualAnimator : MonoBehaviour
 
     private void UpdateFacing(Vector2 frameVelocity)
     {
-        if (Mathf.Abs(frameVelocity.x) > HorizontalFacingThreshold &&
+        if (hasFlockFacingIntent && impactAge < 0f)
+        {
+            requestedFacingLeft = flockFacingIntentLeft;
+        }
+        else if (Mathf.Abs(frameVelocity.x) > HorizontalFacingThreshold &&
             Mathf.Abs(frameVelocity.x) >= Mathf.Abs(frameVelocity.y) * 0.2f)
         {
             requestedFacingLeft = frameVelocity.x < 0f;

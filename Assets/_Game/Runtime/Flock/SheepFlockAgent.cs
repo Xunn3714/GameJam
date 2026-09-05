@@ -41,6 +41,11 @@ public sealed class SheepFlockAgent : MonoBehaviour
     [SerializeField, Min(0f)] private float followDelayAdjustSpeed = 2f;
     [SerializeField, Range(0f, 1f)] private float leaderWanderScale = 0.2f;
 
+    [Header("Facing Response")]
+    [Tooltip("持续转向确认后，每只羊用不同的短延迟翻面，避免按中心距离形成圆形波纹。")]
+    [SerializeField, Min(0f)] private float minimumFacingReactionDelay = 0.03f;
+    [SerializeField, Min(0f)] private float maximumFacingReactionDelay = 0.15f;
+
     [Header("Organic Wander")]
     [SerializeField, Min(0f)] private float wanderStrength = 0.7f;
     [SerializeField, Min(0f)] private float wanderTurnSpeed = 1.6f;
@@ -93,6 +98,11 @@ public sealed class SheepFlockAgent : MonoBehaviour
     private bool wasControllerMoving;
     private bool wasHuddling;
     private float shapeRadiusBias;
+    private float facingReactionDelay;
+    private float facingReactionCountdown;
+    private int observedFacingIntentRevision = -1;
+    private bool hasPendingFacingIntent;
+    private bool hasAppliedFacingIntent;
 
     private enum IdlePaceState
     {
@@ -115,6 +125,8 @@ public sealed class SheepFlockAgent : MonoBehaviour
         member = GetComponent<SheepMember>();
         visualAnimator = SheepVisualAnimator.Ensure(gameObject);
         shapeRadiusBias = Random.Range(-1f, 1f);
+        maximumFacingReactionDelay = Mathf.Max(maximumFacingReactionDelay, minimumFacingReactionDelay);
+        facingReactionDelay = Random.Range(minimumFacingReactionDelay, maximumFacingReactionDelay);
         ResetWander();
         if (blockingLayers.value == 0)
             blockingLayers = MovementBlocking.DefaultMask();
@@ -133,6 +145,10 @@ public sealed class SheepFlockAgent : MonoBehaviour
         followDelay = 0f;
         hasCachedSteering = false;
         idleWasAllowed = false;
+        observedFacingIntentRevision = -1;
+        hasPendingFacingIntent = false;
+        hasAppliedFacingIntent = false;
+        visualAnimator?.ClearFlockFacingIntent();
         wasControllerMoving = owner != null && owner.IsMoving;
         wasHuddling = owner != null && owner.IsHuddling;
         ResetWander();
@@ -152,6 +168,7 @@ public sealed class SheepFlockAgent : MonoBehaviour
 
         float deltaTime = Time.fixedDeltaTime;
         bool isLeader = IsLeader;
+        UpdateFacingIntent(deltaTime);
 
         // 离领头羊越远，跟随玩家输入就越晚：移动从领头羊开始一圈圈向外扩散。
         float targetDelay = isLeader
@@ -159,7 +176,7 @@ public sealed class SheepFlockAgent : MonoBehaviour
             : Mathf.Min((flock.Center - body.position).magnitude * followDelayPerUnit, maximumFollowDelay);
         followDelay = Mathf.MoveTowards(followDelay, targetDelay, followDelayAdjustSpeed * deltaTime);
 
-        Vector2 driveVelocity = flock.GetMovementVelocity(followDelay);
+        Vector2 driveVelocity = flock.GetDelayedDriveVelocity(followDelay);
         bool flockIsMoving = driveVelocity.sqrMagnitude > 0.0001f;
         float speedScale = flock.SpeedMultiplier;
         bool controllerMovementChanged = wasControllerMoving != flock.IsMoving;
@@ -233,6 +250,38 @@ public sealed class SheepFlockAgent : MonoBehaviour
             return;
 
         body.MovePosition(target);
+    }
+
+    private void UpdateFacingIntent(float deltaTime)
+    {
+        if (!flock.HasActiveFacingIntent)
+        {
+            hasPendingFacingIntent = false;
+            if (hasAppliedFacingIntent)
+            {
+                visualAnimator?.ClearFlockFacingIntent();
+                hasAppliedFacingIntent = false;
+            }
+            return;
+        }
+
+        if (observedFacingIntentRevision != flock.FacingIntentRevision)
+        {
+            observedFacingIntentRevision = flock.FacingIntentRevision;
+            facingReactionCountdown = IsLeader ? 0f : facingReactionDelay;
+            hasPendingFacingIntent = true;
+        }
+
+        if (!hasPendingFacingIntent)
+            return;
+
+        facingReactionCountdown -= deltaTime;
+        if (facingReactionCountdown > 0f)
+            return;
+
+        hasPendingFacingIntent = false;
+        hasAppliedFacingIntent = true;
+        visualAnimator?.SetFlockFacingIntent(flock.FacingIntentLeft);
     }
 
     /// <summary>撞上的障碍是不是羊群现在就能撞碎的（决定播软 / 硬撞击动画）。</summary>
@@ -613,6 +662,7 @@ public sealed class SheepFlockAgent : MonoBehaviour
     private void OnValidate()
     {
         maximumWanderDuration = Mathf.Max(maximumWanderDuration, minimumWanderDuration);
+        maximumFacingReactionDelay = Mathf.Max(maximumFacingReactionDelay, minimumFacingReactionDelay);
         maximumFlockAspectRatio = Mathf.Max(minimumFlockAspectRatio, maximumFlockAspectRatio);
         maximumAspectRatioMemberCount = Mathf.Max(5, maximumAspectRatioMemberCount);
         maximumIdleStartDelay = Mathf.Max(maximumIdleStartDelay, minimumIdleStartDelay);
