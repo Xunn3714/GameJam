@@ -12,8 +12,22 @@ public class TaskPanelToggle : MonoBehaviour
     [SerializeField] private bool openOnStart = false;
 
 
+    /// 当前任务面板是否打开。
+    /// PauseManager 会读取这个状态，
+    /// 防止 TaskPanel 打开时 ESC 又打开 Pause。
+    public bool IsOpen
+    {
+        get
+        {
+            return taskPanel != null &&
+                   taskPanel.activeSelf;
+        }
+    }
+
+
     private void Awake()
     {
+        // 自动绑定按钮
         if (taskButton != null)
         {
             taskButton.onClick.AddListener(OpenTaskPanel);
@@ -24,6 +38,8 @@ public class TaskPanelToggle : MonoBehaviour
             closeButton.onClick.AddListener(CloseTaskPanel);
         }
 
+
+        // 初始状态
         if (openOnStart)
         {
             OpenTaskPanel();
@@ -35,6 +51,8 @@ public class TaskPanelToggle : MonoBehaviour
     }
 
 
+    /// 打开任务面板。
+    /// 打开以后左上角任务按钮隐藏。
     public void OpenTaskPanel()
     {
         if (taskPanel != null)
@@ -42,7 +60,6 @@ public class TaskPanelToggle : MonoBehaviour
             taskPanel.SetActive(true);
         }
 
-        // 打开任务面板后，隐藏左上角任务图标
         if (taskButton != null)
         {
             taskButton.gameObject.SetActive(false);
@@ -50,6 +67,8 @@ public class TaskPanelToggle : MonoBehaviour
     }
 
 
+    /// 关闭任务面板。
+    /// 关闭以后重新显示左上角任务按钮。
     public void CloseTaskPanel()
     {
         if (taskPanel != null)
@@ -57,7 +76,6 @@ public class TaskPanelToggle : MonoBehaviour
             taskPanel.SetActive(false);
         }
 
-        // 关闭任务面板后，重新显示任务图标
         if (taskButton != null)
         {
             taskButton.gameObject.SetActive(true);
@@ -67,6 +85,7 @@ public class TaskPanelToggle : MonoBehaviour
 
     private void OnDestroy()
     {
+        // 清理监听
         if (taskButton != null)
         {
             taskButton.onClick.RemoveListener(OpenTaskPanel);
