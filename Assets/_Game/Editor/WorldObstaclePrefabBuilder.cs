@@ -10,6 +10,8 @@ public static class WorldObstaclePrefabBuilder
     public const string PrefabFolder = "Assets/_Game/Content/Perfabs/World";
     public const string DefinitionFolder = "Assets/_Game/Content/Data/World/Obstacles";
     private const string DebrisFolder = "Assets/Art/Debris";
+    private const string WoodBreakClipPath = "Assets/_Game/Content/Audio/BGM/sound efct/wood.mp3";
+    private const string StoneBreakClipPath = "Assets/_Game/Content/Audio/BGM/sound efct/stone.mp3";
 
     public const string FencePrefabPath = PrefabFolder + "/Obstacle_Fence.prefab";
     public const string BarrelPrefabPath = PrefabFolder + "/Obstacle_Barrel.prefab";
@@ -38,6 +40,8 @@ public static class WorldObstaclePrefabBuilder
         public float Clearance;      // 散布时与其他物体的最小间距
         /// <summary>未破坏时在 Default 层的 Order：花草 / 小石头这类矮的贴地物用 -1，永远在羊下面；树、木桶这类高的用 1。</summary>
         public int SortingOrder = 1;
+        public string BreakClipPath;
+        public float BreakVolume = 0.6f;
 
         public bool Disappears => BrokenSprite == null;
         public string PrefabPath => PrefabFolder + "/" + PrefabName + ".prefab";
@@ -56,8 +60,8 @@ public static class WorldObstaclePrefabBuilder
         new DebrisSpec { Id = "obstacle.bush_1", DisplayName = "草丛", PrefabName = "Obstacle_Bush1", Sprite = "小草丛（1）", BrokenSprite = null, Size = ObstacleSizeCategory.Small, Scale = 0.65f, SolidRadius = 0.5f, Weight = 3f, Clearance = 2.4f, SortingOrder = -1 },
         new DebrisSpec { Id = "obstacle.bush_2", DisplayName = "草丛", PrefabName = "Obstacle_Bush2", Sprite = "小草丛（2）", BrokenSprite = null, Size = ObstacleSizeCategory.Small, Scale = 0.65f, SolidRadius = 0.5f, Weight = 3f, Clearance = 2.4f, SortingOrder = -1 },
         // ---- 有坏图：碰到后换坏图、沉到背景 ----
-        new DebrisSpec { Id = "obstacle.barrel", DisplayName = "木桶", PrefabName = "Obstacle_Barrel", Sprite = "木桶", BrokenSprite = "木桶（坏）", Size = ObstacleSizeCategory.Small, Scale = 0.7f, SolidRadius = 0.55f, Weight = 1.5f, Clearance = 3f },
-        new DebrisSpec { Id = "obstacle.rock", DisplayName = "石块", PrefabName = "Obstacle_Rock", Sprite = "石块（2）", BrokenSprite = "石块2（坏）", Size = ObstacleSizeCategory.Medium, Scale = 0.75f, SolidRadius = 0.7f, Weight = 1.5f, Clearance = 3.2f },
+        new DebrisSpec { Id = "obstacle.barrel", DisplayName = "木桶", PrefabName = "Obstacle_Barrel", Sprite = "木桶", BrokenSprite = "木桶（坏）", Size = ObstacleSizeCategory.Small, Scale = 0.7f, SolidRadius = 0.55f, Weight = 1.5f, Clearance = 3f, BreakClipPath = WoodBreakClipPath, BreakVolume = 0.6f },
+        new DebrisSpec { Id = "obstacle.rock", DisplayName = "石块", PrefabName = "Obstacle_Rock", Sprite = "石块（2）", BrokenSprite = "石块2（坏）", Size = ObstacleSizeCategory.Medium, Scale = 0.75f, SolidRadius = 0.7f, Weight = 1.5f, Clearance = 3.2f, BreakClipPath = StoneBreakClipPath, BreakVolume = 1f },
         new DebrisSpec { Id = "obstacle.pebble", DisplayName = "小石头", PrefabName = "Obstacle_Pebble", Sprite = "小石头（1）", BrokenSprite = "=", Size = ObstacleSizeCategory.Small, Scale = 0.5f, SolidRadius = 0.35f, Weight = 2f, Clearance = 2f, SortingOrder = -1 },
         new DebrisSpec { Id = "obstacle.haystack", DisplayName = "干草垛", PrefabName = "Obstacle_Haystack", Sprite = "干草垛", BrokenSprite = "干草垛（坏）", Size = ObstacleSizeCategory.Medium, Scale = 0.8f, SolidRadius = 0.7f, Weight = 1f, Clearance = 3.5f },
         new DebrisSpec { Id = "obstacle.rice_field", DisplayName = "稻田", PrefabName = "Obstacle_RiceField", Sprite = "稻田", BrokenSprite = "稻田（坏）", Size = ObstacleSizeCategory.Medium, Scale = 0.8f, SolidRadius = 0.75f, Weight = 1f, Clearance = 3.5f },
@@ -86,7 +90,12 @@ public static class WorldObstaclePrefabBuilder
             ObstacleBreakRule.RequireCountAndInteract, 100, ObstacleCountSource.CurrentFlockCount,
             ObstacleBrokenBehavior.BecomeBackground, fenceBroken);
 
-        BuildFencePrefab(FencePrefabPath, fence, fenceDefinition);
+        BuildFencePrefab(
+            FencePrefabPath,
+            fence,
+            fenceDefinition,
+            LoadAudioClip(WoodBreakClipPath),
+            0.35f);
 
         int built = 0;
         foreach (DebrisSpec spec in DebrisSpecs)
@@ -105,7 +114,16 @@ public static class WorldObstaclePrefabBuilder
                 spec.Disappears ? ObstacleBrokenBehavior.Disappear : ObstacleBrokenBehavior.BecomeBackground,
                 broken);
 
-            BuildDebrisPrefab(spec.PrefabPath, spec.PrefabName, sprite, definition, spec.SolidRadius, spec.Scale, spec.SortingOrder);
+            BuildDebrisPrefab(
+                spec.PrefabPath,
+                spec.PrefabName,
+                sprite,
+                definition,
+                spec.SolidRadius,
+                spec.Scale,
+                spec.SortingOrder,
+                LoadAudioClip(spec.BreakClipPath),
+                spec.BreakVolume);
             built++;
         }
 
@@ -213,7 +231,12 @@ public static class WorldObstaclePrefabBuilder
     }
 
     /// <summary>围栏：Blocking 层实体碰撞体挡路 + 稍大的 Trigger 供羊群交互。</summary>
-    private static void BuildFencePrefab(string path, Sprite sprite, ObstacleDefinition definition)
+    private static void BuildFencePrefab(
+        string path,
+        Sprite sprite,
+        ObstacleDefinition definition,
+        AudioClip breakClip,
+        float breakVolume)
     {
         GameObject root = new GameObject("Obstacle_Fence");
         try
@@ -255,6 +278,12 @@ public static class WorldObstaclePrefabBuilder
                 breakOnContact.boolValue = false;
             fenceSerialized.ApplyModifiedPropertiesWithoutUndo();
 
+            if (breakClip != null)
+            {
+                BreakableObstacleAudio audio = root.AddComponent<BreakableObstacleAudio>();
+                audio.Configure(breakClip, breakVolume);
+            }
+
             PrefabUtility.SaveAsPrefabAsset(root, path);
         }
         finally
@@ -267,7 +296,16 @@ public static class WorldObstaclePrefabBuilder
     /// 花草 / 石头 / 木桶 / 树……：碰到之前是 Blocking 层的实体碰撞体（羊会被挡一下），
     /// 稍大的 Trigger 侦测到羊群成员后立刻 Break——花草消失，其余换坏图沉到 Background。
     /// </summary>
-    private static void BuildDebrisPrefab(string path, string name, Sprite sprite, ObstacleDefinition definition, float solidRadius, float scale, int sortingOrder)
+    private static void BuildDebrisPrefab(
+        string path,
+        string name,
+        Sprite sprite,
+        ObstacleDefinition definition,
+        float solidRadius,
+        float scale,
+        int sortingOrder,
+        AudioClip breakClip,
+        float breakVolume)
     {
         GameObject root = new GameObject(name);
         try
@@ -301,6 +339,12 @@ public static class WorldObstaclePrefabBuilder
             serialized.FindProperty("definition").objectReferenceValue = definition;
             serialized.FindProperty("spriteRenderer").objectReferenceValue = renderer;
             serialized.ApplyModifiedPropertiesWithoutUndo();
+
+            if (breakClip != null)
+            {
+                BreakableObstacleAudio audio = root.AddComponent<BreakableObstacleAudio>();
+                audio.Configure(breakClip, breakVolume);
+            }
 
             PrefabUtility.SaveAsPrefabAsset(root, path);
         }
@@ -359,6 +403,17 @@ public static class WorldObstaclePrefabBuilder
         if (sprite == null)
             Debug.LogWarning($"Sprite not found: {path}");
         return sprite;
+    }
+
+    private static AudioClip LoadAudioClip(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            return null;
+
+        AudioClip clip = AssetDatabase.LoadAssetAtPath<AudioClip>(path);
+        if (clip == null)
+            Debug.LogWarning($"Audio clip not found: {path}");
+        return clip;
     }
 
     public static void EnsureFolder(string path)

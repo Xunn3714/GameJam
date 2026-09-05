@@ -131,6 +131,9 @@ public sealed class Wolf : MonoBehaviour
     /// <summary>每次实际捕获或撞散成员时触发。</summary>
     public event Action<Wolf, WolfAttackResult> Attacked;
 
+    /// <summary>狼结束预警、正式开始冲锋时触发。</summary>
+    public event Action<Wolf> ChargeStarted;
+
     /// <summary>吓跑模式的狼在羊群面前掉头逃跑的那一刻触发。</summary>
     public event Action<Wolf> Scared;
 
@@ -178,6 +181,7 @@ public sealed class Wolf : MonoBehaviour
         {
             warningRenderer.enabled = false;
         }
+
     }
 
     /// <summary>开始进攻指定羊群：从当前位置瞄准羊群中心并进入预警阶段。</summary>
@@ -720,6 +724,8 @@ public sealed class Wolf : MonoBehaviour
         {
             warningRenderer.enabled = false;
         }
+
+        ChargeStarted?.Invoke(this);
     }
 
     private void OnTriggerEnter2D(Collider2D other)
@@ -891,6 +897,7 @@ public sealed class Wolf : MonoBehaviour
         state = State.Idle;
         Finished?.Invoke(this);
         Finished = null;
+        ChargeStarted = null;
         Attacked = null;
         Destroy(gameObject);
     }

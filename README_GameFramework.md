@@ -450,6 +450,9 @@ PlayBGM(AudioClip)
 StopBGM()
 PlaySFX(AudioClip)
 
+// 可选：限制同一音频片段的最短重复间隔
+PlaySFX(AudioClip, volumeScale, minimumRepeatInterval)
+
 SetBGMVolume(float)
 SetSFXVolume(float)
 ```
@@ -462,11 +465,9 @@ DontDestroyOnLoad(gameObject);
 
 因此可以跨 Scene 保留。
 
-目前还没有正式 BGM / SFX 文件。
+当前 `MainMenu` 和 `AlphaFlockExpansion` 已接入场景 BGM；羊群移动、狼群事件及可破坏障碍已接入 SFX。场景与障碍 Prefab 由现有 Editor 构建器写入音频组件和引用，重新生成时会保留这套集成。
 
-这是正常的。
-
-以后音频资产建议放：
+音频资产放置于：
 
 ```text
 \_Game/Content/Audio/BGM
