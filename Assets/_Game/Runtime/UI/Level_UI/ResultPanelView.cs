@@ -46,7 +46,7 @@ public class ResultPanelView : MonoBehaviour
         float elapsedSeconds)
     {
         ShowResult(
-            "WIN!",
+            "冲出草原！",
             description,
             currentSheep,
             score,
@@ -64,7 +64,7 @@ public class ResultPanelView : MonoBehaviour
         float elapsedSeconds)
     {
         ShowResult(
-            "DEFEAT",
+            "全军覆没",
             description,
             currentSheep,
             score,
@@ -93,11 +93,11 @@ public class ResultPanelView : MonoBehaviour
         resultTitle.text = title;
         resultDescription.text = description;
 
-        sheepCountLabel.text = $"Sheep: {currentSheep}";
-        scoreLabel.text = $"Score: {score}";
-        recruitCountLabel.text = $"Recruited: {recruited}";
-        lostCountLabel.text = $"Lost: {lost}";
-        timeLabel.text = $"Time: {FormatTime(elapsedSeconds)}";
+        sheepCountLabel.text = $"当前羊数：{currentSheep}";
+        scoreLabel.text = $"当前得分：{score}";
+        recruitCountLabel.text = $"成功招募：{recruited}";
+        lostCountLabel.text = $"损失羊数：{lost}";
+        timeLabel.text = $"游戏用时：{FormatTime(elapsedSeconds)}";
 
         gameObject.SetActive(true);
     }

@@ -21,6 +21,8 @@ public class CollectionPanelController : MonoBehaviour
     public TMP_Text abilityDescriptionText;
     public Image sentenceImage;
 
+    private SheepCardView selectedCard;
+
 
     private void OnEnable()
     {
@@ -37,6 +39,7 @@ public class CollectionPanelController : MonoBehaviour
             Debug.LogWarning(
                 "SheepCollectionManager Instance not found.");
 
+            ShowUnavailableState("图鉴数据暂不可用");
             return;
         }
 
@@ -46,6 +49,7 @@ public class CollectionPanelController : MonoBehaviour
             SheepCollectionManager.Instance.GetAllSheep();
 
         SheepCollectionEntry firstUnlocked = null;
+        SheepCardView firstUnlockedCard = null;
 
         foreach (SheepCollectionEntry sheep in sheepList)
         {
@@ -72,23 +76,36 @@ public class CollectionPanelController : MonoBehaviour
                 sheep.displayName,
                 encounterCount,
                 unlocked,
-                () => ShowSheepDetail(capturedSheep)
+                () => SelectCard(card, capturedSheep)
             );
 
             if (unlocked && firstUnlocked == null)
             {
                 firstUnlocked = sheep;
+                firstUnlockedCard = card;
             }
         }
 
         if (firstUnlocked != null)
         {
-            ShowSheepDetail(firstUnlocked);
+            SelectCard(firstUnlockedCard, firstUnlocked);
         }
         else
         {
             ClearDetail();
         }
+    }
+
+
+    private void SelectCard(SheepCardView card, SheepCollectionEntry sheep)
+    {
+        if (selectedCard != null)
+            selectedCard.SetSelected(false);
+
+        selectedCard = card;
+        if (selectedCard != null)
+            selectedCard.SetSelected(true);
+        ShowSheepDetail(sheep);
     }
 
 
@@ -105,7 +122,7 @@ public class CollectionPanelController : MonoBehaviour
         if (progressText != null)
         {
             progressText.text =
-                $"Unlocked: {unlocked} / {total}";
+                $"已解锁  {unlocked} / {total}";
         }
     }
 
@@ -138,7 +155,7 @@ public class CollectionPanelController : MonoBehaviour
 
         if (countText != null)
             countText.text =
-                $"Encountered {encounterCount} times";
+                $"遇到过 {encounterCount} 次";
 
         if (descriptionText != null)
             descriptionText.text =
@@ -171,14 +188,23 @@ public class CollectionPanelController : MonoBehaviour
             detailImage.enabled = false;
         }
 
+        ShowUnavailableState("在草原上遇见新的羊，\n它的资料就会记录在这里。", false);
+    }
+
+
+    private void ShowUnavailableState(string message, bool clearProgress = true)
+    {
+        if (clearProgress && progressText != null)
+            progressText.text = "已解锁  0 / 0";
+
         if (sheepNameText != null)
-            sheepNameText.text = "";
+            sheepNameText.text = "尚未解锁";
 
         if (countText != null)
             countText.text = "";
 
         if (descriptionText != null)
-            descriptionText.text = "";
+            descriptionText.text = message;
 
         if (abilityNameText != null)
             abilityNameText.text = "";
@@ -196,6 +222,7 @@ public class CollectionPanelController : MonoBehaviour
 
     private void ClearCards()
     {
+        selectedCard = null;
         if (contentRoot == null)
             return;
 

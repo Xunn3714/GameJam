@@ -11,6 +11,10 @@ public class SheepCardView : MonoBehaviour
     public TMP_Text countText;
     public Button button;
 
+    [Header("Card State")]
+    [SerializeField] private Sprite normalBackground;
+    [SerializeField] private Sprite selectedBackground;
+
     private Action onClick;
 
 
@@ -45,11 +49,23 @@ public class SheepCardView : MonoBehaviour
 
         if (button != null)
         {
+            SetSelected(false);
             button.interactable = unlocked;
 
             button.onClick.RemoveAllListeners();
             button.onClick.AddListener(HandleClick);
         }
+    }
+
+
+    public void SetSelected(bool selected)
+    {
+        if (button == null || button.image == null)
+            return;
+
+        Sprite target = selected ? selectedBackground : normalBackground;
+        if (target != null)
+            button.image.sprite = target;
     }
 
 
