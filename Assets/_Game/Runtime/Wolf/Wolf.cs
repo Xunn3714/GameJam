@@ -22,6 +22,13 @@ public sealed class Wolf : MonoBehaviour
 
     [Header("Visuals")]
     [SerializeField] private SpriteRenderer bodyRenderer;
+    [Tooltip("单狼外观；留空时保留原有表现。由美术导入工具绑定，长狼不使用。")]
+    [SerializeField] private Sprite idleSprite;
+    [SerializeField] private Sprite downSprite;
+    [SerializeField] private Sprite walkSprite1;
+    [SerializeField] private Sprite walkSprite2;
+    [SerializeField] private Sprite attackSprite;
+    [SerializeField, Min(1f)] private float walkFramesPerSecond = 10f;
     [Tooltip("预警长方形。要求 sprite 为 1x1 单位、pivot 在左侧中点，脚本会按冲锋路径拉伸。")]
     [SerializeField] private SpriteRenderer warningRenderer;
 
@@ -662,9 +669,35 @@ public sealed class Wolf : MonoBehaviour
 
     private void LateUpdate()
     {
+        UpdateBodyVisual();
         // Refresh the visible span as the camera follows/zooms, without changing the locked aim.
         if (longSweep != null && state == State.Warning)
             UpdateWarningShape();
+    }
+
+    private void UpdateBodyVisual()
+    {
+        if (longSweep != null || bodyRenderer == null || idleSprite == null || state == State.Kicked)
+            return;
+
+        bool moving = state == State.Charging || state == State.Fleeing;
+        Sprite sprite = idleSprite;
+        bool flip = false;
+        if (moving)
+        {
+            flip = chargeDirection.x < 0f;
+            if (state == State.Charging && !scared && attackSprite != null)
+                sprite = attackSprite;
+            else if (chargeDirection.y < -Mathf.Abs(chargeDirection.x) && downSprite != null)
+            {
+                sprite = downSprite;
+                flip = false;
+            }
+            else
+                sprite = ((int)(lifetime * walkFramesPerSecond) % 2 == 0 ? walkSprite1 : walkSprite2) ?? idleSprite;
+        }
+        bodyRenderer.sprite = sprite;
+        bodyRenderer.flipX = flip;
     }
 
     private void BeginCharge()
