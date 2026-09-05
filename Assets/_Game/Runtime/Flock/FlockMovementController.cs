@@ -11,6 +11,10 @@ public sealed class FlockMovementController : MonoBehaviour
 
     [SerializeField, Min(0f)] private float moveSpeed = 4f;
 
+    [Header("Blocking")]
+    [SerializeField] private LayerMask blockingLayers;
+    [SerializeField, Min(0f)] private float blockingRadius = 0f;
+
     private InputAction moveAction;
     private Vector2 moveInput;
     private Rigidbody2D body;
@@ -37,6 +41,10 @@ public sealed class FlockMovementController : MonoBehaviour
         centerTrigger.isTrigger = true;
         centerTrigger.radius = CenterColliderRadius;
 
+        if (blockingLayers.value == 0)
+            blockingLayers = MovementBlocking.DefaultMask();
+        if (blockingRadius <= 0f)
+            blockingRadius = CenterColliderRadius;
         moveAction = InputSystem.actions?.FindAction(MoveActionName);
     }
 
@@ -81,6 +89,18 @@ public sealed class FlockMovementController : MonoBehaviour
                 movementBounds.yMin + CenterColliderRadius,
                 movementBounds.yMax - CenterColliderRadius);
         }
+
+        targetPosition = MovementBlocking.ResolveMove(
+        body.position,
+        targetPosition,
+        blockingRadius,
+        blockingLayers);
+
+        if (targetPosition == body.position)
+            return;
+
+        positionBeforeFixedMove = body.position;
+        movedThisStep = true;
 
         body.MovePosition(targetPosition);
     }

@@ -4,7 +4,7 @@ using UnityEngine;
 /// 本文件用于自动设定Tilemap美术图片文件的像素及格式
 public class WorldSpriteImporter : AssetPostprocessor
 {
-    private const string TargetPath = "Art/WorldSprites";
+    private const string TargetPath = "Art";
     private const float PixelsPerUnit = 128f;
 
     void OnPreprocessTexture()
@@ -13,6 +13,7 @@ public class WorldSpriteImporter : AssetPostprocessor
 
         var importer = (TextureImporter)assetImporter;
         importer.textureType = TextureImporterType.Sprite;
+        importer.spriteImportMode = SpriteImportMode.Single;
         importer.filterMode = FilterMode.Bilinear;
         importer.spritePixelsPerUnit = PixelsPerUnit;
 
