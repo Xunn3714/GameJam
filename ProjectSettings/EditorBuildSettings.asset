@@ -9,10 +9,7 @@ EditorBuildSettings:
     path: Assets/_Game/Scenes/MainMenu.unity
     guid: b590f8478a1c7f84f8dabea3601992da
   - enabled: 1
-    path: Assets/_Game/Scenes/Level_01.unity
-    guid: 36957708c62ef38458ad25fba60f9062
-  - enabled: 1
-    path: Assets/_Game/Scenes/Dev/AlphaFlockExpansion.unity
+    path: Assets/_Game/Scenes/AlphaFlockExpansion.unity
     guid: 2080257d92cc89d4d99ad945accad78f
   m_configObjects:
     com.unity.dt.app-ui: {fileID: 11400000, guid: 1b1c20d82303e4b5781c3ef50ac1449f, type: 2}

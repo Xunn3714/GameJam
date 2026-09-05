@@ -29,6 +29,8 @@ public sealed class SheepVisualAnimator : MonoBehaviour
     [SerializeField, Min(0f)] private float softImpactSquash = 0.16f;
     [SerializeField, Min(0f)] private float hardImpactSquash = 0.28f;
     [SerializeField, Min(0f)] private float hardImpactShake = 0.045f;
+    [Tooltip("撞不开障碍的动画播完后，多久才能再次自动播放。")]
+    [SerializeField, Min(0f)] private float hardImpactCooldown = 2f;
 
     private SpriteRenderer sourceRenderer;
     private SpriteRenderer animatedRenderer;
@@ -41,6 +43,7 @@ public sealed class SheepVisualAnimator : MonoBehaviour
     private float idleAge = -1f;
     private float flipAge = -1f;
     private float impactAge = -1f;
+    private float nextHardImpactAllowedTime;
     private Vector2 impactDirection;
     private bool hardImpact;
     private bool currentFacingLeft;
@@ -48,6 +51,11 @@ public sealed class SheepVisualAnimator : MonoBehaviour
     private bool wasMoving;
     private bool hasFlockFacingIntent;
     private bool flockFacingIntentLeft;
+    private bool groupActionVisualActive;
+
+    public bool IsHardImpactPlaying => impactAge >= 0f && hardImpact;
+    public bool IsMovementLocked => IsHardImpactPlaying;
+    public float HardImpactCooldownRemaining => Mathf.Max(0f, nextHardImpactAllowedTime - Time.time);
 
     public void SetFlockFacingIntent(bool facingLeft)
     {
@@ -60,10 +68,24 @@ public sealed class SheepVisualAnimator : MonoBehaviour
         hasFlockFacingIntent = false;
     }
 
-    public void PlayObstacleImpact(bool cannotBreak, Vector2 movementDirection)
+    /// <summary>主动动作期间保留伸缩反馈，但禁止 Sprite 绕 Z 轴摇摆。</summary>
+    public void SetGroupActionVisual(bool active)
     {
-        if (impactAge >= 0f && hardImpact && !cannotBreak)
-            return;
+        groupActionVisualActive = active;
+    }
+
+    public bool PlayObstacleImpact(bool cannotBreak, Vector2 movementDirection)
+    {
+        if (cannotBreak)
+        {
+            // 持续顶着同一个障碍时不允许重置动画；冷却从上一段硬撞动画结束后才开始。
+            if (IsHardImpactPlaying || Time.time < nextHardImpactAllowedTime)
+                return false;
+        }
+        else if (IsHardImpactPlaying)
+        {
+            return false;
+        }
 
         hardImpact = cannotBreak;
         impactDirection = movementDirection.sqrMagnitude > 0.001f
@@ -72,6 +94,7 @@ public sealed class SheepVisualAnimator : MonoBehaviour
         impactAge = 0f;
         idleAge = -1f;
         idleCountdown = Mathf.Max(idleCountdown, cannotBreak ? 0.8f : 0.25f);
+        return true;
     }
 
     public void PlayDaydreamGesture()
@@ -112,6 +135,7 @@ public sealed class SheepVisualAnimator : MonoBehaviour
 
     private void OnDisable()
     {
+        groupActionVisualActive = false;
         if (sourceRenderer != null)
             sourceRenderer.forceRenderingOff = false;
         if (animatedRenderer != null)
@@ -303,7 +327,10 @@ public sealed class SheepVisualAnimator : MonoBehaviour
 
         visualTransform.localScale = new Vector3(scaleX * flipFold, scaleY, 1f);
         visualTransform.localPosition = new Vector3(impactOffset.x, offsetY + impactOffset.y, 0f);
-        visualTransform.localRotation = Quaternion.Euler(0f, 0f, tilt);
+        visualTransform.localRotation = Quaternion.Euler(
+            0f,
+            0f,
+            groupActionVisualActive ? 0f : tilt);
         bool facingFlip = sourceRenderer.flipX ^ currentFacingLeft;
         if (animatedRenderer.flipX != facingFlip)
             animatedRenderer.flipX = facingFlip;
@@ -323,11 +350,17 @@ public sealed class SheepVisualAnimator : MonoBehaviour
         impactAge += Time.deltaTime;
         float duration = hardImpact ? HardImpactDuration : SoftImpactDuration;
         if (impactAge >= duration)
+        {
+            if (hardImpact)
+                nextHardImpactAllowedTime = Time.time + Mathf.Max(0f, hardImpactCooldown);
             impactAge = -1f;
+            hardImpact = false;
+        }
     }
 
     private void OnValidate()
     {
         maximumIdleDelay = Mathf.Max(maximumIdleDelay, minimumIdleDelay);
+        hardImpactCooldown = Mathf.Max(0f, hardImpactCooldown);
     }
 }

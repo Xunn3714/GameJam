@@ -5969,6 +5969,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AlphaFlockExpansionController
   flock: {fileID: 493499559}
   flockMovement: {fileID: 493499558}
+  flockActions: {fileID: 493499562}
   sheepSpawner: {fileID: 938190747}
   cameraFollow: {fileID: 519420033}
   wolfDirector: {fileID: 874111970}
@@ -6223,6 +6224,7 @@ GameObject:
   - component: {fileID: 493499560}
   - component: {fileID: 493499558}
   - component: {fileID: 493499559}
+  - component: {fileID: 493499562}
   m_Layer: 0
   m_Name: SheepFlock
   m_TagString: Untagged
@@ -6279,7 +6281,6 @@ MonoBehaviour:
   movementController: {fileID: 493499558}
   startingMembers:
   - {fileID: 993925166}
-  velocityHistorySeconds: 2
   huddleCompactness: 0.55
   huddleTransitionSpeed: 1.2
   shapeDirectionTurnSpeed: 4
@@ -6291,6 +6292,29 @@ MonoBehaviour:
   largeSteeringInterval: 3
   idlePacingRatio: 0.2
   maximumIdlePacingMembers: 24
+--- !u!114 &493499562
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 493499556}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c8db10cc0a6c46e69bc29ec8df5daf87, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::FlockActionController
+  flock: {fileID: 493499559}
+  movement: {fileID: 493499558}
+  retreatSpeed: 3
+  retreatDistance: 0.65
+  windupDuration: 0.3
+  dashSpeed: 8
+  dashDistance: 2.2
+  minimumManualCompactness: 0.45
+  compactingSpeed: 0.45
+  restoringSpeed: 0.2
+  compactedMoveSpeedMultiplier: 0.58
 --- !u!58 &493499560
 CircleCollider2D:
   m_ObjectHideFlags: 0
@@ -11031,7 +11055,7 @@ MonoBehaviour:
     height: 10
   signFadeDuration: 1.5
   notEnoughHint: "\u7F8A\u7FA4\u8FD8\u4E0D\u591F\uFF08{0}/{1}\uFF09\uFF0C\u518D\u53BB\u78B0\u51E0\u53EA\u7F8A"
-  readyHint: "\u7F8A\u7FA4\u591F\u4E86\uFF01\u6309 E \u649E\u5F00\u6805\u680F"
+  readyHint: "\u7F8A\u7FA4\u591F\u4E86\uFF01\u6309 E \u540E\u9000\u84C4\u52BF\uFF0C\u6574\u7FA4\u51B2\u523A\u649E\u5F00\u6805\u680F"
 --- !u!4 &834937429
 Transform:
   m_ObjectHideFlags: 0

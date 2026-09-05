@@ -1,24 +1,20 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
-/// 围栏：羊群数量达到 ObstacleDefinition.RequiredFlockCount 后，接触时自动撞碎。
-/// 数量不够时靠 Blocking 层的实体碰撞体挡住羊群；也保留手动交互模式供以后使用。
+/// 围栏：E 的整群冲刺命中时按实际冲撞力度判定。
+/// 数量或力度不够时由 Blocking 层实体碰撞体截停羊群。
 [DisallowMultipleComponent]
 [RequireComponent(typeof(BreakableObstacle))]
 public sealed class FenceObstacle : MonoBehaviour
 {
-    private const string InteractActionName = "Player/Interact";
-
     [SerializeField] private BreakableObstacle breakable;
-    [Tooltip("勾选：羊群数量够了碰到就碎；不勾：数量够了还要按交互键（E）。")]
+    [Tooltip("勾选：羊群数量够了碰到就碎；不勾：只能由 E 整群冲刺撞碎。")]
     [SerializeField] private bool breakOnContact = true;
     [Tooltip("大于 0 时覆盖 ObstacleDefinition 里的门槛（例如外围围栏由关卡控制器统一配置）。")]
     [SerializeField, Min(0)] private int requiredCountOverride;
 
     private readonly HashSet<Collider2D> collidersInRange = new HashSet<Collider2D>();
-    private InputAction interactAction;
     private FlockController flockInRange;
     private bool wasInteractable;
     private bool wasInRange;
@@ -50,7 +46,6 @@ public sealed class FenceObstacle : MonoBehaviour
     private void Awake()
     {
         if (breakable == null) breakable = GetComponent<BreakableObstacle>();
-        interactAction = InputSystem.actions?.FindAction(InteractActionName);
     }
 
     private void OnEnable()
@@ -76,10 +71,6 @@ public sealed class FenceObstacle : MonoBehaviour
 
         PruneDestroyedColliders();
 
-        bool interactPressed = InteractPressedThisFrame();
-        if (interactPressed)
-            AttemptCharge();
-
         if (CanBreak && breakOnContact)
         {
             breakable.Break();
@@ -87,18 +78,22 @@ public sealed class FenceObstacle : MonoBehaviour
         }
     }
 
-    private void AttemptCharge()
+    /// <summary>E 整群冲刺传入本次实际力度，不要求预先停留在交互 Trigger 内。</summary>
+    public bool ReceiveDashImpact(FlockController sourceFlock, float impactForce)
     {
-        if (flockInRange == null)
-            return;
+        if (sourceFlock == null || breakable == null || breakable.IsBroken)
+            return false;
 
-        bool canBreak = CanBreak;
-        flockInRange.ReportFenceChargeImpact(hardImpact: !canBreak);
+        bool canBreak = FlockActionController.MeetsBreakThreshold(
+            impactForce,
+            RequiredFlockCount);
+        sourceFlock.ReportFenceChargeImpact(hardImpact: !canBreak);
         if (!canBreak)
-            return;
+            return false;
 
         breakable.Break();
         ClearRange();
+        return true;
     }
 
     private void OnTriggerEnter2D(Collider2D other)
@@ -191,14 +186,5 @@ public sealed class FenceObstacle : MonoBehaviour
         {
             ClearRange();
         }
-    }
-
-    private bool InteractPressedThisFrame()
-    {
-        if (interactAction != null)
-            return interactAction.WasPressedThisFrame();
-
-        Keyboard keyboard = Keyboard.current;
-        return keyboard != null && keyboard.eKey.wasPressedThisFrame;
     }
 }

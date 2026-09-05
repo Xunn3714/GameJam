@@ -31,16 +31,6 @@ public sealed class SheepFlockAgent : MonoBehaviour
     [SerializeField, Min(0f)] private float separationWeight = 4f;
     [SerializeField, Min(0f)] private float alignmentWeight = 0.35f;
 
-    [Header("Leader Ripple")]
-    [Tooltip("领头羊贴着羊群中心走的半径。")]
-    [SerializeField, Min(0f)] private float leaderRadius = 0.1f;
-    [Tooltip("离领头羊每远 1 单位，跟随输入就晚多少秒。")]
-    [SerializeField, Min(0f)] private float followDelayPerUnit = 0.14f;
-    [SerializeField, Min(0f)] private float maximumFollowDelay = 0.8f;
-    [Tooltip("延迟值的变化速度（秒/秒），避免羊在群里换位置时突然抖动。")]
-    [SerializeField, Min(0f)] private float followDelayAdjustSpeed = 2f;
-    [SerializeField, Range(0f, 1f)] private float leaderWanderScale = 0.2f;
-
     [Header("Facing Response")]
     [Tooltip("持续转向确认后，每只羊用不同的短延迟翻面，避免按中心距离形成圆形波纹。")]
     [SerializeField, Min(0f)] private float minimumFacingReactionDelay = 0.03f;
@@ -85,7 +75,6 @@ public sealed class SheepFlockAgent : MonoBehaviour
     private Vector2 targetWanderDirection;
     private Vector2 fallbackSeparationDirection;
     private float wanderTimer;
-    private float followDelay;
     private float stuckTimer;
     private float nextImpactFeedbackTime;
     private Vector2 idleAnchor;
@@ -115,8 +104,7 @@ public sealed class SheepFlockAgent : MonoBehaviour
 
     public Vector2 Velocity => velocity;
     public Vector2 Position => body != null ? body.position : (Vector2)transform.position;
-    public bool IsLeader => flock != null && flock.Leader != null && flock.Leader.gameObject == gameObject;
-    public float FollowDelay => followDelay;
+    public bool IsMovementLocked => visualAnimator != null && visualAnimator.IsMovementLocked;
     public int SimulationSlot => simulationSlot;
 
     private void Awake()
@@ -142,13 +130,13 @@ public sealed class SheepFlockAgent : MonoBehaviour
         flock = owner;
         velocity = Vector2.zero;
         cachedSteeringVelocity = Vector2.zero;
-        followDelay = 0f;
         hasCachedSteering = false;
         idleWasAllowed = false;
         observedFacingIntentRevision = -1;
         hasPendingFacingIntent = false;
         hasAppliedFacingIntent = false;
         visualAnimator?.ClearFlockFacingIntent();
+        visualAnimator?.SetGroupActionVisual(false);
         wasControllerMoving = owner != null && owner.IsMoving;
         wasHuddling = owner != null && owner.IsHuddling;
         ResetWander();
@@ -167,25 +155,32 @@ public sealed class SheepFlockAgent : MonoBehaviour
             return;
 
         float deltaTime = Time.fixedDeltaTime;
-        bool isLeader = IsLeader;
+        visualAnimator?.SetGroupActionVisual(flock.IsGroupActionActive);
         UpdateFacingIntent(deltaTime);
 
-        // 离领头羊越远，跟随玩家输入就越晚：移动从领头羊开始一圈圈向外扩散。
-        float targetDelay = isLeader
-            ? 0f
-            : Mathf.Min((flock.Center - body.position).magnitude * followDelayPerUnit, maximumFollowDelay);
-        followDelay = Mathf.MoveTowards(followDelay, targetDelay, followDelayAdjustSpeed * deltaTime);
+        if (visualAnimator != null && visualAnimator.IsMovementLocked)
+        {
+            StopImmediately();
+            return;
+        }
 
-        Vector2 driveVelocity = flock.GetDelayedDriveVelocity(followDelay);
+        if (flock.IsGroupActionHolding)
+        {
+            StopImmediately();
+            return;
+        }
+
+        // 所有成员直接读取同一份羊群中心速度，不再从某只领头羊向外延迟传播。
+        Vector2 driveVelocity = flock.MovementVelocity;
         bool flockIsMoving = driveVelocity.sqrMagnitude > 0.0001f;
-        float speedScale = flock.SpeedMultiplier;
+        float speedScale = flock.MemberSpeedMultiplier;
         bool controllerMovementChanged = wasControllerMoving != flock.IsMoving;
         bool huddleChanged = wasHuddling != flock.IsHuddling;
         int steeringInterval = flock.GetSteeringUpdateInterval();
         bool shouldUpdateSteering = !hasCachedSteering
             || controllerMovementChanged
             || huddleChanged
-            || flock.ShouldUpdateSteering(simulationSlot, isLeader);
+            || flock.ShouldUpdateSteering(simulationSlot);
         if (shouldUpdateSteering)
         {
             float steeringDeltaTime = (controllerMovementChanged || huddleChanged)
@@ -194,7 +189,6 @@ public sealed class SheepFlockAgent : MonoBehaviour
             cachedSteeringVelocity = CalculateSteeringVelocity(
                 driveVelocity,
                 flockIsMoving,
-                isLeader,
                 steeringDeltaTime);
             hasCachedSteering = true;
         }
@@ -203,7 +197,9 @@ public sealed class SheepFlockAgent : MonoBehaviour
         wasHuddling = flock.IsHuddling;
         Vector2 steeringVelocity = cachedSteeringVelocity;
         float response = (flockIsMoving ? acceleration : idleBraking) * speedScale;
-        velocity = Vector2.MoveTowards(velocity, steeringVelocity, response * deltaTime);
+        velocity = flock.IsGroupActionActive
+            ? steeringVelocity
+            : Vector2.MoveTowards(velocity, steeringVelocity, response * deltaTime);
 
         if (!flockIsMoving
             && steeringVelocity.sqrMagnitude <= stopSpeed * stopSpeed
@@ -215,21 +211,51 @@ public sealed class SheepFlockAgent : MonoBehaviour
 
         Vector2 from = body.position;
         Vector2 desiredStep = velocity * deltaTime;
-        Vector2 target = MovementBlocking.ResolveMove(
-            from,
-            from + desiredStep,
-            blockingRadius,
-            blockingLayers,
-            out MovementBlockResult blockResult);
-
-        bool recoilFromHardImpact = false;
-        Vector2 impactVelocity = velocity;
-        if (blockResult.WasBlocked && Time.time >= nextImpactFeedbackTime)
+        Vector2 target;
+        MovementBlockResult blockResult;
+        if (flock.IsGroupActionActive)
         {
+            // 整群动作会瞬时提高成员速度，必须扫掠整段位移，
+            // 否则终点重叠检查可能跨过较薄的围栏。主动动作期间也不应贴墙滑动。
+            target = MovementBlocking.ResolveDashMove(
+                from,
+                from + desiredStep,
+                blockingRadius,
+                blockingLayers,
+                out blockResult);
+        }
+        else
+        {
+            target = MovementBlocking.ResolveMove(
+                from,
+                from + desiredStep,
+                blockingRadius,
+                blockingLayers,
+                out blockResult);
+        }
+
+        if (blockResult.WasBlocked)
+        {
+            if (flock.IsGroupActionActive)
+            {
+                flock.ReportGroupActionMemberBlocked(blockResult.Blocker);
+                StopImmediately();
+                return;
+            }
+
             bool hardImpact = !CanBreakOnContact(blockResult.Blocker);
-            visualAnimator?.PlayObstacleImpact(hardImpact, velocity);
-            nextImpactFeedbackTime = Time.time + (hardImpact ? 0.48f : 0.2f);
-            recoilFromHardImpact = hardImpact && velocity.sqrMagnitude > 0.001f;
+            bool shouldRequestAnimation = hardImpact || Time.time >= nextImpactFeedbackTime;
+            bool animationStarted = shouldRequestAnimation
+                && visualAnimator != null
+                && visualAnimator.PlayObstacleImpact(hardImpact, velocity);
+            if (!hardImpact && animationStarted)
+                nextImpactFeedbackTime = Time.time + 0.2f;
+
+            if (hardImpact && visualAnimator != null && visualAnimator.IsMovementLocked)
+            {
+                StopImmediately();
+                return;
+            }
         }
 
         // 轴向滑动都不行时，沿垂直于前进方向、更靠近羊群中心的那一侧贴着障碍走。
@@ -243,8 +269,6 @@ public sealed class SheepFlockAgent : MonoBehaviour
         // 把实际走出去的位移反算回速度，避免贴墙的羊把"想走但没走成"的速度
         // 通过 alignment 传染给邻居，导致整群往墙里挤。
         velocity = (target - from) / deltaTime;
-        if (recoilFromHardImpact)
-            velocity = -impactVelocity.normalized * Mathf.Min(0.85f, maximumSpeed * 0.18f);
 
         if (target == from)
             return;
@@ -252,8 +276,25 @@ public sealed class SheepFlockAgent : MonoBehaviour
         body.MovePosition(target);
     }
 
+    private void StopImmediately()
+    {
+        velocity = Vector2.zero;
+        cachedSteeringVelocity = Vector2.zero;
+        hasCachedSteering = false;
+        stuckTimer = 0f;
+    }
+
     private void UpdateFacingIntent(float deltaTime)
     {
+        if (flock.IsGroupActionActive)
+        {
+            observedFacingIntentRevision = flock.FacingIntentRevision;
+            hasPendingFacingIntent = false;
+            hasAppliedFacingIntent = true;
+            visualAnimator?.SetFlockFacingIntent(flock.FacingIntentLeft);
+            return;
+        }
+
         if (!flock.HasActiveFacingIntent)
         {
             hasPendingFacingIntent = false;
@@ -268,7 +309,7 @@ public sealed class SheepFlockAgent : MonoBehaviour
         if (observedFacingIntentRevision != flock.FacingIntentRevision)
         {
             observedFacingIntentRevision = flock.FacingIntentRevision;
-            facingReactionCountdown = IsLeader ? 0f : facingReactionDelay;
+            facingReactionCountdown = facingReactionDelay;
             hasPendingFacingIntent = true;
         }
 
@@ -387,14 +428,13 @@ public sealed class SheepFlockAgent : MonoBehaviour
     private Vector2 CalculateSteeringVelocity(
         Vector2 driveVelocity,
         bool flockIsMoving,
-        bool isLeader,
         float deltaTime)
     {
         Vector2 position = body.position;
         Vector2 desiredVelocity = driveVelocity;
         Vector2 centerOffset = flock.Center - position;
 
-        float activeRadius = isLeader ? leaderRadius : GetComfortableRadius();
+        float activeRadius = GetComfortableRadius();
         if (!flockIsMoving)
         {
             activeRadius += idleCorrectionMargin;
@@ -402,19 +442,17 @@ public sealed class SheepFlockAgent : MonoBehaviour
         Vector2 cohesionOffset = CalculateCohesionOffset(
             centerOffset,
             activeRadius,
-            isLeader,
             out bool isInsideComfortableShape);
         if (cohesionOffset.sqrMagnitude > 0.0001f)
         {
             float outsideDistance = cohesionOffset.magnitude;
             desiredVelocity += cohesionOffset.normalized
-                * Mathf.Min(outsideDistance * cohesionWeight, maximumSpeed * flock.SpeedMultiplier);
+                * Mathf.Min(outsideDistance * cohesionWeight, maximumSpeed * flock.MemberSpeedMultiplier);
         }
 
         if (!flockIsMoving)
         {
             desiredVelocity += CalculateIdlePacingVelocity(
-                isLeader,
                 isInsideComfortableShape,
                 deltaTime);
         }
@@ -426,8 +464,8 @@ public sealed class SheepFlockAgent : MonoBehaviour
         Vector2 separation = Vector2.zero;
         Vector2 averageNeighborVelocity = Vector2.zero;
         int velocityNeighborCount = 0;
-        // 抱团时允许羊挨得更近一些（最多缩到 70%）。
-        float activeSeparationRadius = separationRadius * Mathf.Lerp(0.7f, 1f, flock.Compactness);
+        // 抱团或手动收拢时允许羊挨得更近，使 Q 的间距变化清晰可见。
+        float activeSeparationRadius = separationRadius * Mathf.Lerp(0.5f, 1f, flock.Compactness);
         float separationRadiusSquared = activeSeparationRadius * activeSeparationRadius;
         float activeAlignmentRadius = Mathf.Max(activeSeparationRadius, alignmentRadius);
         float alignmentRadiusSquared = activeAlignmentRadius * activeAlignmentRadius;
@@ -473,8 +511,18 @@ public sealed class SheepFlockAgent : MonoBehaviour
                 desiredVelocity += (averageVelocity - velocity) * alignmentWeight;
             }
 
-            UpdateWander(deltaTime);
-            desiredVelocity += wanderDirection * wanderStrength * (isLeader ? leaderWanderScale : 1f);
+            if (flock.IsGroupActionActive)
+            {
+                wanderDirection = Vector2.MoveTowards(
+                    wanderDirection,
+                    Vector2.zero,
+                    wanderTurnSpeed * deltaTime);
+            }
+            else
+            {
+                UpdateWander(deltaTime);
+                desiredVelocity += wanderDirection * wanderStrength;
+            }
         }
         else
         {
@@ -484,17 +532,16 @@ public sealed class SheepFlockAgent : MonoBehaviour
                 wanderTurnSpeed * deltaTime);
         }
 
-        return Vector2.ClampMagnitude(desiredVelocity, maximumSpeed * flock.SpeedMultiplier);
+        return Vector2.ClampMagnitude(desiredVelocity, maximumSpeed * flock.MemberSpeedMultiplier);
     }
 
     private Vector2 CalculateCohesionOffset(
         Vector2 centerOffset,
         float activeRadius,
-        bool isLeader,
         out bool isInsideComfortableShape)
     {
         float centerDistance = centerOffset.magnitude;
-        if (isLeader || centerDistance <= 0.0001f)
+        if (centerDistance <= 0.0001f)
         {
             isInsideComfortableShape = centerDistance <= activeRadius;
             if (isInsideComfortableShape)
@@ -545,15 +592,13 @@ public sealed class SheepFlockAgent : MonoBehaviour
     }
 
     private Vector2 CalculateIdlePacingVelocity(
-        bool isLeader,
         bool isInsideComfortableShape,
         float deltaTime)
     {
-        bool allowed = !isLeader
-            && !flock.IsMoving
-            && !flock.IsHuddling
+        bool allowed = !flock.IsMoving
+            && !flock.IsCompressed
             && isInsideComfortableShape
-            && flock.CanIdlePace(simulationSlot, false);
+            && flock.CanIdlePace(simulationSlot);
         if (!allowed)
         {
             DisableIdlePacing();

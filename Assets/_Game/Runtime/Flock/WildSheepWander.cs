@@ -104,6 +104,12 @@ public sealed class WildSheepWander : MonoBehaviour
         if (scatteredSheep != null && scatteredSheep.IsScattered)
             return;
 
+        if (visualAnimator != null && visualAnimator.IsMovementLocked)
+        {
+            velocity = Vector2.zero;
+            return;
+        }
+
         float deltaTime = Time.fixedDeltaTime;
         stateTimer -= deltaTime;
         if (stateTimer <= 0f)
@@ -135,7 +141,14 @@ public sealed class WildSheepWander : MonoBehaviour
 
         if (blockResult.WasBlocked)
         {
-            PlayImpact(blockResult.FullyBlocked);
+            bool hardImpact = blockResult.FullyBlocked;
+            PlayImpact(hardImpact);
+            if (hardImpact && visualAnimator != null && visualAnimator.IsMovementLocked)
+            {
+                velocity = Vector2.zero;
+                return;
+            }
+
             velocity = blockResult.FullyBlocked ? -direction * maximumSpeed * 0.45f : velocity;
             BeginDaydream();
         }
@@ -196,13 +209,16 @@ public sealed class WildSheepWander : MonoBehaviour
         return randomDirection.sqrMagnitude > 0.001f ? randomDirection : Vector2.right;
     }
 
-    private void PlayImpact(bool hardImpact)
+    private bool PlayImpact(bool hardImpact)
     {
-        if (Time.time < nextImpactFeedbackTime)
-            return;
+        if (!hardImpact && Time.time < nextImpactFeedbackTime)
+            return false;
 
-        nextImpactFeedbackTime = Time.time + (hardImpact ? 0.5f : 0.2f);
-        visualAnimator?.PlayObstacleImpact(hardImpact, direction);
+        bool played = visualAnimator != null
+            && visualAnimator.PlayObstacleImpact(hardImpact, direction);
+        if (played && !hardImpact)
+            nextImpactFeedbackTime = Time.time + 0.2f;
+        return played;
     }
 
     private void OnValidate()
