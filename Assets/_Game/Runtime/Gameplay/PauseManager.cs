@@ -1,106 +1,145 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 using UnityEngine.InputSystem;
 
 public class PauseManager : MonoBehaviour
 {
-    [Header("Pause UI")]
-    public GameObject pausePanel;
-    public GameObject pauseWindow;
-    public GameObject settingPanel;
+    [Header("Panels")]
+    [SerializeField] private GameObject pausePanel;
+    [SerializeField] private GameObject pauseWindow;
+    [SerializeField] private GameObject settingPanel;
 
-    private bool isPaused = false;
+    [Header("Pause Buttons")]
+    [SerializeField] private Button continueButton;
+    [SerializeField] private Button mainMenuButton;
+    [SerializeField] private Button settingsButton;
+
+    [Header("Settings")]
+    [SerializeField] private Button settingsBackButton;
+
+    private bool isPaused;
 
 
-    private void Start()
+    private void Awake()
     {
-        // 进入关卡时默认不暂停
-        pausePanel.SetActive(false);
+        // 按钮事件全部由 Prefab 内部自动绑定
+        if (continueButton != null)
+            continueButton.onClick.AddListener(ContinueGame);
 
-        // 暂停主页默认准备好
-        pauseWindow.SetActive(true);
+        if (mainMenuButton != null)
+            mainMenuButton.onClick.AddListener(ReturnToMainMenu);
 
-        // 设置页面默认关闭
-        settingPanel.SetActive(false);
+        if (settingsButton != null)
+            settingsButton.onClick.AddListener(ShowSettings);
+
+        if (settingsBackButton != null)
+            settingsBackButton.onClick.AddListener(BackToPause);
+
+        // 游戏开始时确保暂停界面关闭
+        if (pausePanel != null)
+            pausePanel.SetActive(false);
+
+        if (pauseWindow != null)
+            pauseWindow.SetActive(true);
+
+        if (settingPanel != null)
+            settingPanel.SetActive(false);
 
         Time.timeScale = 1f;
+        isPaused = false;
     }
 
 
     private void Update()
     {
-        if (Keyboard.current != null &&
-            Keyboard.current.escapeKey.wasPressedThisFrame)
+        if (Keyboard.current == null)
+            return;
+
+        if (Keyboard.current.escapeKey.wasPressedThisFrame)
         {
-            TogglePause();
+            if (settingPanel != null && settingPanel.activeSelf)
+            {
+                BackToPause();
+                return;
+            }
+
+            if (isPaused)
+                ContinueGame();
+            else
+                PauseGame();
         }
     }
 
 
-    // ESC 切换暂停状态
-    public void TogglePause()
+    public void PauseGame()
     {
-        if (isPaused)
-        {
-            ResumeGame();
-        }
-        else
-        {
-            OpenPause();
-        }
-    }
+        if (pausePanel != null)
+            pausePanel.SetActive(true);
 
+        if (pauseWindow != null)
+            pauseWindow.SetActive(true);
 
-    // 打开暂停菜单
-    public void OpenPause()
-    {
-        isPaused = true;
-
-        pausePanel.SetActive(true);
-
-        pauseWindow.SetActive(true);
-        settingPanel.SetActive(false);
+        if (settingPanel != null)
+            settingPanel.SetActive(false);
 
         Time.timeScale = 0f;
+        isPaused = true;
     }
 
 
-    // 打开 Settings
-    public void ShowSettings()
+    public void ContinueGame()
     {
-        pauseWindow.SetActive(false);
-        settingPanel.SetActive(true);
-    }
-
-
-    // Settings 返回暂停主页
-    public void BackToPause()
-    {
-        settingPanel.SetActive(false);
-        pauseWindow.SetActive(true);
-    }
-
-
-    // 继续游戏
-    public void ResumeGame()
-    {
-        isPaused = false;
-
-        pausePanel.SetActive(false);
+        if (pausePanel != null)
+            pausePanel.SetActive(false);
 
         Time.timeScale = 1f;
+        isPaused = false;
     }
 
 
-    // 返回 MainMenu
+    public void ShowSettings()
+    {
+        if (pauseWindow != null)
+            pauseWindow.SetActive(false);
+
+        if (settingPanel != null)
+            settingPanel.SetActive(true);
+    }
+
+
+    public void BackToPause()
+    {
+        if (settingPanel != null)
+            settingPanel.SetActive(false);
+
+        if (pauseWindow != null)
+            pauseWindow.SetActive(true);
+    }
+
+
     public void ReturnToMainMenu()
     {
-        if (SceneLoader.Instance != null)
-        {
-            SceneLoader.Instance.LoadMainMenu();
-        }
-        else
-        {
-            Debug.LogError("SceneLoader Instance not found.");
-        }
+        Time.timeScale = 1f;
+        isPaused = false;
+
+        SceneManager.LoadScene("MainMenu");
+    }
+
+
+    private void OnDestroy()
+    {
+        // 防止重复监听
+        if (continueButton != null)
+            continueButton.onClick.RemoveListener(ContinueGame);
+
+        if (mainMenuButton != null)
+            mainMenuButton.onClick.RemoveListener(ReturnToMainMenu);
+
+        if (settingsButton != null)
+            settingsButton.onClick.RemoveListener(ShowSettings);
+
+        if (settingsBackButton != null)
+            settingsBackButton.onClick.RemoveListener(BackToPause);
     }
 }

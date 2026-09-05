@@ -165,8 +165,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8ef553b991d522e499fffa21010762cf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BannerView
-  icon: {fileID: 7352917649930954341}
   bannerText: {fileID: 2736790044803158881}
+  bannerIcon: {fileID: 7352917649930954341}
 --- !u!1 &8157473307502433049
 GameObject:
   m_ObjectHideFlags: 0
