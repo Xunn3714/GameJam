@@ -8,12 +8,18 @@ public sealed class CameraFollow2D : MonoBehaviour
     [SerializeField] private Transform target;
     [SerializeField, Min(0f)] private float smoothTime = 0.15f;
 
+    [Header("Zoom")]
+    [SerializeField, Min(0f)] private float zoomSmoothTime = 0.6f;
+
     [Header("Camera Shake")]
     [SerializeField, Min(0f)] private float defaultShakeDuration = 0.12f;
     [SerializeField, Min(0f)] private float defaultShakeStrength = 0.10f;
 
     private Vector3 velocity;
     private Vector3 basePosition;
+
+    private float zoomVelocity;
+    private float targetOrthographicSize;
 
     private float cameraZ;
 
@@ -34,11 +40,17 @@ public sealed class CameraFollow2D : MonoBehaviour
         basePosition = transform.position;
 
         attachedCamera = GetComponent<Camera>();
+
+        targetOrthographicSize =
+            attachedCamera != null && attachedCamera.orthographic
+                ? attachedCamera.orthographicSize
+                : 0f;
     }
 
 
     private void LateUpdate()
     {
+        UpdateZoom();
         UpdateFollowPosition();
         ApplyCameraShake();
     }
@@ -49,19 +61,16 @@ public sealed class CameraFollow2D : MonoBehaviour
         if (target == null)
             return;
 
-
         if (flockController == null)
         {
             flockController =
                 target.GetComponent<FlockController>();
         }
 
-
         Vector2 focusPosition =
             flockController != null
                 ? flockController.Center
                 : (Vector2)target.position;
-
 
         Vector3 targetPosition =
             new Vector3(
@@ -85,14 +94,12 @@ public sealed class CameraFollow2D : MonoBehaviour
             float halfWidth =
                 halfHeight * attachedCamera.aspect;
 
-
             targetPosition.x =
                 ClampInside(
                     targetPosition.x,
                     cameraBounds.xMin + halfWidth,
                     cameraBounds.xMax - halfWidth
                 );
-
 
             targetPosition.y =
                 ClampInside(
@@ -115,7 +122,6 @@ public sealed class CameraFollow2D : MonoBehaviour
             return;
         }
 
-
         basePosition =
             Vector3.SmoothDamp(
                 basePosition,
@@ -126,24 +132,26 @@ public sealed class CameraFollow2D : MonoBehaviour
     }
 
 
+    // =========================================================
+    // Camera Shake
+    // =========================================================
+
     private void ApplyCameraShake()
     {
         if (shakeTimeRemaining <= 0f)
         {
             shakeTimeRemaining = 0f;
+            shakeTotalDuration = 0f;
             shakeStrength = 0f;
 
             transform.position = basePosition;
             return;
         }
 
-
-        // 使用 Unscaled 时间：
-        // 即使撞击时 TimeScale 被降低，
-        // Camera Shake 仍然保持正常速度。
+        // 使用 Unscaled 时间，
+        // Hit Slow 时相机抖动仍保持正常速度。
         shakeTimeRemaining -=
             Time.unscaledDeltaTime;
-
 
         float strengthMultiplier = 1f;
 
@@ -156,12 +164,10 @@ public sealed class CameraFollow2D : MonoBehaviour
                 );
         }
 
-
         Vector2 randomOffset =
             Random.insideUnitCircle
             * shakeStrength
             * strengthMultiplier;
-
 
         transform.position =
             basePosition +
@@ -173,9 +179,6 @@ public sealed class CameraFollow2D : MonoBehaviour
     }
 
 
-    /// <summary>
-    /// 使用默认参数播放一次 Camera Shake。
-    /// </summary>
     public void Shake()
     {
         Shake(
@@ -185,9 +188,6 @@ public sealed class CameraFollow2D : MonoBehaviour
     }
 
 
-    /// <summary>
-    /// 播放 Camera Shake。
-    /// </summary>
     public void Shake(
         float duration,
         float strength
@@ -199,22 +199,17 @@ public sealed class CameraFollow2D : MonoBehaviour
             return;
         }
 
-
-        // 连续撞击时延长 / 加强已有 Shake，
-        // 不会强制先结束上一段。
         shakeTimeRemaining =
             Mathf.Max(
                 shakeTimeRemaining,
                 duration
             );
 
-
         shakeTotalDuration =
             Mathf.Max(
                 shakeTotalDuration,
                 duration
             );
-
 
         shakeStrength =
             Mathf.Max(
@@ -223,7 +218,73 @@ public sealed class CameraFollow2D : MonoBehaviour
             );
     }
 
+    // Camera Zoom
+    // main 新增逻辑
+    public void SetOrthographicSize(
+        float size,
+        bool immediate = false
+    )
+    {
+        if (attachedCamera == null)
+        {
+            attachedCamera =
+                GetComponent<Camera>();
+        }
 
+        if (attachedCamera == null ||
+            !attachedCamera.orthographic)
+        {
+            return;
+        }
+
+        targetOrthographicSize =
+            Mathf.Max(
+                0.01f,
+                size
+            );
+
+        if (!immediate)
+            return;
+
+        attachedCamera.orthographicSize =
+            targetOrthographicSize;
+
+        zoomVelocity = 0f;
+    }
+
+
+    private void UpdateZoom()
+    {
+        if (attachedCamera == null ||
+            !attachedCamera.orthographic ||
+            targetOrthographicSize <= 0f)
+        {
+            return;
+        }
+
+        if (Mathf.Abs(
+                attachedCamera.orthographicSize -
+                targetOrthographicSize
+            ) <= 0.001f)
+        {
+            attachedCamera.orthographicSize =
+                targetOrthographicSize;
+
+            zoomVelocity = 0f;
+            return;
+        }
+
+        attachedCamera.orthographicSize =
+            Mathf.SmoothDamp(
+                attachedCamera.orthographicSize,
+                targetOrthographicSize,
+                ref zoomVelocity,
+                zoomSmoothTime
+            );
+    }
+
+
+    // Bounds
     public void ConfigureBounds(Rect bounds)
     {
         cameraBounds = bounds;
