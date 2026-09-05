@@ -95,7 +95,7 @@ public static class WorldObstaclePrefabBuilder
             fence,
             fenceDefinition,
             LoadAudioClip(WoodBreakClipPath),
-            0.6f);
+            0.35f);
 
         int built = 0;
         foreach (DebrisSpec spec in DebrisSpecs)

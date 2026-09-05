@@ -4,7 +4,7 @@ using UnityEngine;
 [RequireComponent(typeof(BreakableObstacle))]
 public sealed class BreakableObstacleAudio : MonoBehaviour
 {
-    private const float SharedClipCooldown = 0.2f;
+    private const float SharedClipCooldown = 0.35f;
 
     [Header("Break SFX")]
     [SerializeField] private AudioClip breakClip;
