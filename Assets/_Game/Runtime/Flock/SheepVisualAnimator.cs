@@ -51,6 +51,7 @@ public sealed class SheepVisualAnimator : MonoBehaviour
     private bool wasMoving;
     private bool hasFlockFacingIntent;
     private bool flockFacingIntentLeft;
+    private bool groupActionVisualActive;
 
     public bool IsHardImpactPlaying => impactAge >= 0f && hardImpact;
     public bool IsMovementLocked => IsHardImpactPlaying;
@@ -65,6 +66,12 @@ public sealed class SheepVisualAnimator : MonoBehaviour
     public void ClearFlockFacingIntent()
     {
         hasFlockFacingIntent = false;
+    }
+
+    /// <summary>主动动作期间保留伸缩反馈，但禁止 Sprite 绕 Z 轴摇摆。</summary>
+    public void SetGroupActionVisual(bool active)
+    {
+        groupActionVisualActive = active;
     }
 
     public bool PlayObstacleImpact(bool cannotBreak, Vector2 movementDirection)
@@ -128,6 +135,7 @@ public sealed class SheepVisualAnimator : MonoBehaviour
 
     private void OnDisable()
     {
+        groupActionVisualActive = false;
         if (sourceRenderer != null)
             sourceRenderer.forceRenderingOff = false;
         if (animatedRenderer != null)
@@ -319,7 +327,10 @@ public sealed class SheepVisualAnimator : MonoBehaviour
 
         visualTransform.localScale = new Vector3(scaleX * flipFold, scaleY, 1f);
         visualTransform.localPosition = new Vector3(impactOffset.x, offsetY + impactOffset.y, 0f);
-        visualTransform.localRotation = Quaternion.Euler(0f, 0f, tilt);
+        visualTransform.localRotation = Quaternion.Euler(
+            0f,
+            0f,
+            groupActionVisualActive ? 0f : tilt);
         bool facingFlip = sourceRenderer.flipX ^ currentFacingLeft;
         if (animatedRenderer.flipX != facingFlip)
             animatedRenderer.flipX = facingFlip;

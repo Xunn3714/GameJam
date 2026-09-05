@@ -136,6 +136,7 @@ public sealed class SheepFlockAgent : MonoBehaviour
         hasPendingFacingIntent = false;
         hasAppliedFacingIntent = false;
         visualAnimator?.ClearFlockFacingIntent();
+        visualAnimator?.SetGroupActionVisual(false);
         wasControllerMoving = owner != null && owner.IsMoving;
         wasHuddling = owner != null && owner.IsHuddling;
         ResetWander();
@@ -153,6 +154,10 @@ public sealed class SheepFlockAgent : MonoBehaviour
         if (flock == null || body == null || Time.timeScale == 0f)
             return;
 
+        float deltaTime = Time.fixedDeltaTime;
+        visualAnimator?.SetGroupActionVisual(flock.IsGroupActionActive);
+        UpdateFacingIntent(deltaTime);
+
         if (visualAnimator != null && visualAnimator.IsMovementLocked)
         {
             StopImmediately();
@@ -164,9 +169,6 @@ public sealed class SheepFlockAgent : MonoBehaviour
             StopImmediately();
             return;
         }
-
-        float deltaTime = Time.fixedDeltaTime;
-        UpdateFacingIntent(deltaTime);
 
         // 所有成员直接读取同一份羊群中心速度，不再从某只领头羊向外延迟传播。
         Vector2 driveVelocity = flock.MovementVelocity;
@@ -284,6 +286,15 @@ public sealed class SheepFlockAgent : MonoBehaviour
 
     private void UpdateFacingIntent(float deltaTime)
     {
+        if (flock.IsGroupActionActive)
+        {
+            observedFacingIntentRevision = flock.FacingIntentRevision;
+            hasPendingFacingIntent = false;
+            hasAppliedFacingIntent = true;
+            visualAnimator?.SetFlockFacingIntent(flock.FacingIntentLeft);
+            return;
+        }
+
         if (!flock.HasActiveFacingIntent)
         {
             hasPendingFacingIntent = false;
