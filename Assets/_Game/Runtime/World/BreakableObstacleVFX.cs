@@ -1,7 +1,8 @@
 using UnityEngine;
 
+[DisallowMultipleComponent]
 [RequireComponent(typeof(BreakableObstacle))]
-public class BreakableObstacleVFX : MonoBehaviour
+public sealed class BreakableObstacleVFX : MonoBehaviour
 {
     [Header("Break Particles")]
     [SerializeField] private ParticleSystem breakParticlesPrefab;
@@ -12,9 +13,23 @@ public class BreakableObstacleVFX : MonoBehaviour
 
     [Header("Spawn")]
     [SerializeField] private Vector2 spawnOffset = Vector2.zero;
+    [SerializeField, Min(0f)] private float fragmentSpawnRadius;
 
     private BreakableObstacle breakableObstacle;
-    [SerializeField, Min(0f)] private float fragmentSpawnRadius = 0f;
+
+    public void Configure(
+        ParticleSystem particlesPrefab,
+        GameObject physicalFragmentPrefab,
+        int physicalFragmentCount,
+        Vector2 offset,
+        float spawnRadius)
+    {
+        breakParticlesPrefab = particlesPrefab;
+        fragmentPrefab = physicalFragmentPrefab;
+        fragmentCount = Mathf.Max(0, physicalFragmentCount);
+        spawnOffset = offset;
+        fragmentSpawnRadius = Mathf.Max(0f, spawnRadius);
+    }
 
     private void Awake()
     {
