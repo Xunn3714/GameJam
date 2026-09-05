@@ -227,6 +227,7 @@ MonoBehaviour:
   scatterRandomness: 0.45
   carriedSheepColor: {r: 0.3, g: 0.5, b: 1, a: 1}
   carriedSheepDistance: 0.75
+  sheepContactInteraction: 1
   fleeSpeed: 9
   despawnDistance: 24
   maxLifetime: 20

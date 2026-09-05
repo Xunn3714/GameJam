@@ -17,6 +17,11 @@ public static class WolfTestSceneSetup
     private const string SceneFolder = "Assets/_Game/Scenes/Dev";
     private const string ScenePath = SceneFolder + "/TestWolf.unity";
     private const string SmartScenePath = SceneFolder + "/TestSmartWolf.unity";
+    private const string PackParallelScenePath = SceneFolder + "/TestPackParallel.unity";
+    private const string PackSequentialScenePath = SceneFolder + "/TestPackSequential.unity";
+    private const string PackEscortScenePath = SceneFolder + "/TestPackEscort.unity";
+    private const string PackPentagramScenePath = SceneFolder + "/TestPackPentagram.unity";
+    private const string PackPerpendicularScenePath = SceneFolder + "/TestPackPerpendicular.unity";
     private const string SceneTemplatePath = "Assets/Settings/Scenes/URP2DSceneTemplate.unity";
 
     private const string PrototypeFolder = "Assets/_Game/Content/Art/Prototype";
@@ -29,6 +34,7 @@ public static class WolfTestSceneSetup
 
     private const int StartingSheepCount = 10;
     private const int SmartStartingSheepCount = 20;
+    private const int PackStartingSheepCount = 20;
 
     // 测试场景专用的快节奏：空挡 3~5 秒（第一轮 3 秒）、狼嚎 2 秒、跑路 1 秒。正式关卡仍是 15~20 / 3 / 1.5。
     private const float FastCalmMin = 3f;
@@ -51,17 +57,74 @@ public static class WolfTestSceneSetup
     [MenuItem("Game Jam/Wolf Test/Setup TestWolf Scene")]
     public static void SetupTestWolfScene()
     {
-        BuildTestScene(ScenePath, StartingSheepCount, false);
+        BuildTestScene(ScenePath, StartingSheepCount, false, WolfFormationType.Single);
     }
 
     /// <summary>TestSmartWolf：20 只羊 + 聪明狼 + 两个调试窗口（当前学习率 / 当前预测角度）。</summary>
     [MenuItem("Game Jam/Wolf Test/Setup TestSmartWolf Scene")]
     public static void SetupTestSmartWolfScene()
     {
-        BuildTestScene(SmartScenePath, SmartStartingSheepCount, true);
+        BuildTestScene(SmartScenePath, SmartStartingSheepCount, true, WolfFormationType.Single);
     }
 
-    private static void BuildTestScene(string scenePath, int sheepCount, bool smartWolfWindows)
+    // ---- 多狼协作测试场景：每轮固定放对应编队 ----
+
+    [MenuItem("Game Jam/Wolf Test/Pack/Setup TestPackParallel (三长狼并排齐冲)")]
+    public static void SetupTestPackParallelScene()
+    {
+        BuildTestScene(PackParallelScenePath, PackStartingSheepCount, false, WolfFormationType.ParallelSimultaneous);
+    }
+
+    [MenuItem("Game Jam/Wolf Test/Pack/Setup TestPackSequential (三长狼并排轮冲)")]
+    public static void SetupTestPackSequentialScene()
+    {
+        BuildTestScene(PackSequentialScenePath, PackStartingSheepCount, false, WolfFormationType.ParallelSequential);
+    }
+
+    [MenuItem("Game Jam/Wolf Test/Pack/Setup TestPackEscort (长狼包夹)")]
+    public static void SetupTestPackEscortScene()
+    {
+        BuildTestScene(PackEscortScenePath, PackStartingSheepCount, false, WolfFormationType.LongWolfWithEscorts);
+    }
+
+    [MenuItem("Game Jam/Wolf Test/Pack/Setup TestPackPentagram (五角星围猎)")]
+    public static void SetupTestPackPentagramScene()
+    {
+        BuildTestScene(PackPentagramScenePath, PackStartingSheepCount, false, WolfFormationType.Pentagram);
+    }
+
+    [MenuItem("Game Jam/Wolf Test/Pack/Setup TestPackPerpendicular (长狼直角连击)")]
+    public static void SetupTestPackPerpendicularScene()
+    {
+        BuildTestScene(PackPerpendicularScenePath, PackStartingSheepCount, false, WolfFormationType.PerpendicularChain);
+    }
+
+    [MenuItem("Game Jam/Wolf Test/Pack/Setup All Pack Scenes")]
+    public static void SetupAllPackScenes()
+    {
+        SetupTestPackParallelScene();
+        SetupTestPackSequentialScene();
+        SetupTestPackEscortScene();
+        SetupTestPackPentagramScene();
+        SetupTestPackPerpendicularScene();
+    }
+
+    [MenuItem("Game Jam/Wolf Test/Pack/Open TestPackPerpendicular")]
+    public static void OpenTestPackPerpendicular() => OpenExistingScene(PackPerpendicularScenePath, "Setup TestPackPerpendicular");
+
+    [MenuItem("Game Jam/Wolf Test/Pack/Open TestPackParallel")]
+    public static void OpenTestPackParallel() => OpenExistingScene(PackParallelScenePath, "Setup TestPackParallel");
+
+    [MenuItem("Game Jam/Wolf Test/Pack/Open TestPackSequential")]
+    public static void OpenTestPackSequential() => OpenExistingScene(PackSequentialScenePath, "Setup TestPackSequential");
+
+    [MenuItem("Game Jam/Wolf Test/Pack/Open TestPackEscort")]
+    public static void OpenTestPackEscort() => OpenExistingScene(PackEscortScenePath, "Setup TestPackEscort");
+
+    [MenuItem("Game Jam/Wolf Test/Pack/Open TestPackPentagram")]
+    public static void OpenTestPackPentagram() => OpenExistingScene(PackPentagramScenePath, "Setup TestPackPentagram");
+
+    private static void BuildTestScene(string scenePath, int sheepCount, bool smartWolfWindows, WolfFormationType formation)
     {
         EnsureFolder(SceneFolder);
         EnsureFolder(PrototypeFolder);
@@ -84,6 +147,10 @@ public static class WolfTestSceneSetup
         GameObject flockObject = CreateFlock(scene, sheepPrefab, sheepCount, out FlockController flock, out FlockMovementController movement);
         WolfSpawner spawner = CreateSpawner(scene, flock, wolfPrefab);
         WolfEventDirector director = CreateEventDirector(scene, spawner);
+        if (formation != WolfFormationType.Single)
+        {
+            ConfigurePackFormation(spawner, director, wolfPrefab, formation);
+        }
         CreateGameController(scene, flock, movement, spawner, director);
         CreateEventHud(scene, director);
         if (smartWolfWindows)
@@ -100,6 +167,7 @@ public static class WolfTestSceneSetup
             $"{System.IO.Path.GetFileNameWithoutExtension(scenePath)} scene is ready at {scenePath}: {sheepCount} sheep, " +
             $"fast dev rhythm (calm {FastCalmMin}~{FastCalmMax}s, howl {FastHowl}s, retreat {FastRetreat}s). " +
             (smartWolfWindows ? "Two debug windows show the wolves' learning rate and predicted angle (F1 toggles them). " : "") +
+            (formation != WolfFormationType.Single ? $"Every attack uses the '{WolfFormation.DefaultName(formation)}' pack formation. " : "") +
             "Press Play, move with WASD, press R to restart after Game Over.");
     }
 
@@ -436,6 +504,57 @@ public static class WolfTestSceneSetup
         ApplyFastWolfRhythm(serialized);
         serialized.ApplyModifiedPropertiesWithoutUndo();
         return director;
+    }
+
+    /// <summary>
+    /// 给测试场景挂上 WolfFormationRunner，并让 WolfEventDirector 每轮固定放指定编队。
+    /// 长狼 prefab 用 LongWolfTestSceneSetup 的 LongWolf.prefab（没有就生成）。
+    /// </summary>
+    private static void ConfigurePackFormation(WolfSpawner spawner, WolfEventDirector director, GameObject wolfPrefab, WolfFormationType formation)
+    {
+        WolfFormationRunner runner = spawner.GetComponent<WolfFormationRunner>();
+        if (runner == null)
+        {
+            runner = spawner.gameObject.AddComponent<WolfFormationRunner>();
+        }
+        SerializedObject runnerSerialized = new SerializedObject(runner);
+        runnerSerialized.FindProperty("spawner").objectReferenceValue = spawner;
+        runnerSerialized.ApplyModifiedPropertiesWithoutUndo();
+
+        GameObject longWolfPrefab = LongWolfTestSceneSetup.GetOrCreatePrefab();
+
+        SerializedObject directorSerialized = new SerializedObject(director);
+        directorSerialized.FindProperty("formationRunner").objectReferenceValue = runner;
+        // 多狼同时在场，攻击阶段的兜底时间放宽一点。
+        directorSerialized.FindProperty("attackTimeout").floatValue = 30f;
+
+        SerializedProperty entries = directorSerialized.FindProperty("formations");
+        entries.arraySize = 1;
+        SerializedProperty entry = entries.GetArrayElementAtIndex(0);
+        entry.FindPropertyRelative("minRound").intValue = 1;
+        entry.FindPropertyRelative("minMemberCount").intValue = 0;
+        entry.FindPropertyRelative("weight").floatValue = 1f;
+
+        SerializedProperty definition = entry.FindPropertyRelative("formation");
+        definition.FindPropertyRelative("displayName").stringValue = WolfFormation.DefaultName(formation);
+        definition.FindPropertyRelative("type").enumValueIndex = (int)formation;
+        definition.FindPropertyRelative("wolfPrefab").objectReferenceValue = wolfPrefab.GetComponent<Wolf>();
+        definition.FindPropertyRelative("longWolfPrefab").objectReferenceValue =
+            longWolfPrefab != null ? longWolfPrefab.GetComponent<Wolf>() : null;
+        definition.FindPropertyRelative("count").intValue = 3;
+        definition.FindPropertyRelative("laneSpacing").floatValue = 2.6f;
+        definition.FindPropertyRelative("sequentialDelay").floatValue = 0.7f;
+        definition.FindPropertyRelative("escortDelay").floatValue = 0.8f;
+        definition.FindPropertyRelative("escortLongWolfWarningDuration").floatValue = 2.4f;
+        definition.FindPropertyRelative("escortSameSideChance").floatValue = 0.7f;
+        definition.FindPropertyRelative("escortFanSpread").floatValue = 35f;
+        definition.FindPropertyRelative("pentagramRadius").floatValue = 16f;
+        definition.FindPropertyRelative("pentagramUsesLongWolves").boolValue = true;
+        definition.FindPropertyRelative("pentagramWarningDuration").floatValue = 1.5f;
+        definition.FindPropertyRelative("pentagramStagger").floatValue = 0.3f;
+        definition.FindPropertyRelative("pentagramChargeSpeed").floatValue = 9f;
+        definition.FindPropertyRelative("chainHandoffDistance").floatValue = 14f;
+        directorSerialized.ApplyModifiedPropertiesWithoutUndo();
     }
 
     /// <summary>TestSmartWolf 的两个调试窗口：当前学习率 + 当前预测角度（IMGUI，可拖动，F1 隐藏）。</summary>
