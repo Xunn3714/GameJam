@@ -131,6 +131,7 @@ public sealed class SheepFlockAgent : MonoBehaviour
         hasPendingFacingIntent = false;
         hasAppliedFacingIntent = false;
         visualAnimator?.ClearFlockFacingIntent();
+        visualAnimator?.SetGroupActionVisual(false);
         wasControllerMoving = owner != null && owner.IsMoving;
         wasHuddling = owner != null && owner.IsHuddling;
         ResetWander();
@@ -148,6 +149,10 @@ public sealed class SheepFlockAgent : MonoBehaviour
         if (flock == null || body == null || Time.timeScale == 0f)
             return;
 
+        float deltaTime = Time.fixedDeltaTime;
+        visualAnimator?.SetGroupActionVisual(flock.IsGroupActionActive);
+        UpdateFacingIntent(deltaTime);
+
         if (visualAnimator != null && visualAnimator.IsMovementLocked)
         {
             StopImmediately();
@@ -159,9 +164,6 @@ public sealed class SheepFlockAgent : MonoBehaviour
             StopImmediately();
             return;
         }
-
-        float deltaTime = Time.fixedDeltaTime;
-        UpdateFacingIntent(deltaTime);
 
         // 所有成员直接读取同一份羊群中心速度，不再从某只领头羊向外延迟传播。
         Vector2 driveVelocity = flock.MovementVelocity;
@@ -204,12 +206,28 @@ public sealed class SheepFlockAgent : MonoBehaviour
 
         Vector2 from = body.position;
         Vector2 desiredStep = velocity * deltaTime;
-        Vector2 target = MovementBlocking.ResolveMove(
-            from,
-            from + desiredStep,
-            blockingRadius,
-            blockingLayers,
-            out MovementBlockResult blockResult);
+        Vector2 target;
+        MovementBlockResult blockResult;
+        if (flock.IsGroupActionActive)
+        {
+            // 整群动作会瞬时提高成员速度，必须扫掠整段位移，
+            // 否则终点重叠检查可能跨过较薄的围栏。主动动作期间也不应贴墙滑动。
+            target = MovementBlocking.ResolveDashMove(
+                from,
+                from + desiredStep,
+                blockingRadius,
+                blockingLayers,
+                out blockResult);
+        }
+        else
+        {
+            target = MovementBlocking.ResolveMove(
+                from,
+                from + desiredStep,
+                blockingRadius,
+                blockingLayers,
+                out blockResult);
+        }
 
         if (blockResult.WasBlocked)
         {
@@ -260,6 +278,15 @@ public sealed class SheepFlockAgent : MonoBehaviour
 
     private void UpdateFacingIntent(float deltaTime)
     {
+        if (flock.IsGroupActionActive)
+        {
+            observedFacingIntentRevision = flock.FacingIntentRevision;
+            hasPendingFacingIntent = false;
+            hasAppliedFacingIntent = true;
+            visualAnimator?.SetFlockFacingIntent(flock.FacingIntentLeft);
+            return;
+        }
+
         if (!flock.HasActiveFacingIntent)
         {
             hasPendingFacingIntent = false;

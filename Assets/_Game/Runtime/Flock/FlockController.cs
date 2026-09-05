@@ -146,15 +146,31 @@ public sealed class FlockController : MonoBehaviour
 
     internal void SetGroupActionState(bool active, bool holding, Vector2 forwardDirection)
     {
+        bool actionStarted = active && !IsGroupActionActive;
         if (!active || !IsGroupActionActive)
         {
             pendingGroupActionBlocker = null;
             hasPendingGroupActionBlock = false;
         }
-        IsGroupActionActive = active;
-        IsGroupActionHolding = active && holding;
+
         if (forwardDirection.sqrMagnitude > 0.0001f)
             groupActionDirection = forwardDirection.normalized;
+
+        IsGroupActionActive = active;
+        IsGroupActionHolding = active && holding;
+
+        if (actionStarted)
+        {
+            // 主动动作只使用左右翻面：水平分量决定朝向；近似竖直时保留上一次朝向。
+            if (Mathf.Abs(groupActionDirection.x) >= 0.15f)
+                FacingIntentLeft = groupActionDirection.x < 0f;
+
+            facingIntentRevision = (facingIntentRevision + 1) & int.MaxValue;
+            HasActiveFacingIntent = true;
+            hasPendingFacing = false;
+            facingCommittedThisHold = true;
+            pendingFacingDuration = 0f;
+        }
     }
 
     internal void ReportGroupActionMemberBlocked(Collider2D blocker)
@@ -235,9 +251,18 @@ public sealed class FlockController : MonoBehaviour
 
     private void UpdateFacingIntent()
     {
-        Vector2 input = IsGroupActionActive
-            ? groupActionDirection
-            : (movementController != null ? movementController.MoveInput : Vector2.zero);
+        // E 动作从开始到结束都锁定同一份水平朝向，避免竖直冲刺时各成员
+        // 按自己的微小横向位移反复翻面。
+        if (IsGroupActionActive)
+        {
+            HasActiveFacingIntent = true;
+            hasPendingFacing = false;
+            facingCommittedThisHold = true;
+            pendingFacingDuration = 0f;
+            return;
+        }
+
+        Vector2 input = movementController != null ? movementController.MoveInput : Vector2.zero;
         if (Mathf.Abs(input.x) < 0.15f)
         {
             HasActiveFacingIntent = false;

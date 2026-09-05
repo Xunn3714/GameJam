@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// 地图最外圈的围栏。门槛由关卡控制器统一下发（按本局历史最高羊数），任意一段被撞开后羊群即可冲出地图。
+/// 地图最外圈的围栏。门槛由关卡控制器统一下发，冲刺时按当前羊数判定；任意一段被撞开后羊群即可冲出地图。
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class BorderFenceRing : MonoBehaviour

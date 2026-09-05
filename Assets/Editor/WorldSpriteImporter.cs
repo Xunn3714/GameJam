@@ -14,16 +14,30 @@ public class WorldSpriteImporter : AssetPostprocessor
 
     void OnPreprocessTexture()
     {
-        if (!assetPath.StartsWith(WorldArtPath, StringComparison.OrdinalIgnoreCase)) return;
+        bool isSpecialSheep = assetPath.StartsWith(
+            SpecialSheepCatalog.DefaultSourceRootFolder.TrimEnd('/', '\\') + "/",
+            StringComparison.OrdinalIgnoreCase);
+        if (!assetPath.StartsWith(WorldArtPath, StringComparison.OrdinalIgnoreCase) && !isSpecialSheep) return;
 
         var importer = (TextureImporter)assetImporter;
         importer.textureType = TextureImporterType.Sprite;
-        importer.spriteImportMode = SpriteImportMode.Single;
+        // 保留已切片的 Multiple Sprite；强制改为 Single 会让 Tile/Palette 中的子 Sprite fileID 失效。
+        if (isSpecialSheep || importer.spriteImportMode != SpriteImportMode.Multiple)
+            importer.spriteImportMode = SpriteImportMode.Single;
         importer.filterMode = FilterMode.Bilinear;
         importer.spritePixelsPerUnit = ResolvePixelsPerUnit(importer);
 
         importer.textureCompression = TextureImporterCompression.Compressed;
         importer.mipmapEnabled = false; // 2D 游戏一般不需要 mipmap，除非会做大幅缩放远近效果
+        if (isSpecialSheep)
+        {
+            importer.alphaIsTransparency = true;
+            importer.wrapMode = TextureWrapMode.Clamp;
+            TextureImporterSettings settings = new TextureImporterSettings();
+            importer.ReadTextureSettings(settings);
+            settings.spriteGenerateFallbackPhysicsShape = false;
+            importer.SetTextureSettings(settings);
+        }
     }
 
     private float ResolvePixelsPerUnit(TextureImporter importer)
@@ -36,7 +50,10 @@ public class WorldSpriteImporter : AssetPostprocessor
 
         bool normalizeCanvasWidth =
             assetPath.StartsWith(SheepSpritePath, StringComparison.OrdinalIgnoreCase) ||
-            assetPath.StartsWith(PoopSpritePath, StringComparison.OrdinalIgnoreCase);
+            assetPath.StartsWith(PoopSpritePath, StringComparison.OrdinalIgnoreCase) ||
+            assetPath.StartsWith(
+                SpecialSheepCatalog.DefaultSourceRootFolder.TrimEnd('/', '\\') + "/",
+                StringComparison.OrdinalIgnoreCase);
         if (!normalizeCanvasWidth)
         {
             return WorldPixelsPerUnit;

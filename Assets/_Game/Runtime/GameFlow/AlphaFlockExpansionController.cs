@@ -55,7 +55,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     [SerializeField, Min(0.02f)] private float impactFeedbackInterval = 0.12f;
 
     [Header("Exit")]
-    [Tooltip("历史最高羊数达到这个值后永久解锁外围围栏。")]
+    [Tooltip("历史最高羊数达到这个值后永久解锁出口；撞开围栏时当前羊数也必须达标。")]
     [SerializeField, Min(1)] private int exitUnlockFlockSize = 100;
     [Tooltip("羊群中心越过地图边界多远算成功冲出。")]
     [SerializeField, Min(0.5f)] private float exitMargin = 2.5f;
@@ -454,8 +454,11 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         objectiveScratch.Add(new MvpObjectiveSnapshot(
             "alpha.exit_unlock", $"羊群壮大到 {exitUnlockFlockSize} 只", true, false, progression.ExitUnlocked,
             Mathf.Min(progression.HighestFlockSize, exitUnlockFlockSize), exitUnlockFlockSize));
+        string escapeObjective = progression.ExitUnlocked && !borderBroken && members < exitUnlockFlockSize
+            ? $"当前羊群恢复到 {exitUnlockFlockSize} 只后撞开外围围栏"
+            : "撞开外围围栏，冲出草原";
         objectiveScratch.Add(new MvpObjectiveSnapshot(
-            "alpha.escape", "撞开外围围栏，冲出草原", true, progression.ExitUnlocked && !borderBroken, escaped,
+            "alpha.escape", escapeObjective, true, progression.ExitUnlocked && !borderBroken, escaped,
             borderBroken ? 1 : 0, 1));
         objectiveScratch.Add(new MvpObjectiveSnapshot(
             "alpha.special", "招募一只特殊羊", false, false, specialRecruits > 0,
@@ -641,9 +644,15 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
             wolfLine = wolvesUnlocked ? $"狼：已解锁（场上 {wolves}）" : $"狼：达到 {wolfUnlockFlockSize} 只后出现";
         }
 
-        string exitLine = ExitUnlocked
-            ? (borderRing != null && borderRing.AnyBroken ? "出口：围栏已破，冲出去！" : "出口：已解锁，按 E 整群冲刺破栏")
-            : $"出口：历史最高 {progression.HighestFlockSize}/{exitUnlockFlockSize}";
+        string exitLine;
+        if (!ExitUnlocked)
+            exitLine = $"出口：历史最高 {progression.HighestFlockSize}/{exitUnlockFlockSize}";
+        else if (borderRing != null && borderRing.AnyBroken)
+            exitLine = "出口：围栏已破，冲出去！";
+        else if (currentFlock >= exitUnlockFlockSize)
+            exitLine = "出口：已解锁，按 E 整群冲刺破栏";
+        else
+            exitLine = $"出口：已解锁，当前羊数 {currentFlock}/{exitUnlockFlockSize}";
 
         GUI.Box(new Rect(12f, 12f, 390f, 200f), GUIContent.none);
         GUILayout.BeginArea(new Rect(24f, 20f, 370f, 190f));

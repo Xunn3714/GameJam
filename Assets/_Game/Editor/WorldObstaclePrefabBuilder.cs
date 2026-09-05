@@ -47,7 +47,7 @@ public static class WorldObstaclePrefabBuilder
             ObstacleBrokenBehavior.BecomeBackground, fenceBroken);
         ObstacleDefinition borderFenceDefinition = GetOrCreateDefinition(
             BorderFenceDefinitionPath, "obstacle.border_fence", "外围围栏", ObstacleSizeCategory.Large,
-            ObstacleBreakRule.RequireCountAndInteract, 100, ObstacleCountSource.HighestFlockCountThisRun,
+            ObstacleBreakRule.RequireCountAndInteract, 100, ObstacleCountSource.CurrentFlockCount,
             ObstacleBrokenBehavior.BecomeBackground, fenceBroken);
         ObstacleDefinition barrelDefinition = GetOrCreateDefinition(
             BarrelDefinitionPath, "obstacle.barrel", "木桶", ObstacleSizeCategory.Small,
