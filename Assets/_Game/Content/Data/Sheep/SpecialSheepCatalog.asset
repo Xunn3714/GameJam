@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 836cfc9ef8881a34d91f952ceabb29bf, type: 3}
   m_Name: SpecialSheepCatalog
   m_EditorClassIdentifier: Assembly-CSharp::SpecialSheepCatalog
-  sourceRootFolder: "Assets/\u7F8A \u7A0B\u5E8F"
+  sourceRootFolder: Assets/SpecialSheep
   baseSheepPrefab: {fileID: 2358661416431911602, guid: a8f25a56092d78446aa43868336107a0, type: 3}
   tiers:
   - quality: 1

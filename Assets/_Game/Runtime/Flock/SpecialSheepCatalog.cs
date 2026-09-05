@@ -5,7 +5,8 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "SpecialSheepCatalog", menuName = "Sheep Alpha/Special Sheep Catalog")]
 public sealed class SpecialSheepCatalog : ScriptableObject
 {
-    public const string DefaultSourceRootFolder = "Assets/羊 程序";
+    public const string DefaultSourceRootFolder = "Assets/SpecialSheep";
+    private const string LegacySourceRootFolder = "Assets/羊 程序";
 
     [Serializable]
     public sealed class Entry
@@ -211,8 +212,14 @@ public sealed class SpecialSheepCatalog : ScriptableObject
 
     public void EditorEnsureDefaults()
     {
-        if (string.IsNullOrWhiteSpace(sourceRootFolder))
+        if (string.IsNullOrWhiteSpace(sourceRootFolder)
+            || string.Equals(
+                sourceRootFolder.Trim().TrimEnd('/', '\\'),
+                LegacySourceRootFolder,
+                StringComparison.OrdinalIgnoreCase))
+        {
             sourceRootFolder = DefaultSourceRootFolder;
+        }
         tiers ??= new List<Tier>();
         if (tiers.Count > 0)
             return;
