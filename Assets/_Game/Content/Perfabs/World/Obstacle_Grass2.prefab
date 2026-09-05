@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 3175525362483236102}
   - component: {fileID: 1781132818316654616}
   - component: {fileID: 2658928749933934267}
+  - component: {fileID: 4749954581493247575}
   m_Layer: 3
   m_Name: Obstacle_Grass2
   m_TagString: Untagged
@@ -211,3 +212,18 @@ MonoBehaviour:
   spriteRenderer: {fileID: 2217142724691392236}
   animator: {fileID: 0}
   breakTriggerName: Break
+--- !u!114 &4749954581493247575
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1189197347636829024}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d587e570eb2d0a94b80a067f26ca425a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BreakableObstacleVFX
+  breakParticlesPrefab: {fileID: 0}
+  fragmentPrefab: {fileID: 4741890322465624849, guid: c273f39e30f131644a291e8c21e28472, type: 3}
+  fragmentCount: 8
