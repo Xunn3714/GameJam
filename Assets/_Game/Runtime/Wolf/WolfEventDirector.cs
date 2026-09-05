@@ -57,6 +57,12 @@ public sealed class WolfEventDirector : MonoBehaviour
     [SerializeField] private AudioClip howlClip;
     [SerializeField] private AudioSource fallbackAudioSource;
 
+    [Header("Pack Attacks (多狼协作)")]
+    [Tooltip("多狼编队执行器；为空时每轮只放一只狼。")]
+    [SerializeField] private WolfFormationRunner formationRunner;
+    [Tooltip("可选的编队列表。每轮攻击时在满足回合 / 羊数门槛的条目里按权重抽一个；没有可用条目就放一只狼。")]
+    [SerializeField] private WolfFormationEntry[] formations = Array.Empty<WolfFormationEntry>();
+
     [Header("Control")]
     [SerializeField] private bool runOnStart = true;
 
@@ -64,12 +70,15 @@ public sealed class WolfEventDirector : MonoBehaviour
     private float phaseDuration;
     private Wolf activeWolf;
     private bool isRunning;
+    private bool formationActive;
 
     public WolfEventPhase Phase { get; private set; } = WolfEventPhase.Dormant;
     public int RoundIndex { get; private set; }
     public bool IsRunning => isRunning;
     public int RequiredMemberCount => requiredMemberCount;
     public int CurrentMemberCount => flock != null ? flock.MemberCount : 0;
+    /// <summary>这一轮攻击的名字（独狼 / 编队名），攻击阶段之外为空。</summary>
+    public string CurrentAttackName { get; private set; } = string.Empty;
 
     /// <summary>当前阶段剩余秒数；攻击 / 蛰伏阶段返回 -1（没有倒计时）。</summary>
     public float PhaseTimeRemaining =>
@@ -103,6 +112,23 @@ public sealed class WolfEventDirector : MonoBehaviour
         {
             spawner.StopSpawning();
         }
+
+        if (formationRunner == null)
+        {
+            formationRunner = GetComponent<WolfFormationRunner>();
+        }
+        if (formationRunner != null)
+        {
+            formationRunner.WolfLaunched += HandleFormationWolfLaunched;
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (formationRunner != null)
+        {
+            formationRunner.WolfLaunched -= HandleFormationWolfLaunched;
+        }
     }
 
     private void Start()
@@ -133,6 +159,12 @@ public sealed class WolfEventDirector : MonoBehaviour
             activeWolf.Finished -= HandleWolfFinished;
             activeWolf = null;
         }
+        if (formationRunner != null)
+        {
+            formationRunner.Stop();
+        }
+        formationActive = false;
+        CurrentAttackName = string.Empty;
     }
 
     private bool HasReachedStartCondition()
@@ -179,7 +211,7 @@ public sealed class WolfEventDirector : MonoBehaviour
                 break;
 
             case WolfEventPhase.Attack:
-                if (activeWolf == null || phaseTimer >= attackTimeout)
+                if (IsAttackFinished() || phaseTimer >= attackTimeout)
                 {
                     EnterPhase(WolfEventPhase.Retreat);
                 }
@@ -223,19 +255,33 @@ public sealed class WolfEventDirector : MonoBehaviour
             case WolfEventPhase.Attack:
                 phaseDuration = attackTimeout;
                 SetHuddle(huddleDuringHowl && huddleDuringAttack);
-                ReleaseWolf();
+                ReleaseAttack();
                 break;
 
             case WolfEventPhase.Retreat:
                 phaseDuration = retreatDuration;
                 SetHuddle(false);
+                // 攻击超时兜底进来时编队可能还在放狼，必须一起停掉，否则空挡阶段还会继续出狼。
+                if (formationRunner != null)
+                {
+                    formationRunner.Stop();
+                }
+                formationActive = false;
+                CurrentAttackName = string.Empty;
                 break;
         }
 
         PhaseChanged?.Invoke(phase);
     }
 
-    private void ReleaseWolf()
+    private bool IsAttackFinished()
+    {
+        bool singleDone = activeWolf == null;
+        bool formationDone = !formationActive || formationRunner == null || !formationRunner.IsRunning;
+        return singleDone && formationDone;
+    }
+
+    private void ReleaseAttack()
     {
         if (spawner == null)
         {
@@ -243,12 +289,63 @@ public sealed class WolfEventDirector : MonoBehaviour
             return;
         }
 
+        WolfFormation formation = PickFormation();
+        if (formation != null && formation.type != WolfFormationType.Single && formationRunner != null)
+        {
+            formationActive = true;
+            CurrentAttackName = formation.DisplayName;
+            formationRunner.Play(formation);
+            return;
+        }
+
+        CurrentAttackName = WolfFormation.DefaultName(WolfFormationType.Single);
         activeWolf = spawner.SpawnWolf();
         if (activeWolf != null)
         {
             activeWolf.Finished += HandleWolfFinished;
             WolfReleased?.Invoke(activeWolf);
         }
+    }
+
+    /// <summary>在满足回合 / 羊数门槛的编队里按权重抽一个；没有就返回 null（放一只狼）。</summary>
+    private WolfFormation PickFormation()
+    {
+        if (formations == null || formations.Length == 0)
+            return null;
+
+        float totalWeight = 0f;
+        foreach (WolfFormationEntry entry in formations)
+        {
+            if (IsEligible(entry))
+                totalWeight += entry.weight;
+        }
+        if (totalWeight <= 0f)
+            return null;
+
+        float roll = UnityEngine.Random.Range(0f, totalWeight);
+        foreach (WolfFormationEntry entry in formations)
+        {
+            if (!IsEligible(entry))
+                continue;
+            roll -= entry.weight;
+            if (roll <= 0f)
+                return entry.formation;
+        }
+        return null;
+    }
+
+    private bool IsEligible(WolfFormationEntry entry)
+    {
+        return entry != null
+            && entry.formation != null
+            && entry.weight > 0f
+            && RoundIndex >= entry.minRound
+            && CurrentMemberCount >= entry.minMemberCount;
+    }
+
+    private void HandleFormationWolfLaunched(Wolf wolf)
+    {
+        WolfReleased?.Invoke(wolf);
     }
 
     private void HandleWolfFinished(Wolf wolf)

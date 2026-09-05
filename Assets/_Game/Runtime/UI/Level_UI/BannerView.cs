@@ -1,12 +1,14 @@
 using System.Collections;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 public class BannerView : MonoBehaviour
 {
     [Header("UI")]
     [SerializeField] private TMP_Text bannerText;
+    [FormerlySerializedAs("icon")]
     [SerializeField] private Image bannerIcon;
 
     private Coroutine hideCoroutine;
@@ -36,6 +38,26 @@ public class BannerView : MonoBehaviour
             bannerIcon.sprite = icon;
             bannerIcon.enabled = icon != null;
         }
+    }
+
+    public void SetText(string message)
+    {
+        if (bannerText != null)
+            bannerText.text = message;
+    }
+
+    public void SetIcon(Sprite icon)
+    {
+        if (bannerIcon == null)
+            return;
+
+        bannerIcon.sprite = icon;
+        bannerIcon.enabled = icon != null;
+    }
+
+    public void Show()
+    {
+        gameObject.SetActive(true);
     }
 
     public void ShowTemporary(

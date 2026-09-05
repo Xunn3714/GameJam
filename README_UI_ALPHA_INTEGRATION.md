@@ -1,322 +1,104 @@
-# UI / Alpha Scene Integration README
+# Alpha UI 集成说明
 
-## 本次改动概览
+## 范围
 
-本次主要完成了 Alpha 羊群扩张场景中的 UI 接入与暂停系统整理，重点包括：
+本次改动只负责把新 UI 美术和交互接入最新 `main` 玩法，不替换玩法实现。
 
-- Task 任务面板接入 Alpha 真实任务进度
-- 特殊羊提示 Banner 接入并显示对应羊图片
-- 暂停菜单视觉重排
-- 暂停菜单新增 Sheep / Restart / Exit 功能
-- 暂停菜单接入羊图鉴
-- 图鉴打开时隐藏 Task UI，避免界面重叠
-- 清理旧左上角透明 HUD 显示
+玩法基线由 `main` 决定：
 
-## 1. Task 任务面板
+- WASD 移动。
+- E 向当前左右朝向蓄势冲刺。
+- Q 收束羊群。
+- 出生羊圈、外围围栏、出口、阶段扩张和狼群规则均保留 `main` 版本。
+- 外围出口在本局历史最高羊数达到 100 时解锁；真正撞开时，当前羊数仍需达标。
 
-### 目标
+VFX、VFX 测试场景、额外特殊羊 Prefab 不在本次 UI 集成范围内。
 
-将原本左上角透明 HUD 中的 Alpha 任务进度，接入新的 TaskPanel UI。
+## UI 结构
 
-### 当前真实任务
-
-任务来源：
-
-`Assets/_Game/Runtime/GameFlow/AlphaFlockExpansionController.cs`
-
-由 `RefreshObjectives()` 生成：
-
-1. `alpha.pen`
-   - 凑够羊，按 E 撞开羊圈
-2. `alpha.exit_unlock`
-   - 羊群壮大到指定数量
-3. `alpha.escape`
-   - 撞开外围围栏，冲出草原
-4. `alpha.special`
-   - 招募一只特殊羊（支线）
-
-### 数据链
-
-```text
-AlphaFlockExpansionController.RefreshObjectives()
-        ↓
-MvpHudView.UpdateObjectives(...)
-        ↓
-TaskChecklistView
-        ↓
-TaskRow_01 ~ TaskRow_04
-```
-
-### TaskPanel 当前结构
-
-```text
-TaskSystem
-├ Btn_TaskIcon
-└ TaskPanel
-   ├ Btn_Close
-   ├ Txt_Task
-   ├ TaskRow_01
-   │  ├ Check_Icon_01
-   │  ├ Txt_Task_01
-   │  └ Progress_01
-   ├ TaskRow_02
-   │  ├ Check_Icon_02
-   │  ├ Txt_Task_02
-   │  └ Progress_02
-   ├ TaskRow_03
-   │  ├ Check_Icon_03
-   │  ├ Txt_Task_03
-   │  └ Progress_03
-   ├ TaskRow_04
-   │  ├ Check_Icon_04
-   │  ├ Txt_Task_04
-   │  └ Progress_04
-   ├ Image
-   └ GroupCountText
-```
-
-### 行为
-
-- `Progress_xx` 显示真实 `Progress / Target`
-- `Check_Icon_xx` 根据 `IsComplete` 自动切换
-- `GroupCountText` 显示当前羊群数量
-- 第一个任务即使达到 `6/6`，也必须真正撞开羊圈后才会勾选
-- 特殊羊任务在成功招募特殊羊后变为 `1/1` 并打勾
-
-### 旧 HUD 处理
-
-旧的：
+`AlphaFlockExpansion` 只有一个 `GameCanvas`、一个 `EventSystem` 和一个 `PauseManager`：
 
 ```text
 GameCanvas
-└ SheepHUD
-   ├ HudBackdrop
-   ├ TaskText
-   └ Flock Count Text
+├─ TaskSystem
+│  ├─ Btn_TaskIcon
+│  └─ TaskPanel
+├─ PauseSystem
+│  └─ PausePanel
+│     ├─ PauseWindow
+│     ├─ SettingPanel
+│     └─ CollectionPanel
+├─ AlphaBanner
+├─ SheepHUD
+├─ JoinToast
+└─ WolfEventHud
 ```
 
-已隐藏对应显示对象，但保留 `SheepHUD` 本体及 `JoinToast`，避免影响其他提示逻辑。
+`PauseSystem` 根节点始终激活，`PausePanel` 开局默认隐藏，以便 `PauseManager` 持续监听 ESC。
 
-## 2. AlphaBanner / 特殊羊提示
+## 任务面板
 
-### 目标
-
-特殊羊加入时，在现有 `AlphaBanner` 中显示：
+真实数据链：
 
 ```text
-[对应特殊羊图片]  Special Sheep Joined!
+AlphaFlockExpansionController.RefreshObjectives()
+    → MvpHudView.UpdateObjectives()
+    → TaskChecklistView.ApplyObjectives()
 ```
 
-而不是新增第二套 Banner。
+四项固定任务与 `main` 对齐：
 
-### 当前链路
+| ID | 显示内容 | 完成条件 |
+|---|---|---|
+| `alpha.pen` | 撞开出生羊圈 | 羊圈真正打开 |
+| `alpha.exit_unlock` | 壮大羊群并解锁出口 | 历史最高羊数达到出口门槛 |
+| `alpha.escape` | 撞开外围围栏并逃离 | 越过打开的外围出口 |
+| `alpha.special` | 招募一只特殊羊 | 本局特殊羊数达到 1 |
 
-```text
-FlockController.SheepRecruited
-        ↓
-AlphaFlockExpansionController.HandleSheepRecruited()
-        ↓
-读取被招募特殊羊 SpriteRenderer.sprite
-        ↓
-AlphaBannerView.Show(message, sprite)
-        ↓
-BannerView.Show(message, icon)
-```
+任务数据为空或重置时，所有任务行会恢复未完成状态，不保留上一局的进度。
 
-### 关键修改
+## Banner
 
-`AlphaBannerView` 支持：
+`AlphaBannerView` 统一负责排队、替换和淡入淡出；`BannerView` 只负责文字和可选图标。
 
-```csharp
-Show(string message, Sprite icon)
-```
+- `Show(message)`：普通消息排队。
+- `Show(message, icon)`：带图标消息排队。
+- `ShowLatest(message)`：替换已过期的动态提示。
+- `ShowLatest(message, icon)`：替换动态提示并显示图标。
 
-`AlphaFlockExpansionController` 在特殊羊招募时传入该羊实际 Sprite。
+出生羊圈的人数不足/可撞开提示继续使用 `ShowLatest`，不会被过滤。招募特殊羊时，Banner 显示该羊当前 `SpriteRenderer` 上的图片。
 
-`BannerView` 不再在 `Awake()` 中直接：
+## 暂停菜单
 
-```csharp
-gameObject.SetActive(false);
-```
+`PauseManager` 保留旧接口，并增加新 UI 按钮绑定：
 
-避免把和它挂在同一个对象上的 `AlphaBannerView` 一起关闭。
+- `OpenPause` / `PauseGame`
+- `ResumeGame` / `ContinueGame`
+- `ShowSettings` / `BackToPause`
+- `ShowCollection` / `BackFromCollection`
+- `RestartGame`
+- `ReturnToMainMenu`
+- `ExitGame`
 
-### 出生羊圈提示处理
+返回主菜单和重开关卡优先复用 `SceneLoader`。结算界面显示后，暂停、设置、图鉴和任务面板都会关闭，ESC 不再打开暂停菜单。
 
-出生羊圈尚未打开时，普通 Banner 不显示，避免 TutorialPen 提示反复闪烁。
+## 场景所有权
 
-特殊羊图片 Banner 不受该限制。
+`AlphaFlockExpansionSceneSetup` 是 Alpha 场景的可重复生成入口：
 
-羊圈打开后，以下普通提示恢复正常：
+- 直接实例化 `TaskSystem`、`PauseSystem` 和 `BannerSystem` Prefab。
+- 自动绑定任务、暂停、Banner 和玩法 Controller 引用。
+- 不再打开或复制归档的 `Level_01`。
+- 重复运行后仍只保留一套 UI 系统。
 
-- 阶段升级
-- 狼群提示
-- 羊圈打开
-- 出口解锁
-- 围栏破坏
+## 验收清单
 
-## 3. PauseSystem UI 重排
-
-### 当前结构
-
-```text
-PauseSystem
-└ PausePanel
-   ├ PauseWindow
-   │  ├ PauseTitle
-   │  ├ Btn_Continue
-   │  ├ Btn_MainMenu
-   │  ├ Btn_Settings
-   │  ├ Btn_Sheep
-   │  ├ Btn_Exit
-   │  └ Btn_Restart
-   ├ SettingPanel
-   └ CollectionPanel
-```
-
-### 视觉调整
-
-- 使用新的暂停菜单大背景图
-- `PauseWindow` 作为中央主面板
-- 主按钮重新排版
-- `Restart` 放置在左上角
-- `Exit` 使用独立退出按钮
-- 保留 `SettingPanel` 与 `CollectionPanel` 作为暂停菜单内二级页面
-
-## 4. PauseManager 功能
-
-### 已接功能
-
-```text
-Continue
-→ 继续游戏
-
-Main Menu
-→ 返回 MainMenu
-
-Settings
-→ 打开 SettingPanel
-
-Sheep
-→ 打开 CollectionPanel
-
-Restart
-→ 重新加载当前场景
-
-Exit
-→ 退出游戏
-```
-
-### Restart
-
-调用现有 `RestartGame()`：
-
-优先：
-
-```csharp
-SceneLoader.Instance.ReloadCurrentScene();
-```
-
-否则：
-
-```csharp
-SceneManager.LoadScene(SceneManager.GetActiveScene().name);
-```
-
-### Exit
-
-Editor 中停止 Play；Build 中调用 `Application.Quit()`。
-
-## 5. Collection / 羊图鉴接入
-
-MainMenu 原有 `CollectionPanel` 已整理为可复用对象并接入 PauseSystem。
-
-`CollectionPanelController` 在 `OnEnable()` 时会自动：
-
-```csharp
-RefreshCollection();
-```
-
-因此打开图鉴时会自动刷新当前图鉴数据。
-
-### 暂停菜单行为
-
-```text
-PauseWindow
-    ↓ Btn_Sheep
-CollectionPanel 打开
-PauseWindow 隐藏
-TaskSystem 隐藏
-```
-
-返回：
-
-```text
-CollectionPanel 关闭
-PauseWindow 恢复
-TaskSystem 恢复
-```
-
-这样避免左上角 Task 图标 / TaskPanel 和图鉴发生 UI 重叠。
-
-## 6. 当前测试结果
-
-已确认：
-
-- TaskPanel 能显示 Alpha 真实任务进度
-- 羊群数量实时更新
-- 四个任务勾选逻辑正常
-- 羊圈任务在真正撞开后才完成
-- 特殊羊任务可正常完成
-- 特殊羊 Banner 能显示对应特殊羊 Sprite
-- Pause 基本按钮可正常使用
-- Sheep 按钮可以打开图鉴
-- Collection 返回按钮可回到暂停菜单
-- Restart 按钮已接当前关卡重开逻辑
-- Exit 已接退出逻辑
-- Task UI 在图鉴打开时可隐藏，避免遮挡
-
-## 7. 主要涉及脚本
-
-```text
-Assets/_Game/Runtime/GameFlow/AlphaFlockExpansionController.cs
-Assets/_Game/Runtime/UI/Alpha/AlphaBannerView.cs
-Assets/_Game/Runtime/UI/.../BannerView.cs
-Assets/_Game/Runtime/Task/MvpHudView.cs
-Assets/_Game/Runtime/.../TaskChecklistView.cs
-Assets/_Game/Runtime/.../PauseManager.cs
-Assets/_Game/Runtime/.../CollectionPanelController.cs
-```
-
-> 注：部分具体目录以当前项目实际目录为准。
-
-## 8. 提交前建议检查
-
-1. 开局 PausePanel 不应自动显示
-2. ESC 正常打开 Pause
-3. Continue 正常继续
-4. Settings 可打开并返回
-5. Sheep 可打开图鉴并返回
-6. 打开图鉴时 TaskSystem 不遮挡
-7. Restart 能重新加载当前场景
-8. Exit 正常
-9. 收羊后 Task 进度实时变化
-10. 撞开羊圈后第一项任务打勾
-11. 收到特殊羊后：
-    - `alpha.special = 1/1`
-    - Task 打勾
-    - 右上角弹出对应特殊羊图片 Banner
-12. 出生羊圈阶段普通 Banner 不持续闪烁
-
-## PR Summary
-
-```text
-- Integrated Alpha objective progress into the custom Task UI
-- Added 4 objective rows with progress and completion states
-- Reused AlphaBanner for special sheep notifications with dynamic sheep sprites
-- Suppressed repeated normal banner messages before tutorial pen opens
-- Reworked Pause UI layout
-- Added Sheep Collection, Restart and Exit actions to Pause menu
-- Integrated CollectionPanel into PauseSystem
-- Hid TaskSystem while CollectionPanel is open to avoid UI overlap
-```
+1. WASD、E 冲刺、Q 收束与 `main` 一致。
+2. 冲刺期间羊朝左右冲刺方向，不会旋转。
+3. 四个任务的进度、勾选和羊群数实时更新。
+4. 出生羊圈动态提示正常刷新。
+5. 特殊羊 Banner 显示正确文字和图片。
+6. ESC、Continue、Settings、Sheep、Restart、Main Menu 和 Exit 正常。
+7. Task、Pause、Collection 和 Result 不会互相叠加。
+8. `MainMenu → AlphaFlockExpansion` 流程正常。
+9. 重新运行 Alpha Scene Setup 后场景引用仍然完整。

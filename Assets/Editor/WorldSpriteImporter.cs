@@ -21,7 +21,9 @@ public class WorldSpriteImporter : AssetPostprocessor
 
         var importer = (TextureImporter)assetImporter;
         importer.textureType = TextureImporterType.Sprite;
-        importer.spriteImportMode = SpriteImportMode.Single;
+        // 保留已切片的 Multiple Sprite；强制改为 Single 会让 Tile/Palette 中的子 Sprite fileID 失效。
+        if (isSpecialSheep || importer.spriteImportMode != SpriteImportMode.Multiple)
+            importer.spriteImportMode = SpriteImportMode.Single;
         importer.filterMode = FilterMode.Bilinear;
         importer.spritePixelsPerUnit = ResolvePixelsPerUnit(importer);
 

@@ -10,14 +10,14 @@
 
 - Unity：`6000.5.9f1`
 - 渲染：Universal Render Pipeline / 2D Renderer
-- 输入：Unity Input System；WASD 控制羊群，E 冲撞围栏
+- 输入：Unity Input System；WASD 控制羊群，E 触发整群后退蓄势冲刺，Q 收拢队形
 - 当前入口：`Assets/_Game/Scenes/MainMenu.unity`
 - 当前关卡：`Assets/_Game/Scenes/AlphaFlockExpansion.unity`
-- 首轮目标平台：Windows（WASD + Space）
+- 首轮目标平台：Windows（WASD + E/Q）
 
 ## 当前玩法方向
 
-玩家控制一个最初只有 1 名成员的羊群，通过接触野生羊持续扩充族群。WASD 移动羊群，E 冲撞满足人数要求的围栏，狼群会周期性冲散或叼走成员；最终目标是达到 100 只并撞开外围围栏冲出草原。
+玩家控制一个最初只有 1 名成员的羊群，通过接触野生羊持续扩充族群。WASD 移动羊群，按 E 后整群先向后退、短暂停顿蓄势，再一起向前冲刺；Q 持续收拢羊群并降低移速。狼群会周期性冲散或叼走成员；最终目标是达到 100 只并用整群冲刺撞开外围围栏冲出草原。
 
 `AlphaFlockExpansion` 使用 `240 × 140` 草原，通过阶段配置维持镜头周边的野生羊密度，并随羊群规模扩大视野、速度和狼群压力。
 

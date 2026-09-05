@@ -35,8 +35,13 @@ public class TaskChecklistView : MonoBehaviour
     {
         if (groupCountText != null)
         {
-            groupCountText.text = $"Group: {memberCount}";
+            groupCountText.text = $"羊群：{memberCount}";
         }
+
+        ResetTask(checkIcon01, progress01);
+        ResetTask(checkIcon02, progress02);
+        ResetTask(checkIcon03, progress03);
+        ResetTask(checkIcon04, progress04);
 
         if (objectives == null)
             return;
@@ -92,8 +97,17 @@ public class TaskChecklistView : MonoBehaviour
 
         if (progressText != null)
         {
-            progressText.text =
-                $"{objective.Progress}/{objective.Target}";
+            progressText.text = objective.Target > 0
+                ? $"{objective.Progress}/{objective.Target}"
+                : objective.IsComplete ? "完成" : string.Empty;
         }
+    }
+
+    private void ResetTask(Image icon, TMP_Text progressText)
+    {
+        if (icon != null)
+            icon.sprite = uncheckedSprite;
+        if (progressText != null)
+            progressText.text = string.Empty;
     }
 }
