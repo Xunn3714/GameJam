@@ -1,23 +1,38 @@
+using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.TextCore.LowLevel;
 
 /// <summary>
-/// Creates one dynamic TMP font asset from an installed Windows CJK font and reuses it.
+/// Creates one dynamic TMP font asset from the bundled CJK font and reuses it.
 /// </summary>
 public static class MvpTmpUiFont
 {
     private const string BundledFontResourcePath = "NotoSansSC-Regular";
+    private const string RuntimeFontAssetName = "NotoSansSC MVP Runtime Fallback";
     private const string MvpCharacters =
-        "找到羊族群加入了棉花糖云朵小卷豆豆奶盖白团咩毛球盐巴雪软月亮“”！：0123456789/";
+        "找到羊族群加入了棉花糖云朵小卷豆豆奶盖白团咩毛球盐巴雪软月亮任务列表迎接第一位同伴把壮大到只另外带着留下记号支线新当前成功招募拉屎次数游戏用时本局未命名集合完毕返回标题图鉴登记类型绵稀有度普通携带分数动画组原型资源外观以后新增内容条目场景实例重复成员领队真实随机别名区分变化后打开读取最新设置主音量音乐叫声开始退出暂停继续重新“”（）！：，。、☑☐★●•0123456789/";
 
     private static Font sourceFont;
     private static TMP_FontAsset cachedFontAsset;
 
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetRuntimeState()
+    {
+        // With Enter Play Mode domain reload disabled, TMP_Settings can keep a
+        // reference to the previous run's dynamic font after its atlas and
+        // material have been destroyed. Remove it before any text is rebuilt.
+        RemoveInvalidRuntimeFallbacks();
+        cachedFontAsset = null;
+        sourceFont = null;
+    }
+
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void RegisterGlobalFallback()
     {
+        RemoveInvalidRuntimeFallbacks();
+
         TMP_FontAsset fontAsset = GetOrCreate();
         if (fontAsset == null)
         {
@@ -76,11 +91,11 @@ public static class MvpTmpUiFont
 
         if (cachedFontAsset == null)
         {
-            Debug.LogWarning("无法从系统中文字体创建动态 TMP 字体资源。");
+            Debug.LogWarning("无法从内置中文字体创建动态 TMP 字体资源。");
             return null;
         }
 
-        cachedFontAsset.name = $"{sourceFont.name} Dynamic TMP Fallback";
+        cachedFontAsset.name = RuntimeFontAssetName;
         cachedFontAsset.hideFlags = HideFlags.DontSave;
 
         if (!cachedFontAsset.TryAddCharacters(MvpCharacters, out string missingCharacters))
@@ -89,5 +104,22 @@ public static class MvpTmpUiFont
         }
 
         return cachedFontAsset;
+    }
+
+    private static void RemoveInvalidRuntimeFallbacks()
+    {
+        List<TMP_FontAsset> fallbackFonts = TMP_Settings.fallbackFontAssets;
+        if (fallbackFonts == null)
+            return;
+
+        for (int i = fallbackFonts.Count - 1; i >= 0; i--)
+        {
+            TMP_FontAsset fallback = fallbackFonts[i];
+            if (fallback == null ||
+                string.Equals(fallback.name, RuntimeFontAssetName, StringComparison.Ordinal))
+            {
+                fallbackFonts.RemoveAt(i);
+            }
+        }
     }
 }
