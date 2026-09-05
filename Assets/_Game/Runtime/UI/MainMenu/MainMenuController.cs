@@ -9,6 +9,7 @@ public class MainMenuController : MonoBehaviour
     public GameObject settingPanel;
     public GameObject collectionPanel;
     public GameObject statisticsPanel;
+    public GameObject creditsPanel;
 
     [Header("Independent Main Menu UI")]
     public GameObject gameTitle;
@@ -35,6 +36,9 @@ public class MainMenuController : MonoBehaviour
 
         if (statisticsPanel != null)
             statisticsPanel.SetActive(false);
+
+        if (creditsPanel != null)
+            creditsPanel.SetActive(false);
 
         if (gameTitle != null)
             gameTitle.SetActive(true);
@@ -74,6 +78,15 @@ public class MainMenuController : MonoBehaviour
     }
 
 
+    public void ShowCredits()
+    {
+        HideMainMenu();
+
+        if (creditsPanel != null)
+            creditsPanel.SetActive(true);
+    }
+
+
     public void BackToMenu()
     {
         ShowMenu();
@@ -93,6 +106,9 @@ public class MainMenuController : MonoBehaviour
 
         if (statisticsPanel != null)
             statisticsPanel.SetActive(false);
+
+        if (creditsPanel != null)
+            creditsPanel.SetActive(false);
 
         if (gameTitle != null)
             gameTitle.SetActive(false);

@@ -8,6 +8,7 @@ public sealed class MvpHudView : MonoBehaviour
 {
     [SerializeField] private TMP_Text taskText;
     [SerializeField] private TMP_Text flockCountText;
+    [SerializeField] private TaskChecklistView taskChecklistView;
 
     private int displayedMemberCount;
     private int displayedPoopStock = -1;
@@ -81,6 +82,9 @@ public sealed class MvpHudView : MonoBehaviour
 
         displayedMemberCount = memberCount;
         RefreshStatusText();
+
+        if (taskChecklistView != null)
+            taskChecklistView.ApplyObjectives(objectives, memberCount);
     }
 
     public void UpdatePoopStock(int stored, int capacity)

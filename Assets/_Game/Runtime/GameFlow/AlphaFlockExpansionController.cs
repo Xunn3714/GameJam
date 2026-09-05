@@ -286,7 +286,13 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         if (!string.Equals(typeId, MvpSheepCatalog.DefaultTypeId, System.StringComparison.Ordinal))
         {
             specialRecruits++;
-            ShowBanner($"特殊羊加入：{sheepSpawner.GetTypeDisplayName(typeId)} {sheepName}".TrimEnd());
+            SpriteRenderer spriteRenderer = sheep.GetComponent<SpriteRenderer>();
+            if (spriteRenderer == null)
+                spriteRenderer = sheep.GetComponentInChildren<SpriteRenderer>(true);
+
+            string message =
+                $"特殊羊加入：{sheepSpawner.GetTypeDisplayName(typeId)} {sheepName}".TrimEnd();
+            ShowBanner(message, spriteRenderer != null ? spriteRenderer.sprite : null);
             RefreshObjectives();
         }
 
@@ -557,6 +563,12 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     {
         if (bannerView != null)
             bannerView.Show(message);
+    }
+
+    private void ShowBanner(string message, Sprite icon)
+    {
+        if (bannerView != null)
+            bannerView.Show(message, icon);
     }
 
     private void ShowLatestBanner(string message)
