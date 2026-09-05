@@ -1,9 +1,12 @@
 using UnityEngine;
 
-[DisallowMultipleComponent]
-public sealed class SheepIdentity : MonoBehaviour
+public class SheepIdentity : MonoBehaviour
 {
+    [Header("Collection")]
+    public string sheepId;
+
     public string DisplayName { get; private set; }
+
 
     public void AssignName(string displayName)
     {
