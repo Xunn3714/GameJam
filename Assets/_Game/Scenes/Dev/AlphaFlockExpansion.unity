@@ -6003,7 +6003,7 @@ MonoBehaviour:
     maximumBatchSize: 15
     cameraSize: 14
   - displayName: "\u7F8A\u6F6E"
-    minimumFlockSize: 100
+    minimumFlockSize: 90
     minimumBatchSize: 20
     maximumBatchSize: 30
     cameraSize: 18

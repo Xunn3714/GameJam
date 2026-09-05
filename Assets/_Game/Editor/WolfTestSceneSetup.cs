@@ -9,11 +9,14 @@ using UnityEngine.UI;
 /// <summary>
 /// 一键生成 TestWolf 开发场景：10 只羊的羊群 + 定时生成的狼 + 调试 HUD。
 /// 菜单：Game Jam / Wolf Test / Setup TestWolf Scene。可重复执行，会重建场景内的相关对象。
+/// TestSmartWolf 场景用同一套流程，多两个“学习率 / 预测角度”调试窗口和更多的羊。
+/// Dev 下的 TestWolf 系列都用缩短后的狼群节奏（见 ApplyFastWolfRhythm），正式关卡不受影响。
 /// </summary>
 public static class WolfTestSceneSetup
 {
     private const string SceneFolder = "Assets/_Game/Scenes/Dev";
     private const string ScenePath = SceneFolder + "/TestWolf.unity";
+    private const string SmartScenePath = SceneFolder + "/TestSmartWolf.unity";
     private const string SceneTemplatePath = "Assets/Settings/Scenes/URP2DSceneTemplate.unity";
 
     private const string PrototypeFolder = "Assets/_Game/Content/Art/Prototype";
@@ -25,6 +28,14 @@ public static class WolfTestSceneSetup
     private const string WolfPrefabPath = WolfPrefabFolder + "/Wolf.prefab";
 
     private const int StartingSheepCount = 10;
+    private const int SmartStartingSheepCount = 20;
+
+    // 测试场景专用的快节奏：空挡 3~5 秒（第一轮 3 秒）、狼嚎 2 秒、跑路 1 秒。正式关卡仍是 15~20 / 3 / 1.5。
+    private const float FastCalmMin = 3f;
+    private const float FastCalmMax = 5f;
+    private const float FastFirstCalm = 3f;
+    private const float FastHowl = 2f;
+    private const float FastRetreat = 1f;
 
     private static readonly string[] ManagedRootNames =
     {
@@ -33,11 +44,24 @@ public static class WolfTestSceneSetup
         "WolfEventDirector",
         "WolfTestGameController",
         "WolfEventCanvas",
+        "SmartWolfDebugView",
         "TestWolf_WorldGrid"
     };
 
     [MenuItem("Game Jam/Wolf Test/Setup TestWolf Scene")]
     public static void SetupTestWolfScene()
+    {
+        BuildTestScene(ScenePath, StartingSheepCount, false);
+    }
+
+    /// <summary>TestSmartWolf：20 只羊 + 聪明狼 + 两个调试窗口（当前学习率 / 当前预测角度）。</summary>
+    [MenuItem("Game Jam/Wolf Test/Setup TestSmartWolf Scene")]
+    public static void SetupTestSmartWolfScene()
+    {
+        BuildTestScene(SmartScenePath, SmartStartingSheepCount, true);
+    }
+
+    private static void BuildTestScene(string scenePath, int sheepCount, bool smartWolfWindows)
     {
         EnsureFolder(SceneFolder);
         EnsureFolder(PrototypeFolder);
@@ -53,15 +77,19 @@ public static class WolfTestSceneSetup
             throw new System.InvalidOperationException($"Missing sheep prefab at {SheepMemberPrefabPath}.");
         }
 
-        Scene scene = OpenOrCreateScene();
+        Scene scene = OpenOrCreateScene(scenePath);
         ClearManagedObjects(scene);
 
         CreateGrid(scene);
-        GameObject flockObject = CreateFlock(scene, sheepPrefab, out FlockController flock, out FlockMovementController movement);
+        GameObject flockObject = CreateFlock(scene, sheepPrefab, sheepCount, out FlockController flock, out FlockMovementController movement);
         WolfSpawner spawner = CreateSpawner(scene, flock, wolfPrefab);
         WolfEventDirector director = CreateEventDirector(scene, spawner);
         CreateGameController(scene, flock, movement, spawner, director);
         CreateEventHud(scene, director);
+        if (smartWolfWindows)
+        {
+            CreateSmartWolfDebugView(scene, spawner, director);
+        }
         ConfigureCamera(scene, flockObject.transform);
 
         Selection.activeGameObject = flockObject;
@@ -69,8 +97,54 @@ public static class WolfTestSceneSetup
         EditorSceneManager.SaveScene(scene);
         AssetDatabase.SaveAssets();
         Debug.Log(
-            $"TestWolf scene is ready at {ScenePath}: {StartingSheepCount} sheep, wolves follow the calm → howl → attack rhythm. " +
+            $"{System.IO.Path.GetFileNameWithoutExtension(scenePath)} scene is ready at {scenePath}: {sheepCount} sheep, " +
+            $"fast dev rhythm (calm {FastCalmMin}~{FastCalmMax}s, howl {FastHowl}s, retreat {FastRetreat}s). " +
+            (smartWolfWindows ? "Two debug windows show the wolves' learning rate and predicted angle (F1 toggles them). " : "") +
             "Press Play, move with WASD, press R to restart after Game Over.");
+    }
+
+    /// <summary>
+    /// 给当前打开的 Dev 测试场景（例如 TestLongWolf）套用缩短后的狼群节奏。只改 WolfEventDirector 的时间参数。
+    /// </summary>
+    [MenuItem("Game Jam/Wolf Test/Apply Fast Wolf Rhythm To Open Scene")]
+    public static void ApplyFastWolfRhythmToOpenScene()
+    {
+        Scene scene = SceneManager.GetActiveScene();
+        if (!scene.path.StartsWith(SceneFolder))
+        {
+            Debug.LogWarning($"Fast wolf rhythm is only for scenes under {SceneFolder}; the open scene is {scene.path}.");
+            return;
+        }
+
+        WolfEventDirector[] directors = scene.GetRootGameObjects()
+            .SelectMany(root => root.GetComponentsInChildren<WolfEventDirector>(true))
+            .ToArray();
+        if (directors.Length == 0)
+        {
+            Debug.LogWarning("No WolfEventDirector in the open scene.");
+            return;
+        }
+
+        foreach (WolfEventDirector director in directors)
+        {
+            SerializedObject serialized = new SerializedObject(director);
+            ApplyFastWolfRhythm(serialized);
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        EditorSceneManager.MarkSceneDirty(scene);
+        EditorSceneManager.SaveScene(scene);
+        Debug.Log($"Applied fast wolf rhythm to {directors.Length} director(s) in {scene.path}: " +
+                  $"calm {FastCalmMin}~{FastCalmMax}s (first {FastFirstCalm}s), howl {FastHowl}s, retreat {FastRetreat}s.");
+    }
+
+    private static void ApplyFastWolfRhythm(SerializedObject director)
+    {
+        director.FindProperty("calmDurationMin").floatValue = FastCalmMin;
+        director.FindProperty("calmDurationMax").floatValue = FastCalmMax;
+        director.FindProperty("firstCalmDurationOverride").floatValue = FastFirstCalm;
+        director.FindProperty("howlDuration").floatValue = FastHowl;
+        director.FindProperty("retreatDuration").floatValue = FastRetreat;
     }
 
     private const string Level01ScenePath = "Assets/_Game/Scenes/Level_01.unity";
@@ -187,49 +261,60 @@ public static class WolfTestSceneSetup
     [MenuItem("Game Jam/Wolf Test/Open TestWolf Scene")]
     public static void OpenTestWolfScene()
     {
-        if (AssetDatabase.LoadAssetAtPath<SceneAsset>(ScenePath) == null)
+        OpenExistingScene(ScenePath, "Setup TestWolf Scene");
+    }
+
+    [MenuItem("Game Jam/Wolf Test/Open TestSmartWolf Scene")]
+    public static void OpenTestSmartWolfScene()
+    {
+        OpenExistingScene(SmartScenePath, "Setup TestSmartWolf Scene");
+    }
+
+    private static void OpenExistingScene(string scenePath, string setupMenuName)
+    {
+        if (AssetDatabase.LoadAssetAtPath<SceneAsset>(scenePath) == null)
         {
-            Debug.LogWarning("TestWolf scene does not exist yet. Run 'Setup TestWolf Scene' first.");
+            Debug.LogWarning($"{scenePath} does not exist yet. Run '{setupMenuName}' first.");
             return;
         }
 
         if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
         {
-            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
         }
     }
 
-    private static Scene OpenOrCreateScene()
+    private static Scene OpenOrCreateScene(string scenePath)
     {
         Scene activeScene = SceneManager.GetActiveScene();
-        if (activeScene.path == ScenePath)
+        if (activeScene.path == scenePath)
             return activeScene;
 
         if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
         {
-            throw new System.OperationCanceledException("TestWolf setup was cancelled.");
+            throw new System.OperationCanceledException("Wolf test scene setup was cancelled.");
         }
 
-        if (AssetDatabase.LoadAssetAtPath<SceneAsset>(ScenePath) == null)
+        if (AssetDatabase.LoadAssetAtPath<SceneAsset>(scenePath) == null)
         {
             if (AssetDatabase.LoadAssetAtPath<SceneAsset>(SceneTemplatePath) != null)
             {
                 // 复制 URP 2D 模板，保留 Main Camera + Global Light 2D。
-                if (!AssetDatabase.CopyAsset(SceneTemplatePath, ScenePath))
+                if (!AssetDatabase.CopyAsset(SceneTemplatePath, scenePath))
                 {
-                    throw new System.InvalidOperationException($"Failed to copy {SceneTemplatePath} to {ScenePath}.");
+                    throw new System.InvalidOperationException($"Failed to copy {SceneTemplatePath} to {scenePath}.");
                 }
             }
             else
             {
                 Scene created = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
-                EditorSceneManager.SaveScene(created, ScenePath);
+                EditorSceneManager.SaveScene(created, scenePath);
             }
 
             AssetDatabase.Refresh();
         }
 
-        return EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+        return EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
     }
 
     private static void ClearManagedObjects(Scene scene)
@@ -266,6 +351,7 @@ public static class WolfTestSceneSetup
     private static GameObject CreateFlock(
         Scene scene,
         GameObject sheepPrefab,
+        int sheepCount,
         out FlockController flock,
         out FlockMovementController movement)
     {
@@ -287,17 +373,20 @@ public static class WolfTestSceneSetup
         movement = flockObject.AddComponent<FlockMovementController>();
         flock = flockObject.AddComponent<FlockController>();
 
+        // 内圈 3 只、中圈 7 只，再多的羊排到外圈，围绕羊群中心。
+        int[] ringCapacity = { 3, 7, Mathf.Max(0, sheepCount - 10) };
+        float[] ringRadius = { 0.8f, 1.6f, 2.6f };
+
         List<SheepMember> members = new List<SheepMember>();
-        for (int index = 0; index < StartingSheepCount; index++)
+        for (int index = 0; index < sheepCount; index++)
         {
             GameObject sheep = (GameObject)PrefabUtility.InstantiatePrefab(sheepPrefab, scene);
             sheep.name = $"Sheep_{index + 1:00}";
 
-            // 内圈 3 只、外圈 7 只，围绕羊群中心。
-            bool inner = index < 3;
-            int ringIndex = inner ? index : index - 3;
-            int ringCount = inner ? 3 : StartingSheepCount - 3;
-            float radius = inner ? 0.8f : 1.6f;
+            int ring = index < 3 ? 0 : index < 10 ? 1 : 2;
+            int ringIndex = index - (ring == 0 ? 0 : ring == 1 ? 3 : 10);
+            int ringCount = Mathf.Max(1, ringCapacity[ring]);
+            float radius = ringRadius[ring];
             float angle = ringIndex * Mathf.PI * 2f / ringCount;
             sheep.transform.position = new Vector3(Mathf.Cos(angle) * radius, Mathf.Sin(angle) * radius, 0f);
 
@@ -343,10 +432,23 @@ public static class WolfTestSceneSetup
 
         SerializedObject serialized = new SerializedObject(director);
         serialized.FindProperty("spawner").objectReferenceValue = spawner;
-        // 测试场景第一轮空挡缩短到 5 秒，正式节奏仍是 15~20 秒。
-        serialized.FindProperty("firstCalmDurationOverride").floatValue = 5f;
+        // Dev 测试场景用缩短的节奏，正式关卡（Level_01 / Alpha）保持 15~20 秒。
+        ApplyFastWolfRhythm(serialized);
         serialized.ApplyModifiedPropertiesWithoutUndo();
         return director;
+    }
+
+    /// <summary>TestSmartWolf 的两个调试窗口：当前学习率 + 当前预测角度（IMGUI，可拖动，F1 隐藏）。</summary>
+    private static void CreateSmartWolfDebugView(Scene scene, WolfSpawner spawner, WolfEventDirector director)
+    {
+        GameObject viewObject = new GameObject("SmartWolfDebugView");
+        SceneManager.MoveGameObjectToScene(viewObject, scene);
+        SmartWolfDebugView view = viewObject.AddComponent<SmartWolfDebugView>();
+
+        SerializedObject serialized = new SerializedObject(view);
+        serialized.FindProperty("spawner").objectReferenceValue = spawner;
+        serialized.FindProperty("director").objectReferenceValue = director;
+        serialized.ApplyModifiedPropertiesWithoutUndo();
     }
 
     private static void CreateGameController(
