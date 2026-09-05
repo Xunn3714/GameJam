@@ -32,7 +32,7 @@ Assets/_Game/Scenes/MainMenu.unity
 当前开发 / 联调场景：
 
 ```text
-Assets/_Game/Scenes/TestLevel.unity
+Assets/_Game/Scenes/Old/Tests/TestLevel.unity
 ```
 
 当前已有：
@@ -46,7 +46,7 @@ Assets/_Game/Scenes/TestLevel.unity
 后续玩法与 UI 联调完成后，再将可复用 UI Prefab 迁移到：
 
 ```text
-Assets/_Game/Scenes/Level_01.unity
+Assets/_Game/Scenes/Old/Legacy/Level_01.unity
 ```
 
 ---

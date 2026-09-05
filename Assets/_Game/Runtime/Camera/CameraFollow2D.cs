@@ -19,6 +19,7 @@ public sealed class CameraFollow2D : MonoBehaviour
     private float shakeAmplitude;
     private float shakeDuration;
     private float shakeTimer;
+    private Vector2 shakeDirection = Vector2.right;
     private Vector3 basePosition;
     private bool hasBasePosition;
 
@@ -28,7 +29,15 @@ public sealed class CameraFollow2D : MonoBehaviour
         shakeAmplitude = Mathf.Max(shakeAmplitude, amplitude);
         shakeDuration = Mathf.Max(0.01f, duration);
         shakeTimer = shakeDuration;
+        Vector2 randomDirection = Random.insideUnitCircle;
+        shakeDirection = randomDirection.sqrMagnitude > 0.0001f
+            ? randomDirection.normalized
+            : Vector2.right;
     }
+
+    public float CurrentOrthographicSize => attachedCamera != null && attachedCamera.orthographic
+        ? attachedCamera.orthographicSize
+        : targetOrthographicSize;
 
     private void Awake()
     {
@@ -60,10 +69,18 @@ public sealed class CameraFollow2D : MonoBehaviour
         if (shakeTimer <= 0f)
             return;
 
-        shakeTimer -= Time.deltaTime;
-        float strength = shakeAmplitude * Mathf.Clamp01(shakeTimer / shakeDuration);
-        Vector2 offset = Random.insideUnitCircle * strength;
+        float progress = 1f - Mathf.Clamp01(shakeTimer / shakeDuration);
+        float envelope = 1f - progress;
+        envelope *= envelope;
+        float angle = progress * Mathf.PI * 6f;
+        Vector2 perpendicular = new Vector2(-shakeDirection.y, shakeDirection.x);
+        Vector2 offset = (
+            shakeDirection * Mathf.Cos(angle)
+            + perpendicular * Mathf.Sin(angle * 0.83f) * 0.35f)
+            * (shakeAmplitude * envelope);
         transform.position = basePosition + new Vector3(offset.x, offset.y, 0f);
+
+        shakeTimer -= Time.deltaTime;
 
         if (shakeTimer <= 0f)
         {

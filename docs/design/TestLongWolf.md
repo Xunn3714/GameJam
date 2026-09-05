@@ -1,7 +1,7 @@
 # TestLongWolf 开发场景
 
 - 状态：独立玩法原型，按 2026-09-05 的长狼需求制作。
-- 范围：`Assets/_Game/Scenes/Dev/TestLongWolf.unity`；不代表正式关卡规则更新。
+- 范围：`Assets/_Game/Scenes/Old/Tests/TestLongWolf.unity`；不代表正式关卡规则更新。
 - 场景由 `LongWolfTestSceneSetup` 使用 Unity API 从已保存的 TestWolf 复制生成。
 
 ## 玩法

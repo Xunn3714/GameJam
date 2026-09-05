@@ -6,7 +6,7 @@ using UnityEngine.SceneManagement;
 
 public static class SheepMovementPrototypeSetup
 {
-    private const string ScenePath = "Assets/_Game/Scenes/TestLevel.unity";
+    private const string ScenePath = "Assets/_Game/Scenes/Old/Tests/TestLevel.unity";
     private const string PrototypeFolder = "Assets/_Game/Content/Art/Prototype";
     private const string CircleAssetPath = PrototypeFolder + "/SheepCircle.asset";
     private const string RectangleAssetPath = PrototypeFolder + "/SheepRectangle.asset";

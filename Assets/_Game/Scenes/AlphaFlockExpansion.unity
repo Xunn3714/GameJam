@@ -6010,6 +6010,9 @@ MonoBehaviour:
   speedScaleExponent: 0.75
   wolfUnlockFlockSize: 6
   failedSpawnRetryDelay: 1.5
+  impactShakeAmplitude: 0.16
+  impactShakeDuration: 0.2
+  impactFeedbackInterval: 0.12
   exitUnlockFlockSize: 100
   exitMargin: 2.5
   exitBoundsExpansion: 10
@@ -6279,6 +6282,15 @@ MonoBehaviour:
   velocityHistorySeconds: 2
   huddleCompactness: 0.55
   huddleTransitionSpeed: 1.2
+  shapeDirectionTurnSpeed: 4
+  facingIntentCommitDelay: 0.1
+  neighborCellSize: 3.2
+  mediumFlockThreshold: 50
+  largeFlockThreshold: 120
+  mediumSteeringInterval: 2
+  largeSteeringInterval: 3
+  idlePacingRatio: 0.2
+  maximumIdlePacingMembers: 24
 --- !u!58 &493499560
 CircleCollider2D:
   m_ObjectHideFlags: 0
@@ -12408,31 +12420,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProgressiveSheepSpawner
   flock: {fileID: 493499559}
-  sheepPrefab: {fileID: 2358661416431911602, guid: a8f25a56092d78446aa43868336107a0, type: 3}
   namePool: {fileID: 11400000, guid: c92b8606274c4f341b8ede76d1b9e527, type: 2}
   gameplayCamera: {fileID: 519420031}
   worldSeed: {fileID: 402281562}
-  sheepTypes:
-  - prefab: {fileID: 2358661416431911602, guid: a8f25a56092d78446aa43868336107a0, type: 3}
-    typeId: sheep.mvp.common
-    displayName: "\u666E\u901A\u7F8A"
-    weight: 90
-  - prefab: {fileID: 2358661416431911602, guid: ace3fa7c2c874c08a018e69c7ad9fbcc, type: 3}
-    typeId: sheep.special.black
-    displayName: "\u9ED1\u7F8A"
-    weight: 2.5
-  - prefab: {fileID: 2358661416431911602, guid: 9bd2e96b1b764bf79ef7d58b69c8eabb, type: 3}
-    typeId: sheep.special.horned
-    displayName: "\u89D2\u7F8A"
-    weight: 2.5
-  - prefab: {fileID: 2358661416431911602, guid: f23df8856d744c99a0f985672b51f6d8, type: 3}
-    typeId: sheep.special.tophat
-    displayName: "\u793C\u5E3D\u7F8A"
-    weight: 2.5
-  - prefab: {fileID: 2358661416431911602, guid: 8ac1d85a0a654ae68de6c47a58b7d9aa, type: 3}
-    typeId: sheep.special.redbow
-    displayName: "\u7EA2\u8774\u8776\u7ED3\u7F8A"
-    weight: 2.5
+  specialSheepCatalog: {fileID: 11400000, guid: 266b09c8ae7308e4ba500ac43e410fcf, type: 2}
   spawnAreaCenter: {x: 0, y: 0}
   spawnAreaSize: {x: 240, y: 140}
   cameraEdgePadding: 3

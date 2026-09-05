@@ -1,0 +1,497 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 836cfc9ef8881a34d91f952ceabb29bf, type: 3}
+  m_Name: SpecialSheepCatalog
+  m_EditorClassIdentifier: Assembly-CSharp::SpecialSheepCatalog
+  sourceRootFolder: Assets/SpecialSheep
+  baseSheepPrefab: {fileID: 2358661416431911602, guid: a8f25a56092d78446aa43868336107a0, type: 3}
+  tiers:
+  - quality: 1
+    folderName: "\u7EFF\u8272\u7F8A"
+    probabilityPercent: 20
+    entries:
+    - assetGuid: 0206aeaa29039e2468693f137e9e4e8a
+      typeId: sheep.special.0206aeaa29039e2468693f137e9e4e8a
+      lastImportedFileName: "\u86CB\u5C0F\u7F8A"
+      displayName: "\u86CB\u5C0F\u7F8A"
+      sprite: {fileID: 21300000, guid: 0206aeaa29039e2468693f137e9e4e8a, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u86CB\u5C0F\u7F8A\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1
+    - assetGuid: 0935fc8ba15224141b77350ee571a4ac
+      typeId: sheep.special.0935fc8ba15224141b77350ee571a4ac
+      lastImportedFileName: "\u77ED\u77ED\u7F8A"
+      displayName: "\u77ED\u77ED\u7F8A"
+      sprite: {fileID: 21300000, guid: 0935fc8ba15224141b77350ee571a4ac, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u77ED\u77ED\u7F8A\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1
+    - assetGuid: 15cb24c4eb0259a478c6a633e5f93f13
+      typeId: sheep.special.15cb24c4eb0259a478c6a633e5f93f13
+      lastImportedFileName: "\u77EE\u811A\u7F8A"
+      displayName: "\u77EE\u811A\u7F8A"
+      sprite: {fileID: 21300000, guid: 15cb24c4eb0259a478c6a633e5f93f13, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u77EE\u811A\u7F8A\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1
+    - assetGuid: 18f9f97a37d03274ebae52fe46769f75
+      typeId: sheep.special.18f9f97a37d03274ebae52fe46769f75
+      lastImportedFileName: "\u7F8A\u4E86\u4E2A\u7F8A"
+      displayName: "\u7F8A\u4E86\u4E2A\u7F8A"
+      sprite: {fileID: 21300000, guid: 18f9f97a37d03274ebae52fe46769f75, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u7F8A\u4E86\u4E2A\u7F8A\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1
+    - assetGuid: 218d202a0e4f66a47a6b37ee8b3b3347
+      typeId: sheep.special.218d202a0e4f66a47a6b37ee8b3b3347
+      lastImportedFileName: "\u773C\u775B\u7F8A"
+      displayName: "\u773C\u775B\u7F8A"
+      sprite: {fileID: 21300000, guid: 218d202a0e4f66a47a6b37ee8b3b3347, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u773C\u775B\u7F8A\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1
+    - assetGuid: 230278cf425ff8c459fa2804469f08ec
+      typeId: sheep.special.230278cf425ff8c459fa2804469f08ec
+      lastImportedFileName: "\u68D5\u7F8A"
+      displayName: "\u68D5\u7F8A"
+      sprite: {fileID: 21300000, guid: 230278cf425ff8c459fa2804469f08ec, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u68D5\u7F8A\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1
+    - assetGuid: 2eb555e5b4cdd0648931fa96fd0fe6de
+      typeId: sheep.special.2eb555e5b4cdd0648931fa96fd0fe6de
+      lastImportedFileName: "\u80E1\u5B50\u7F8A"
+      displayName: "\u80E1\u5B50\u7F8A"
+      sprite: {fileID: 21300000, guid: 2eb555e5b4cdd0648931fa96fd0fe6de, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u80E1\u5B50\u7F8A\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1
+    - assetGuid: 32612a9bf2012be4a9e686ca8d2b467c
+      typeId: sheep.special.32612a9bf2012be4a9e686ca8d2b467c
+      lastImportedFileName: "\u80D6\u7F8A"
+      displayName: "\u80D6\u7F8A"
+      sprite: {fileID: 21300000, guid: 32612a9bf2012be4a9e686ca8d2b467c, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u80D6\u7F8A\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1
+    - assetGuid: 4babde597b2706744bf88984fa6ad913
+      typeId: sheep.special.4babde597b2706744bf88984fa6ad913
+      lastImportedFileName: "\u7EC5\u58EB\u7F8A"
+      displayName: "\u7EC5\u58EB\u7F8A"
+      sprite: {fileID: 21300000, guid: 4babde597b2706744bf88984fa6ad913, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u7EC5\u58EB\u7F8A\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1
+    - assetGuid: 54ec1c67a1168ac4fb19590ca8ec10f1
+      typeId: sheep.special.54ec1c67a1168ac4fb19590ca8ec10f1
+      lastImportedFileName: "\u957F\u89D2\u7F8A"
+      displayName: "\u957F\u89D2\u7F8A"
+      sprite: {fileID: 21300000, guid: 54ec1c67a1168ac4fb19590ca8ec10f1, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u957F\u89D2\u7F8A\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1
+    - assetGuid: 5dc20a0e928e9984b86b2106ca8af981
+      typeId: sheep.special.5dc20a0e928e9984b86b2106ca8af981
+      lastImportedFileName: "\u6591\u70B9\u7F8A"
+      displayName: "\u6591\u70B9\u7F8A"
+      sprite: {fileID: 21300000, guid: 5dc20a0e928e9984b86b2106ca8af981, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u6591\u70B9\u7F8A\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1
+    - assetGuid: 5f6fb34cd54f8e041abe031718ad1a86
+      typeId: sheep.special.5f6fb34cd54f8e041abe031718ad1a86
+      lastImportedFileName: "\u7626\u7F8A"
+      displayName: "\u7626\u7F8A"
+      sprite: {fileID: 21300000, guid: 5f6fb34cd54f8e041abe031718ad1a86, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u7626\u7F8A\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1
+    - assetGuid: 71139a83a98335143ac875ab25ebf650
+      typeId: sheep.special.71139a83a98335143ac875ab25ebf650
+      lastImportedFileName: "\u957F\u5C3E\u7F8A"
+      displayName: "\u957F\u5C3E\u7F8A"
+      sprite: {fileID: 21300000, guid: 71139a83a98335143ac875ab25ebf650, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u957F\u5C3E\u7F8A\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1
+    - assetGuid: 728a837e9f020984684dc1440ef9132f
+      typeId: sheep.special.728a837e9f020984684dc1440ef9132f
+      lastImportedFileName: "\u5FAE\u535A\u7F8A"
+      displayName: "\u5FAE\u535A\u7F8A"
+      sprite: {fileID: 21300000, guid: 728a837e9f020984684dc1440ef9132f, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u5FAE\u535A\u7F8A\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1
+    - assetGuid: 7d290af0cb825c743aa2823af5dbf5a4
+      typeId: sheep.special.7d290af0cb825c743aa2823af5dbf5a4
+      lastImportedFileName: "\u5976\u725B\u7F8A"
+      displayName: "\u5976\u725B\u7F8A"
+      sprite: {fileID: 21300000, guid: 7d290af0cb825c743aa2823af5dbf5a4, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u5976\u725B\u7F8A\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1
+    - assetGuid: 830438a50411e5741935125f1780748d
+      typeId: sheep.special.830438a50411e5741935125f1780748d
+      lastImportedFileName: "\u5410\u820C\u5934\u7F8A"
+      displayName: "\u5410\u820C\u5934\u7F8A"
+      sprite: {fileID: 21300000, guid: 830438a50411e5741935125f1780748d, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u5410\u820C\u5934\u7F8A\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1
+    - assetGuid: 9631761430da7f948acd72f5356f7a12
+      typeId: sheep.special.9631761430da7f948acd72f5356f7a12
+      lastImportedFileName: "\u5927\u5934\u7F8A"
+      displayName: "\u5927\u5934\u7F8A"
+      sprite: {fileID: 21300000, guid: 9631761430da7f948acd72f5356f7a12, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u5927\u5934\u7F8A\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1
+    - assetGuid: 98327eb238cf7d24f961eaee9a802536
+      typeId: sheep.special.98327eb238cf7d24f961eaee9a802536
+      lastImportedFileName: "\u6740\u9A6C\u7279\u7F8A"
+      displayName: "\u6740\u9A6C\u7279\u7F8A"
+      sprite: {fileID: 21300000, guid: 98327eb238cf7d24f961eaee9a802536, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u6740\u9A6C\u7279\u7F8A\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1
+    - assetGuid: 9adc43897770605488ae6018f76ec00b
+      typeId: sheep.special.9adc43897770605488ae6018f76ec00b
+      lastImportedFileName: "\u7F8A\u53EF\u7F8A\u4E50"
+      displayName: "\u7F8A\u53EF\u7F8A\u4E50"
+      sprite: {fileID: 21300000, guid: 9adc43897770605488ae6018f76ec00b, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u7F8A\u53EF\u7F8A\u4E50\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1
+    - assetGuid: adffaa56da2adb442923553a07568f70
+      typeId: sheep.special.adffaa56da2adb442923553a07568f70
+      lastImportedFileName: "\u62D0\u6756\u7F8A"
+      displayName: "\u62D0\u6756\u7F8A"
+      sprite: {fileID: 21300000, guid: adffaa56da2adb442923553a07568f70, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u62D0\u6756\u7F8A\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1
+    - assetGuid: ae08ffcaa5f023f449b6f484f2093273
+      typeId: sheep.special.ae08ffcaa5f023f449b6f484f2093273
+      lastImportedFileName: "\u7206\u70B8\u7F8A"
+      displayName: "\u7206\u70B8\u7F8A"
+      sprite: {fileID: 21300000, guid: ae08ffcaa5f023f449b6f484f2093273, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u7206\u70B8\u7F8A\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1
+    - assetGuid: b2c55ca9f38de914bad8b079e820c53f
+      typeId: sheep.special.b2c55ca9f38de914bad8b079e820c53f
+      lastImportedFileName: "\u5927\u773C\u7F8A"
+      displayName: "\u5927\u773C\u7F8A"
+      sprite: {fileID: 21300000, guid: b2c55ca9f38de914bad8b079e820c53f, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u5927\u773C\u7F8A\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1
+    - assetGuid: b476860f485cdb643886656d4e8c0683
+      typeId: sheep.special.b476860f485cdb643886656d4e8c0683
+      lastImportedFileName: "\u5446\u5446\u7F8A"
+      displayName: "\u5446\u5446\u7F8A"
+      sprite: {fileID: 21300000, guid: b476860f485cdb643886656d4e8c0683, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u5446\u5446\u7F8A\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1
+    - assetGuid: b94a4390c15bf88409064d4dac580546
+      typeId: sheep.special.b94a4390c15bf88409064d4dac580546
+      lastImportedFileName: "\u957F\u6BDB\u7F8A"
+      displayName: "\u957F\u6BDB\u7F8A"
+      sprite: {fileID: 21300000, guid: b94a4390c15bf88409064d4dac580546, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u957F\u6BDB\u7F8A\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1
+    - assetGuid: bd54d8b0630e015479b46a37bd37a16f
+      typeId: sheep.special.bd54d8b0630e015479b46a37bd37a16f
+      lastImportedFileName: "\u79C3\u7F8A"
+      displayName: "\u79C3\u7F8A"
+      sprite: {fileID: 21300000, guid: bd54d8b0630e015479b46a37bd37a16f, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u79C3\u7F8A\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1
+    - assetGuid: caece8ac01e8a684aab87015c3e864c6
+      typeId: sheep.special.black
+      lastImportedFileName: "\u9ED1\u7F8A"
+      displayName: "\u9ED1\u7F8A"
+      sprite: {fileID: 21300000, guid: caece8ac01e8a684aab87015c3e864c6, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u9ED1\u7F8A\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1
+    - assetGuid: d70c7e5bc1c67e04eab700c08270bd34
+      typeId: sheep.special.d70c7e5bc1c67e04eab700c08270bd34
+      lastImportedFileName: "\u6728\u6876\u7F8A"
+      displayName: "\u6728\u6876\u7F8A"
+      sprite: {fileID: 21300000, guid: d70c7e5bc1c67e04eab700c08270bd34, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u6728\u6876\u7F8A\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1
+    - assetGuid: da7f9c6797001d748bdf89b695b1803f
+      typeId: sheep.special.da7f9c6797001d748bdf89b695b1803f
+      lastImportedFileName: "\u65B9\u7F8A"
+      displayName: "\u65B9\u7F8A"
+      sprite: {fileID: 21300000, guid: da7f9c6797001d748bdf89b695b1803f, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u65B9\u7F8A\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1
+    - assetGuid: e14a7e63561e54044a52344ba356125f
+      typeId: sheep.special.e14a7e63561e54044a52344ba356125f
+      lastImportedFileName: "\u94C3\u94DB\u7F8A"
+      displayName: "\u94C3\u94DB\u7F8A"
+      sprite: {fileID: 21300000, guid: e14a7e63561e54044a52344ba356125f, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u94C3\u94DB\u7F8A\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1
+    - assetGuid: e8e5bc6e49f64914ba8accf7a74e032d
+      typeId: sheep.special.e8e5bc6e49f64914ba8accf7a74e032d
+      lastImportedFileName: "\u8349\u7F8A"
+      displayName: "\u8349\u7F8A"
+      sprite: {fileID: 21300000, guid: e8e5bc6e49f64914ba8accf7a74e032d, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u8349\u7F8A\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1
+    - assetGuid: eb9d449a099c10f4a9fdd9aff5db526c
+      typeId: sheep.special.eb9d449a099c10f4a9fdd9aff5db526c
+      lastImportedFileName: "\u82B1\u7F8A"
+      displayName: "\u82B1\u7F8A"
+      sprite: {fileID: 21300000, guid: eb9d449a099c10f4a9fdd9aff5db526c, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u82B1\u7F8A\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1
+    - assetGuid: f8f394ad0561e4845a4db9c9f3a14971
+      typeId: sheep.special.f8f394ad0561e4845a4db9c9f3a14971
+      lastImportedFileName: "\u6597\u9E21\u773C\u7F8A"
+      displayName: "\u6597\u9E21\u773C\u7F8A"
+      sprite: {fileID: 21300000, guid: f8f394ad0561e4845a4db9c9f3a14971, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u6597\u9E21\u773C\u7F8A\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1
+    - assetGuid: 6a448262346a0984386d42d6678e096e
+      typeId: sheep.special.horned
+      lastImportedFileName: "\u5C71\u7F8A"
+      displayName: "\u5C71\u7F8A"
+      sprite: {fileID: 21300000, guid: 6a448262346a0984386d42d6678e096e, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u5C71\u7F8A\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1
+    - assetGuid: 4ee2e70656116de4387c3e1aa2bc280e
+      typeId: sheep.special.redbow
+      lastImportedFileName: "\u9886\u7ED3\u7F8A"
+      displayName: "\u9886\u7ED3\u7F8A"
+      sprite: {fileID: 21300000, guid: 4ee2e70656116de4387c3e1aa2bc280e, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u9886\u7ED3\u7F8A\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1
+    - assetGuid: 1e313f1c55e99984ea7b21e2fbbf1349
+      typeId: sheep.special.tophat
+      lastImportedFileName: "\u793C\u5E3D\u7F8A"
+      displayName: "\u793C\u5E3D\u7F8A"
+      sprite: {fileID: 21300000, guid: 1e313f1c55e99984ea7b21e2fbbf1349, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u793C\u5E3D\u7F8A\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1
+  - quality: 2
+    folderName: "\u84DD\u8272\u7F8A"
+    probabilityPercent: 5
+    entries:
+    - assetGuid: 000e34284b1b0494d941f0c9f544be4a
+      typeId: sheep.special.000e34284b1b0494d941f0c9f544be4a
+      lastImportedFileName: "\u7EB8\u76D2\u7F8A"
+      displayName: "\u7EB8\u76D2\u7F8A"
+      sprite: {fileID: 21300000, guid: 000e34284b1b0494d941f0c9f544be4a, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u7EB8\u76D2\u7F8A\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1
+    - assetGuid: 2c7c4123218e93345b77ceaa5597caaf
+      typeId: sheep.special.2c7c4123218e93345b77ceaa5597caaf
+      lastImportedFileName: "\u6CE1\u6CE1\u7F8A"
+      displayName: "\u6CE1\u6CE1\u7F8A"
+      sprite: {fileID: 21300000, guid: 2c7c4123218e93345b77ceaa5597caaf, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u6CE1\u6CE1\u7F8A\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1
+    - assetGuid: 2eb5fe3bfe39a23408edeaa1cbed1b8d
+      typeId: sheep.special.2eb5fe3bfe39a23408edeaa1cbed1b8d
+      lastImportedFileName: "\u6D3E\u5BF9\u7F8A"
+      displayName: "\u6D3E\u5BF9\u7F8A"
+      sprite: {fileID: 21300000, guid: 2eb5fe3bfe39a23408edeaa1cbed1b8d, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u6D3E\u5BF9\u7F8A\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1
+    - assetGuid: 377007ceb0ca795438a7d1b84361699d
+      typeId: sheep.special.377007ceb0ca795438a7d1b84361699d
+      lastImportedFileName: "\u6C14\u7403\u7F8A"
+      displayName: "\u6C14\u7403\u7F8A"
+      sprite: {fileID: 21300000, guid: 377007ceb0ca795438a7d1b84361699d, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u6C14\u7403\u7F8A\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1
+    - assetGuid: 8e24a59250e5faa458c4d268b74777bf
+      typeId: sheep.special.8e24a59250e5faa458c4d268b74777bf
+      lastImportedFileName: "\u6C34\u6BCD\u7F8A"
+      displayName: "\u6C34\u6BCD\u7F8A"
+      sprite: {fileID: 21300000, guid: 8e24a59250e5faa458c4d268b74777bf, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u6C34\u6BCD\u7F8A\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1
+    - assetGuid: cb84fbf1582531943b56d4fda6e4fe9d
+      typeId: sheep.special.cb84fbf1582531943b56d4fda6e4fe9d
+      lastImportedFileName: "\u9A82\u9A82\u54A7\u54A7\u7F8A"
+      displayName: "\u9A82\u9A82\u54A7\u54A7\u7F8A"
+      sprite: {fileID: 21300000, guid: cb84fbf1582531943b56d4fda6e4fe9d, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u9A82\u9A82\u54A7\u54A7\u7F8A\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1
+    - assetGuid: e809572861cecd04ba4d4a633128546d
+      typeId: sheep.special.e809572861cecd04ba4d4a633128546d
+      lastImportedFileName: "\u54ED\u54ED\u7F8A"
+      displayName: "\u54ED\u54ED\u7F8A"
+      sprite: {fileID: 21300000, guid: e809572861cecd04ba4d4a633128546d, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u54ED\u54ED\u7F8A\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1
+  - quality: 3
+    folderName: "\u7D2B\u8272\u7F8A"
+    probabilityPercent: 1
+    entries:
+    - assetGuid: f2203e57048de9f408944e84a29293fc
+      typeId: sheep.special.f2203e57048de9f408944e84a29293fc
+      lastImportedFileName: "\u7F8A\u7D22"
+      displayName: "\u7F8A\u7D22"
+      sprite: {fileID: 21300000, guid: f2203e57048de9f408944e84a29293fc, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u7F8A\u7D22\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1
+  - quality: 4
+    folderName: "\u91D1\u8272\u7F8A"
+    probabilityPercent: 0.3
+    entries:
+    - assetGuid: 655462e028f5997488d0796ba8f01e1a
+      typeId: sheep.special.655462e028f5997488d0796ba8f01e1a
+      lastImportedFileName: "\u7F8E\u7F8A\u7F8A"
+      displayName: "\u7F8E\u7F8A\u7F8A"
+      sprite: {fileID: 21300000, guid: 655462e028f5997488d0796ba8f01e1a, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u7F8E\u7F8A\u7F8A\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1
+    - assetGuid: d23a1bf8e0b4185408eaafba29ab4d73
+      typeId: sheep.special.d23a1bf8e0b4185408eaafba29ab4d73
+      lastImportedFileName: "\u7C91\u7C91\u7F8A"
+      displayName: "\u7C91\u7C91\u7F8A"
+      sprite: {fileID: 21300000, guid: d23a1bf8e0b4185408eaafba29ab4d73, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u7C91\u7C91\u7F8A\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1
+  - quality: 5
+    folderName: "\u5F69\u8272\u7F8A"
+    probabilityPercent: 0.1
+    entries:
+    - assetGuid: 7d92b36c977bb5940a273a53967c0ae6
+      typeId: sheep.special.7d92b36c977bb5940a273a53967c0ae6
+      lastImportedFileName: "\u91CC\u7F8A"
+      displayName: "\u91CC\u7F8A"
+      sprite: {fileID: 21300000, guid: 7d92b36c977bb5940a273a53967c0ae6, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u91CC\u7F8A\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1

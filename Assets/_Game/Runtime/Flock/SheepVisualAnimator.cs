@@ -46,6 +46,19 @@ public sealed class SheepVisualAnimator : MonoBehaviour
     private bool currentFacingLeft;
     private bool requestedFacingLeft;
     private bool wasMoving;
+    private bool hasFlockFacingIntent;
+    private bool flockFacingIntentLeft;
+
+    public void SetFlockFacingIntent(bool facingLeft)
+    {
+        hasFlockFacingIntent = true;
+        flockFacingIntentLeft = facingLeft;
+    }
+
+    public void ClearFlockFacingIntent()
+    {
+        hasFlockFacingIntent = false;
+    }
 
     public void PlayObstacleImpact(bool cannotBreak, Vector2 movementDirection)
     {
@@ -140,21 +153,37 @@ public sealed class SheepVisualAnimator : MonoBehaviour
 
     private void CopyRendererState()
     {
-        animatedRenderer.enabled = sourceRenderer.enabled;
-        animatedRenderer.sprite = sourceRenderer.sprite;
-        animatedRenderer.color = sourceRenderer.color;
-        animatedRenderer.sharedMaterial = sourceRenderer.sharedMaterial;
-        animatedRenderer.sortingLayerID = sourceRenderer.sortingLayerID;
-        animatedRenderer.sortingOrder = sourceRenderer.sortingOrder;
-        animatedRenderer.maskInteraction = sourceRenderer.maskInteraction;
-        animatedRenderer.spriteSortPoint = sourceRenderer.spriteSortPoint;
-        animatedRenderer.flipY = sourceRenderer.flipY;
-        animatedRenderer.flipX = sourceRenderer.flipX ^ currentFacingLeft;
+        if (animatedRenderer.enabled != sourceRenderer.enabled)
+            animatedRenderer.enabled = sourceRenderer.enabled;
+        if (animatedRenderer.sprite != sourceRenderer.sprite)
+            animatedRenderer.sprite = sourceRenderer.sprite;
+        if (animatedRenderer.color != sourceRenderer.color)
+            animatedRenderer.color = sourceRenderer.color;
+        if (animatedRenderer.sharedMaterial != sourceRenderer.sharedMaterial)
+            animatedRenderer.sharedMaterial = sourceRenderer.sharedMaterial;
+        if (animatedRenderer.sortingLayerID != sourceRenderer.sortingLayerID)
+            animatedRenderer.sortingLayerID = sourceRenderer.sortingLayerID;
+        if (animatedRenderer.sortingOrder != sourceRenderer.sortingOrder)
+            animatedRenderer.sortingOrder = sourceRenderer.sortingOrder;
+        if (animatedRenderer.maskInteraction != sourceRenderer.maskInteraction)
+            animatedRenderer.maskInteraction = sourceRenderer.maskInteraction;
+        if (animatedRenderer.spriteSortPoint != sourceRenderer.spriteSortPoint)
+            animatedRenderer.spriteSortPoint = sourceRenderer.spriteSortPoint;
+        if (animatedRenderer.flipY != sourceRenderer.flipY)
+            animatedRenderer.flipY = sourceRenderer.flipY;
+
+        bool facingFlip = sourceRenderer.flipX ^ currentFacingLeft;
+        if (animatedRenderer.flipX != facingFlip)
+            animatedRenderer.flipX = facingFlip;
     }
 
     private void UpdateFacing(Vector2 frameVelocity)
     {
-        if (Mathf.Abs(frameVelocity.x) > HorizontalFacingThreshold &&
+        if (hasFlockFacingIntent && impactAge < 0f)
+        {
+            requestedFacingLeft = flockFacingIntentLeft;
+        }
+        else if (Mathf.Abs(frameVelocity.x) > HorizontalFacingThreshold &&
             Mathf.Abs(frameVelocity.x) >= Mathf.Abs(frameVelocity.y) * 0.2f)
         {
             requestedFacingLeft = frameVelocity.x < 0f;
@@ -275,7 +304,9 @@ public sealed class SheepVisualAnimator : MonoBehaviour
         visualTransform.localScale = new Vector3(scaleX * flipFold, scaleY, 1f);
         visualTransform.localPosition = new Vector3(impactOffset.x, offsetY + impactOffset.y, 0f);
         visualTransform.localRotation = Quaternion.Euler(0f, 0f, tilt);
-        animatedRenderer.flipX = sourceRenderer.flipX ^ currentFacingLeft;
+        bool facingFlip = sourceRenderer.flipX ^ currentFacingLeft;
+        if (animatedRenderer.flipX != facingFlip)
+            animatedRenderer.flipX = facingFlip;
     }
 
     private void ScheduleNextIdle()

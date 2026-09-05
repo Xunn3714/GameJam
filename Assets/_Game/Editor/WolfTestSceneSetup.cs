@@ -14,7 +14,7 @@ using UnityEngine.UI;
 /// </summary>
 public static class WolfTestSceneSetup
 {
-    private const string SceneFolder = "Assets/_Game/Scenes/Dev";
+    private const string SceneFolder = "Assets/_Game/Scenes/Old/Tests";
     private const string ScenePath = SceneFolder + "/TestWolf.unity";
     /// <summary>狼群测试场景（聪明狼 / 多狼编队）统一放在 Scenes/Test 下。</summary>
     private const string TestSceneFolder = "Assets/_Game/Scenes/Test";
@@ -218,7 +218,7 @@ public static class WolfTestSceneSetup
         director.FindProperty("retreatDuration").floatValue = FastRetreat;
     }
 
-    private const string Level01ScenePath = "Assets/_Game/Scenes/Level_01.unity";
+    private const string Level01ScenePath = "Assets/_Game/Scenes/Old/Legacy/Level_01.unity";
     private const string ResultPanelPrefabPath = "Assets/_Game/Content/Perfabs/UI/ResultPanel.prefab";
     private const string Level01WolfRootName = "WolfSystem";
     private const string Level01WolfHudName = "WolfEventHud";
