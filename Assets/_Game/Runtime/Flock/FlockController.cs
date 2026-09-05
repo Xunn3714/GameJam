@@ -26,7 +26,7 @@ public sealed class FlockController : MonoBehaviour
     [Tooltip("两只羊在这个距离内且中间没有阻挡时，视为属于同一群。")]
     [SerializeField, Min(0.5f)] private float mainGroupLinkDistance = 3.5f;
     [Tooltip("断开成员与主群最近成员超过这个距离后，才开始计算脱队时间。")]
-    [SerializeField, Min(0.5f)] private float detachDistanceFromMainGroup = 7f;
+    [SerializeField, Min(0.5f)] private float detachDistanceFromMainGroup = 5.5f;
     [Tooltip("持续断开且远离主群多久后正式脱队，避免短暂拉开造成误判。")]
     [SerializeField, Min(0f)] private float detachDelay = 1.5f;
     [Tooltip("正式脱队时向外散开的初速度。")]
