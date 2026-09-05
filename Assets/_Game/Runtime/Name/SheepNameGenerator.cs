@@ -5,8 +5,10 @@ public sealed class SheepNameGenerator : MonoBehaviour
 {
     [SerializeField] private SheepNamePool namePool;
     [SerializeField] private SheepIdentity[] sheep;
+    [SerializeField] private FlockController flockController;
 
     private readonly List<string> availableNames = new();
+    private readonly List<SheepIdentity> targets = new();
 
     private void Start()
     {
@@ -16,6 +18,7 @@ public sealed class SheepNameGenerator : MonoBehaviour
     private void AssignNames()
     {
         availableNames.Clear();
+        targets.Clear();
 
         if (namePool != null)
         {
@@ -33,13 +36,30 @@ public sealed class SheepNameGenerator : MonoBehaviour
 
         Shuffle(availableNames);
 
+        foreach (RecruitableSheep recruitable in FindObjectsByType<RecruitableSheep>(
+                     FindObjectsInactive.Exclude))
+        {
+            AddTarget(recruitable.GetComponent<SheepIdentity>());
+        }
+
+        AddTargets(sheep);
+
+        // Older MVP scenes only serialized the five recruitable sheep. Include
+        // the initial flock member as well so every visible sheep has a name.
+        flockController ??= FindAnyObjectByType<FlockController>();
+        if (flockController != null)
+        {
+            foreach (SheepMember member in flockController.Members)
+            {
+                if (member != null)
+                    AddTarget(member.GetComponent<SheepIdentity>());
+            }
+        }
+
         int fallbackIndex = 1;
 
-        for (int i = 0; i < sheep.Length; i++)
+        for (int i = 0; i < targets.Count; i++)
         {
-            if (sheep[i] == null)
-                continue;
-
             string assignedName;
 
             if (availableNames.Count > 0)
@@ -53,10 +73,25 @@ public sealed class SheepNameGenerator : MonoBehaviour
                 fallbackIndex++;
             }
 
-            sheep[i].AssignName(assignedName);
+            targets[i].AssignName(assignedName);
 
-            Debug.Log($"{sheep[i].name} 的名字是：{assignedName}", sheep[i]);
+            Debug.Log($"{targets[i].name} 的名字是：{assignedName}", targets[i]);
         }
+    }
+
+    private void AddTargets(SheepIdentity[] identities)
+    {
+        if (identities == null)
+            return;
+
+        foreach (SheepIdentity identity in identities)
+            AddTarget(identity);
+    }
+
+    private void AddTarget(SheepIdentity identity)
+    {
+        if (identity != null && identity.gameObject.activeInHierarchy && !targets.Contains(identity))
+            targets.Add(identity);
     }
 
     private static void Shuffle(List<string> list)

@@ -84,11 +84,11 @@ public sealed class FlockController : MonoBehaviour
             member.GetComponent<SheepIdentity>();
 
         if (identity != null &&
-            !string.IsNullOrEmpty(identity.sheepId) &&
+            !string.IsNullOrEmpty(identity.SheepTypeId) &&
             SheepCollectionManager.Instance != null)
         {
             SheepCollectionManager.Instance
-                .EncounterSheep(identity.sheepId);
+                .EncounterSheep(identity.SheepTypeId);
         }
 
 
