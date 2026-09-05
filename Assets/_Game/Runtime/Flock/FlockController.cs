@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 [DisallowMultipleComponent]
 [DefaultExecutionOrder(-50)]
@@ -21,18 +22,21 @@ public sealed class FlockController : MonoBehaviour
     [SerializeField, Min(0.1f)] private float shapeDirectionTurnSpeed = 4f;
 
     [Header("Member Separation")]
-    [Tooltip("检查成员是否与主群断开的时间间隔。")]
+    [Tooltip("检查成员是否仍处于羊群成员场内的时间间隔。")]
     [SerializeField, Min(0.1f)] private float separationCheckInterval = 0.4f;
-    [Tooltip("两只羊在这个距离内且中间没有阻挡时，视为属于同一群。")]
-    [SerializeField, Min(0.5f)] private float mainGroupLinkDistance = 3.5f;
-    [Tooltip("断开成员与主群最近成员超过这个距离后，才开始计算脱队时间。")]
-    [SerializeField, Min(0.5f)] private float detachDistanceFromMainGroup = 5.5f;
-    [Tooltip("持续断开且远离主群多久后正式脱队，避免短暂拉开造成误判。")]
+    [Tooltip("成员场不会小于这个半径。这里只用于成员资格判定，不会施加吸引力。")]
+    [FormerlySerializedAs("detachDistanceFromMainGroup")]
+    [SerializeField, Min(0.5f)] private float minimumMembershipRadius = 5.5f;
+    [Tooltip("成员场半径公式的基础值：基础值 + 成长值 × sqrt(中心成员数)。")]
+    [SerializeField, Min(0f)] private float membershipRadiusBase = 3.5f;
+    [Tooltip("中心成员越多，成员场半径按平方根增长，避免大羊群半径线性膨胀。")]
+    [SerializeField, Min(0f)] private float membershipRadiusGrowth = 1f;
+    [Tooltip("成员场最大半径，避免极大羊群让远处成员永久不脱队。")]
+    [SerializeField, Min(0.5f)] private float maximumMembershipRadius = 25f;
+    [Tooltip("持续处于成员场外多久后正式脱队，避免短暂越界造成误判。")]
     [SerializeField, Min(0f)] private float detachDelay = 1.5f;
     [Tooltip("正式脱队时向外散开的初速度。")]
     [SerializeField, Min(0f)] private float detachScatterSpeed = 1.2f;
-    [Tooltip("阻断羊群连通性的实体层；留空时运行期使用 Blocking 层。")]
-    [SerializeField] private LayerMask separationBlockingLayers;
 
     [Header("Turning")]
     [Tooltip("水平输入持续多久后才让整个羊群翻面；过滤轻点造成的全群转向波。")]
@@ -69,12 +73,9 @@ public sealed class FlockController : MonoBehaviour
     private Vector2 groupActionDirection = Vector2.right;
     private Collider2D pendingGroupActionBlocker;
     private bool hasPendingGroupActionBlock;
-    private SheepMember mainGroupAnchor;
     private float nextSeparationCheckTime;
-    private readonly HashSet<SheepMember> connectedMainGroup = new HashSet<SheepMember>();
-    private readonly Queue<SheepMember> connectivityTraversal = new Queue<SheepMember>();
-    private readonly List<SheepMember> separationNeighborBuffer = new List<SheepMember>(32);
-    private readonly Dictionary<SheepMember, float> disconnectedSince =
+    private float currentMembershipRadius = 5.5f;
+    private readonly Dictionary<SheepMember, float> outsideMembershipSince =
         new Dictionary<SheepMember, float>();
     private readonly List<SheepMember> detachingMembers = new List<SheepMember>();
 
@@ -103,7 +104,7 @@ public sealed class FlockController : MonoBehaviour
     public bool IsGroupActionActive { get; private set; }
     public bool IsGroupActionHolding { get; private set; }
     public Vector2 GroupActionDirection => groupActionDirection;
-    public SheepMember MainGroupAnchor => mainGroupAnchor;
+    public float CurrentMembershipRadius => Mathf.Max(minimumMembershipRadius, currentMembershipRadius);
 
     /// <summary>羊群椭圆长轴方向；停止移动后保留最后方向，避免外形突然转回水平。</summary>
     public Vector2 ShapeForward => shapeForward;
@@ -161,6 +162,8 @@ public sealed class FlockController : MonoBehaviour
 
         if (actionStarted)
         {
+            outsideMembershipSince.Clear();
+
             // 主动动作只使用左右翻面：水平分量决定朝向；近似竖直时保留上一次朝向。
             if (Mathf.Abs(groupActionDirection.x) >= 0.15f)
                 FacingIntentLeft = groupActionDirection.x < 0f;
@@ -219,8 +222,7 @@ public sealed class FlockController : MonoBehaviour
         movementController ??=
             GetComponent<FlockMovementController>();
 
-        if (separationBlockingLayers.value == 0)
-            separationBlockingLayers = MovementBlocking.DefaultMask();
+        currentMembershipRadius = Mathf.Max(minimumMembershipRadius, membershipRadiusBase);
 
         if (startingMembers == null)
             return;
@@ -473,6 +475,8 @@ public sealed class FlockController : MonoBehaviour
 
         ScatteredSheep scattered = sheep.GetComponent<ScatteredSheep>();
         bool isReturningMember = scattered != null && scattered.IsScattered;
+        if (isReturningMember && !IsInsideMembershipField(member.transform.position))
+            return false;
 
         // 招募是一次完整状态提交：成员与招募计数都更新后，再统一通知 UI。
         // 否则订阅者会短暂读到“成员已增加、招募数还没增加”的半成品状态。
@@ -570,9 +574,7 @@ public sealed class FlockController : MonoBehaviour
         member.Leave(this);
 
         members.RemoveAt(index);
-        disconnectedSince.Remove(member);
-        if (mainGroupAnchor == member)
-            mainGroupAnchor = FindReplacementMainGroupAnchor();
+        outsideMembershipSince.Remove(member);
         memberGridDirty = true;
         RefreshSimulationSlots(index);
 
@@ -625,8 +627,6 @@ public sealed class FlockController : MonoBehaviour
         }
 
         members.Add(member);
-        if (mainGroupAnchor == null)
-            mainGroupAnchor = member;
         memberGridDirty = true;
 
         member.SetAgent(agent);
@@ -670,40 +670,31 @@ public sealed class FlockController : MonoBehaviour
 
     private void EvaluateMemberSeparation(float currentTime)
     {
-        if (members.Count <= 1 || IsGroupActionActive)
+        if (IsGroupActionActive)
         {
-            disconnectedSince.Clear();
+            outsideMembershipSince.Clear();
             return;
         }
 
-        if (mainGroupAnchor == null || mainGroupAnchor.Flock != this)
-            mainGroupAnchor = FindReplacementMainGroupAnchor();
-        if (mainGroupAnchor == null)
-            return;
-
-        CollectConnectedMainGroup();
-
-        float effectiveDetachDistance = Mathf.Max(mainGroupLinkDistance, detachDistanceFromMainGroup);
+        currentMembershipRadius = CalculateMembershipRadius();
+        float membershipRadiusSquared = currentMembershipRadius * currentMembershipRadius;
         detachingMembers.Clear();
         for (int index = 0; index < members.Count; index++)
         {
             SheepMember member = members[index];
-            if (member == null || connectedMainGroup.Contains(member))
+            if (member == null)
+                continue;
+
+            Vector2 offsetFromCenter = GetMemberPosition(member) - Center;
+            if (offsetFromCenter.sqrMagnitude <= membershipRadiusSquared)
             {
-                if (member != null)
-                    disconnectedSince.Remove(member);
+                outsideMembershipSince.Remove(member);
                 continue;
             }
 
-            if (IsNearConnectedMainGroup(member, effectiveDetachDistance))
+            if (!outsideMembershipSince.TryGetValue(member, out float separatedAt))
             {
-                disconnectedSince.Remove(member);
-                continue;
-            }
-
-            if (!disconnectedSince.TryGetValue(member, out float separatedAt))
-            {
-                disconnectedSince.Add(member, currentTime);
+                outsideMembershipSince.Add(member, currentTime);
                 separatedAt = currentTime;
             }
 
@@ -715,60 +706,56 @@ public sealed class FlockController : MonoBehaviour
     }
 
 
-    private void CollectConnectedMainGroup()
+    private float CalculateMembershipRadius()
     {
-        connectedMainGroup.Clear();
-        connectivityTraversal.Clear();
-        connectedMainGroup.Add(mainGroupAnchor);
-        connectivityTraversal.Enqueue(mainGroupAnchor);
+        float minimumRadius = Mathf.Max(0.5f, minimumMembershipRadius);
+        float maximumRadius = Mathf.Max(minimumRadius, maximumMembershipRadius);
+        float candidateRadius = minimumRadius;
 
-        float linkDistance = Mathf.Max(0.5f, mainGroupLinkDistance);
-        float linkDistanceSquared = linkDistance * linkDistance;
-        while (connectivityTraversal.Count > 0 && connectedMainGroup.Count < members.Count)
+        // 从最小范围向外求一个稳定成员场。只有当前范围内的中心成员会扩大下一轮范围，
+        // 因此远处的待脱队羊不会反过来把自己计入“重力质量”。
+        const int maximumExpansionPasses = 8;
+        for (int pass = 0; pass < maximumExpansionPasses; pass++)
         {
-            SheepMember current = connectivityTraversal.Dequeue();
-            Vector2 currentPosition = GetMemberPosition(current);
-            CollectNearbyMembers(currentPosition, linkDistance, separationNeighborBuffer);
+            int centralMemberCount = CountMembersWithinRadius(candidateRadius);
+            float expandedRadius = Mathf.Clamp(
+                membershipRadiusBase
+                    + membershipRadiusGrowth * Mathf.Sqrt(centralMemberCount),
+                minimumRadius,
+                maximumRadius);
+            if (expandedRadius <= candidateRadius + 0.01f)
+                break;
 
-            for (int index = 0; index < separationNeighborBuffer.Count; index++)
-            {
-                SheepMember candidate = separationNeighborBuffer[index];
-                if (candidate == null
-                    || candidate.Flock != this
-                    || connectedMainGroup.Contains(candidate))
-                    continue;
-
-                Vector2 candidatePosition = GetMemberPosition(candidate);
-                if ((candidatePosition - currentPosition).sqrMagnitude > linkDistanceSquared)
-                    continue;
-                if (MovementBlocking.IsLineBlocked(
-                        currentPosition,
-                        candidatePosition,
-                        separationBlockingLayers))
-                    continue;
-
-                connectedMainGroup.Add(candidate);
-                connectivityTraversal.Enqueue(candidate);
-            }
+            candidateRadius = expandedRadius;
         }
+
+        return candidateRadius;
     }
 
 
-    private bool IsNearConnectedMainGroup(SheepMember member, float distance)
+    private int CountMembersWithinRadius(float radius)
     {
-        Vector2 memberPosition = GetMemberPosition(member);
-        float distanceSquared = distance * distance;
-        CollectNearbyMembers(memberPosition, distance, separationNeighborBuffer);
-        for (int index = 0; index < separationNeighborBuffer.Count; index++)
+        int count = 0;
+        float radiusSquared = radius * radius;
+        Vector2 center = Center;
+        for (int index = 0; index < members.Count; index++)
         {
-            SheepMember candidate = separationNeighborBuffer[index];
-            if (candidate == null || !connectedMainGroup.Contains(candidate))
-                continue;
-            if ((GetMemberPosition(candidate) - memberPosition).sqrMagnitude <= distanceSquared)
-                return true;
+            SheepMember member = members[index];
+            if (member != null
+                && (GetMemberPosition(member) - center).sqrMagnitude <= radiusSquared)
+            {
+                count++;
+            }
         }
 
-        return false;
+        return count;
+    }
+
+
+    internal bool IsInsideMembershipField(Vector2 position)
+    {
+        float radius = CurrentMembershipRadius;
+        return (position - Center).sqrMagnitude <= radius * radius;
     }
 
 
@@ -793,12 +780,12 @@ public sealed class FlockController : MonoBehaviour
             for (int index = 0; index < detachingMembers.Count; index++)
             {
                 SheepMember member = detachingMembers[index];
-                if (member == null || member == mainGroupAnchor || member.Flock != this)
+                if (member == null || member.Flock != this)
                     continue;
 
-                Vector2 awayFromMainGroup = (Vector2)member.transform.position - (Vector2)mainGroupAnchor.transform.position;
-                Vector2 direction = awayFromMainGroup.sqrMagnitude > 0.0001f
-                    ? awayFromMainGroup.normalized
+                Vector2 awayFromCenter = (Vector2)member.transform.position - Center;
+                Vector2 direction = awayFromCenter.sqrMagnitude > 0.0001f
+                    ? awayFromCenter.normalized
                     : UnityEngine.Random.insideUnitCircle.normalized;
                 direction = (direction + UnityEngine.Random.insideUnitCircle * 0.45f).normalized;
                 if (direction.sqrMagnitude <= 0.0001f)
@@ -825,30 +812,6 @@ public sealed class FlockController : MonoBehaviour
         MembersSeparated?.Invoke(detachedCount);
     }
 
-
-    private SheepMember FindReplacementMainGroupAnchor()
-    {
-        SheepMember closest = null;
-        float closestDistance = float.PositiveInfinity;
-        Vector2 center = Center;
-        for (int index = 0; index < members.Count; index++)
-        {
-            SheepMember candidate = members[index];
-            if (candidate == null)
-                continue;
-
-            float distance = ((Vector2)candidate.transform.position - center).sqrMagnitude;
-            if (distance < closestDistance)
-            {
-                closest = candidate;
-                closestDistance = distance;
-            }
-        }
-
-        return closest;
-    }
-
-
     private void OnValidate()
     {
         largeFlockThreshold = Mathf.Max(mediumFlockThreshold + 1, largeFlockThreshold);
@@ -856,10 +819,16 @@ public sealed class FlockController : MonoBehaviour
         largeSteeringInterval = Mathf.Max(1, largeSteeringInterval);
         maximumIdlePacingMembers = Mathf.Max(0, maximumIdlePacingMembers);
         separationCheckInterval = Mathf.Max(0.1f, separationCheckInterval);
-        mainGroupLinkDistance = Mathf.Max(0.5f, mainGroupLinkDistance);
-        detachDistanceFromMainGroup = Mathf.Max(mainGroupLinkDistance, detachDistanceFromMainGroup);
+        minimumMembershipRadius = Mathf.Max(0.5f, minimumMembershipRadius);
+        membershipRadiusBase = Mathf.Max(0f, membershipRadiusBase);
+        membershipRadiusGrowth = Mathf.Max(0f, membershipRadiusGrowth);
+        maximumMembershipRadius = Mathf.Max(minimumMembershipRadius, maximumMembershipRadius);
         detachDelay = Mathf.Max(0f, detachDelay);
         detachScatterSpeed = Mathf.Max(0f, detachScatterSpeed);
+        currentMembershipRadius = Mathf.Clamp(
+            currentMembershipRadius,
+            minimumMembershipRadius,
+            maximumMembershipRadius);
         memberGridDirty = true;
     }
 }
