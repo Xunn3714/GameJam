@@ -12,7 +12,7 @@ public static class MvpTmpUiFont
     private const string BundledFontResourcePath = "NotoSansSC-Regular";
     private const string RuntimeFontAssetName = "NotoSansSC MVP Runtime Fallback";
     private const string MvpCharacters =
-        "找到羊族群加入了棉花糖云朵小卷豆豆奶盖白团咩毛球盐巴雪软月亮任务列表迎接第一位同伴把壮大到只另外带着留下记号支线新当前成功招募拉屎次数游戏用时本局未命名集合完毕返回标题图鉴登记类型绵稀有度普通携带分数动画组原型资源外观以后新增内容条目场景实例重复成员领队真实随机别名区分变化后打开读取最新设置主音量音乐叫声开始退出暂停继续重新“”（）！：，。、☑☐★●•0123456789/";
+        "找到羊族群加入了棉花糖云朵小卷豆豆奶盖白团咩毛球盐巴雪软月亮任务列表迎接第一位同伴把壮大到只另外带着留下记号支线新当前成功招募拉屎次数大便游戏用时本局未命名集合完毕返回标题图鉴登记类型绵稀有度普通携带分数动画组原型资源外观以后新增内容条目场景实例重复成员领队真实随机别名区分变化后打开读取最新设置主音量音乐叫声开始退出暂停继续重新“”（）！：，。、☑☐★●•0123456789/";
 
     private static Font sourceFont;
     private static TMP_FontAsset cachedFontAsset;

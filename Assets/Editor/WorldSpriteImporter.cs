@@ -7,7 +7,10 @@ public class WorldSpriteImporter : AssetPostprocessor
 {
     private const string WorldArtPath = "Assets/Art/";
     private const string SheepSpritePath = WorldArtPath + "SheepSprites/";
+    private const string PoopSpritePath = WorldArtPath + "SkillSprites/Poop/";
+    private const string HandDrawnPoopPath = PoopSpritePath + "shit.png";
     private const float WorldPixelsPerUnit = 128f;
+    private const float HandDrawnPoopPixelsPerUnit = 200f;
 
     void OnPreprocessTexture()
     {
@@ -25,13 +28,21 @@ public class WorldSpriteImporter : AssetPostprocessor
 
     private float ResolvePixelsPerUnit(TextureImporter importer)
     {
-        if (!assetPath.StartsWith(SheepSpritePath, StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(assetPath, HandDrawnPoopPath, StringComparison.OrdinalIgnoreCase))
+        {
+            // 原图保留了较宽的透明画布，用主体像素范围匹配稀有大便的显示尺寸。
+            return HandDrawnPoopPixelsPerUnit;
+        }
+
+        bool normalizeCanvasWidth =
+            assetPath.StartsWith(SheepSpritePath, StringComparison.OrdinalIgnoreCase) ||
+            assetPath.StartsWith(PoopSpritePath, StringComparison.OrdinalIgnoreCase);
+        if (!normalizeCanvasWidth)
         {
             return WorldPixelsPerUnit;
         }
 
-        // 羊的原画分辨率并不统一。让画布宽度恒为 1 世界单位，
-        // 保持它与既有 1 单位占位羊及约 1 单位的碰撞体一致。
+        // 角色和技能原画分辨率并不统一，让画布宽度恒为 1 世界单位。
         importer.GetSourceTextureWidthAndHeight(out int sourceWidth, out _);
         return Mathf.Max(1f, sourceWidth);
     }

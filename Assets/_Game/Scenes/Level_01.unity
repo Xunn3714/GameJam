@@ -2132,9 +2132,11 @@ MonoBehaviour:
   spawnPoint: {fileID: 930155416}
   poopPrefab: {fileID: 5617940016520123198, guid: b3277c9e502007845b6caa1af6a1153e, type: 3}
   poopClip: {fileID: 0}
-  cooldownSeconds: 2
-  lifetimeSeconds: 10
-  maxActivePoops: 10
+  maxStoredPoops: 5
+  rechargeSeconds: 10
+  cooldownSeconds: 0.5
+  lifetimeSeconds: 5
+  maxActivePoops: 2
 --- !u!58 &881671397
 CircleCollider2D:
   m_ObjectHideFlags: 0
@@ -2345,7 +2347,7 @@ Transform:
   m_GameObject: {fileID: 930155415}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.55, z: 0}
+  m_LocalPosition: {x: -0.72, y: -0.08, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

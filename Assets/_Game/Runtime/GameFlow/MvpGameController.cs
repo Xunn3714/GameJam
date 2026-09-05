@@ -122,7 +122,10 @@ public sealed class MvpGameController : MonoBehaviour
         }
 
         if (poopAbility != null)
+        {
             poopAbility.Used += HandlePoopUsed;
+            poopAbility.StockChanged += HandlePoopStockChanged;
+        }
 
         taskSystem.Changed += HandleTasksChanged;
         taskSystem.AllRequiredCompleted += HandleAllRequiredTasksCompleted;
@@ -143,6 +146,9 @@ public sealed class MvpGameController : MonoBehaviour
 
         EvaluateTasks();
         taskSystem.MarkPresented();
+
+        if (poopAbility != null)
+            HandlePoopStockChanged(poopAbility.StoredPoops, poopAbility.MaxStoredPoops);
     }
 
     private void OnDisable()
@@ -154,7 +160,10 @@ public sealed class MvpGameController : MonoBehaviour
         }
 
         if (poopAbility != null)
+        {
             poopAbility.Used -= HandlePoopUsed;
+            poopAbility.StockChanged -= HandlePoopStockChanged;
+        }
 
         if (taskSystem != null)
         {
@@ -197,6 +206,11 @@ public sealed class MvpGameController : MonoBehaviour
     {
         sessionStats.RecordPoop();
         EvaluateTasks();
+    }
+
+    private void HandlePoopStockChanged(int stored, int capacity)
+    {
+        hudView?.UpdatePoopStock(stored, capacity);
     }
 
     private void EvaluateTasks()
