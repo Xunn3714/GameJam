@@ -4,6 +4,7 @@ public class AudioManager : MonoBehaviour
 {
     public static AudioManager Instance { get; private set; }
 
+    public const string MASTER_VOLUME_KEY = "MasterVolume";
     public const string BGM_VOLUME_KEY = "BGMVolume";
     public const string SFX_VOLUME_KEY = "SFXVolume";
     public const string SHEEP_VOLUME_KEY = "SheepVolume";
@@ -12,6 +13,11 @@ public class AudioManager : MonoBehaviour
     public AudioSource bgmSource;
     public AudioSource sfxSource;
     public AudioSource sheepSource;
+
+    private float masterVolume = 1f;
+    private float bgmVolume = 1f;
+    private float sfxVolume = 1f;
+    private float sheepVolume = 1f;
 
 
     private void Awake()
@@ -31,18 +37,11 @@ public class AudioManager : MonoBehaviour
 
     private void LoadVolumeSettings()
     {
-        float bgmVolume =
-            PlayerPrefs.GetFloat(BGM_VOLUME_KEY, 1f);
-
-        float sfxVolume =
-            PlayerPrefs.GetFloat(SFX_VOLUME_KEY, 1f);
-
-        float sheepVolume =
-            PlayerPrefs.GetFloat(SHEEP_VOLUME_KEY, 1f);
-
-        SetBGMVolume(bgmVolume);
-        SetSFXVolume(sfxVolume);
-        SetSheepVolume(sheepVolume);
+        masterVolume = PlayerPrefs.GetFloat(MASTER_VOLUME_KEY, 1f);
+        bgmVolume = PlayerPrefs.GetFloat(BGM_VOLUME_KEY, 1f);
+        sfxVolume = PlayerPrefs.GetFloat(SFX_VOLUME_KEY, 1f);
+        sheepVolume = PlayerPrefs.GetFloat(SHEEP_VOLUME_KEY, 1f);
+        ApplyVolumes();
     }
 
 
@@ -90,18 +89,39 @@ public class AudioManager : MonoBehaviour
 
     public void SetBGMVolume(float volume)
     {
-        bgmSource.volume = Mathf.Clamp01(volume);
+        bgmVolume = Mathf.Clamp01(volume);
+        ApplyVolumes();
     }
 
 
     public void SetSFXVolume(float volume)
     {
-        sfxSource.volume = Mathf.Clamp01(volume);
+        sfxVolume = Mathf.Clamp01(volume);
+        ApplyVolumes();
     }
 
 
     public void SetSheepVolume(float volume)
     {
-        sheepSource.volume = Mathf.Clamp01(volume);
+        sheepVolume = Mathf.Clamp01(volume);
+        ApplyVolumes();
+    }
+
+    public void SetMasterVolume(float volume)
+    {
+        masterVolume = Mathf.Clamp01(volume);
+        ApplyVolumes();
+    }
+
+    private void ApplyVolumes()
+    {
+        if (bgmSource != null)
+            bgmSource.volume = masterVolume * bgmVolume;
+
+        if (sfxSource != null)
+            sfxSource.volume = masterVolume * sfxVolume;
+
+        if (sheepSource != null)
+            sheepSource.volume = masterVolume * sheepVolume;
     }
 }

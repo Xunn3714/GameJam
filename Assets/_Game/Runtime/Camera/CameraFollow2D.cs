@@ -10,10 +10,14 @@ public sealed class CameraFollow2D : MonoBehaviour
     private Vector3 velocity;
     private float cameraZ;
     private FlockController flockController;
+    private Camera attachedCamera;
+    private bool keepInsideBounds;
+    private Rect cameraBounds;
 
     private void Awake()
     {
         cameraZ = transform.position.z;
+        attachedCamera = GetComponent<Camera>();
     }
 
     private void LateUpdate()
@@ -36,6 +40,20 @@ public sealed class CameraFollow2D : MonoBehaviour
             cameraZ
         );
 
+        if (keepInsideBounds && attachedCamera != null && attachedCamera.orthographic)
+        {
+            float halfHeight = attachedCamera.orthographicSize;
+            float halfWidth = halfHeight * attachedCamera.aspect;
+            targetPosition.x = ClampInside(
+                targetPosition.x,
+                cameraBounds.xMin + halfWidth,
+                cameraBounds.xMax - halfWidth);
+            targetPosition.y = ClampInside(
+                targetPosition.y,
+                cameraBounds.yMin + halfHeight,
+                cameraBounds.yMax - halfHeight);
+        }
+
         if ((targetPosition - transform.position).sqrMagnitude <= SettleDistance * SettleDistance)
         {
             transform.position = targetPosition;
@@ -49,5 +67,18 @@ public sealed class CameraFollow2D : MonoBehaviour
             ref velocity,
             smoothTime
         );
+    }
+
+    public void ConfigureBounds(Rect bounds)
+    {
+        cameraBounds = bounds;
+        keepInsideBounds = bounds.width > 0f && bounds.height > 0f;
+    }
+
+    private static float ClampInside(float value, float minimum, float maximum)
+    {
+        return minimum <= maximum
+            ? Mathf.Clamp(value, minimum, maximum)
+            : (minimum + maximum) * 0.5f;
     }
 }

@@ -1,13 +1,13 @@
 # 《找到另一只羊》MVP 技术方案
 
-- **状态**：Draft
+- **状态**：MVP 原型实现（已集成 `Level_01`）
 - **Owner**：TBD
 - **最后更新**：2026-09-04
 - **目标版本**：Unity 6000.5.9f1
 - **表现形式**：URP 2D 俯视角
 - **首轮平台**：Windows，WASD 键盘操作
 - **玩法场景**：`Assets/_Game/Scenes/Level_01.unity`
-- **计划实现路径**：`Assets/_Game/`
+- **实现路径**：`Assets/_Game/`、`Assets/Art/SheepSprites/`
 - **上游策划**：[羊群 MVP 策划案](../design/羊群MVP策划案.md)
 - **Agent 入口**：[`AGENTS.md`](../../AGENTS.md)
 
@@ -15,7 +15,7 @@
 
 实现一个约 5 分钟的最小可玩版本，验证以下核心体验：
 
-> 玩家从一只羊开始，通过接触另外 5 只羊，让族群逐渐扩大。
+> 玩家从一只羊开始，通过接触本局随机生成的羊，让族群逐渐扩大。
 
 第一版同时加入“拉屎”主动技能，用来验证技能的输入、生成物、反馈和冷却流程。
 
@@ -34,20 +34,22 @@
 - `Level_01` 已包含 Camera、Global Light 2D、GameCanvas、EventSystem 和 PauseManager。
 - 已有持久化的 `SceneLoader` 和 `AudioManager`，由 MainMenu 创建并跨场景保留。
 - 已有暂停、设置、主菜单和 Ending 基础系统。
-- 尚无玩家移动、羊群、任务、技能、名称和结算统计模块。
+- 羊群移动、招募、名称、技能、任务、图鉴占位和结算统计已经集成到 `Level_01`。
+- `MvpGameController` 会按 Inspector 参数创建本局羊群，不依赖 Scene 中预摆的待招募羊数量。
+- 当前场景配置为 `100 × 50` 生成区域、50 只待招募羊，其中 5 只是特殊羊。
 
 本竖切片复用现有 `SceneLoader`、`AudioManager` 和 `PauseManager`，不新增全局 Manager、Event Bus、Service Locator、对象池或存档系统。
 
 ## 3. 玩家流程
 
 1. 进入关卡，玩家控制一个包含 1 只随机命名成员羊的族群。
-2. HUD 显示 `找到羊：0/5` 和 `族群：1`。
+2. HUD 显示本局任务列表和 `族群：1`。
 3. 玩家使用 WASD 在草地中移动。
 4. 任意族群成员接触一只带随机名称的待招募羊，对方加入族群。
 5. HUD 更新任务进度和族群数量，并显示 `“{羊名}”加入了族群！`。
 6. 玩家可以按 Space 拉屎；技能进入短暂冷却。
-7. 找到第 5 只羊后显示完成面板，列出成员名称、族群规模、拉屎次数和游戏用时。
-8. 玩家可以重新开始本关。
+7. 完成全部必做任务后显示完成面板，列出成员名称、族群规模、招募数、分数、拉屎次数和游戏用时。
+8. 玩家可以打开暂停菜单中的同伴名册/羊图鉴，或在结算后返回标题。
 
 第一版没有失败条件。
 
@@ -63,44 +65,58 @@ Assets/_Game/
 │   │   ├── RecruitableSheep.cs
 │   │   ├── SheepFlockAgent.cs
 │   │   ├── SheepIdentity.cs
-│   │   └── SheepMember.cs
-│   ├── Naming/
+│   │   ├── SheepMember.cs
+│   │   ├── MvpSheepSpawnDistributor.cs
+│   │   ├── SpecialSheepMarker.cs
+│   │   ├── SpecialSheepPool.cs
+│   │   └── SpecialSheepSpawnPoint.cs
+│   ├── Name/
 │   │   ├── SheepNameGenerator.cs
 │   │   └── SheepNamePool.cs
 │   ├── Skills/
 │   │   └── PoopAbility.cs
-│   ├── Stats/
-│   │   └── MvpSessionStats.cs
-│   ├── Tasks/
-│   │   └── RecruitSheepTask.cs
-│   ├── UI/
+│   ├── Task/
+│   │   ├── RecruitSheepTask.cs
+│   │   ├── MvpTaskSystem.cs
 │   │   ├── MvpHudView.cs
-│   │   ├── JoinToastView.cs
-│   │   └── ResultPanelView.cs
+│   │   └── JoinToastView.cs
+│   ├── UI/
+│   │   ├── MvpResultPanelView.cs
+│   │   ├── MvpCodexView.cs
+│   │   ├── MvpTmpUiFont.cs
+│   │   └── MvpUiFactory.cs
 │   ├── GameFlow/
-│   │   └── MvpGameController.cs
+│   │   ├── MvpGameController.cs
+│   │   └── MvpSessionStats.cs
 │   ├── Camera/
 │   │   └── CameraFollow2D.cs
 ├── Content/
-│   ├── Art/Characters/Sheep/
-│   ├── Data/
-│   │   └── SheepNamePool.asset
+│   ├── Data/SheepMvp/
+│   │   └── DefaultSpecialSheepPool.asset
 │   └── Perfabs/Sheep/
 │       ├── SheepMember.prefab
 │       ├── RecruitableSheep.prefab
-│       └── Poop.prefab
-└── Scenes/
-    └── Dev/
-        └── SheepMvp_Dev.unity
+│       ├── SpecialSheep_TopHat.prefab
+│       ├── SpecialSheep_RedBow.prefab
+│       ├── SpecialSheep_Horned.prefab
+│       └── SpecialSheep_Black.prefab
+└── Scenes/Level_01.unity
+
+Assets/Art/SheepSprites/
+├── Sheep_Normal.png
+├── Sheep_Special_TopHat.png
+├── Sheep_Special_RedBow.png
+├── Sheep_Special_Horned.png
+└── Sheep_Special_Black.png
 ```
 
 当前主分支没有 asmdef，现有 `SceneLoader`、`AudioManager` 和 `PauseManager` 都属于 `Assembly-CSharp`。本 MVP 暂不新增 asmdef，以免新程序集无法引用这些现有类型。
 
 当前仓库实际目录名是 `Perfabs`。本文暂时沿用该路径，避免同时出现 `Prefabs` 和 `Perfabs` 两套目录；后续如需纠正拼写，必须由目录 owner 在 Unity Project 窗口内统一移动并保留 GUID。
 
-现有 `PixelArtImporter` 只匹配路径中包含 `Art/Sprites` 的图片，而当前羊美术计划放在 `Art/Characters/Sheep`。占位图需要在 Inspector 中手动设置 Point Filter、无压缩、无 Mipmap 和16 PPU；是否扩展导入器由美术管线 owner 另行决定。
+当前羊 Sprite 位于 `Assets/Art/SheepSprites`，以透明 PNG、Single Sprite、无 Mipmap 的方式导入。原始 JPG 保留为源素材；运行时 Prefab 只引用透明 PNG。
 
-首轮功能开发在独立 Dev Scene 中完成。通过验收后，由 `Level_01` Scene owner 将 Prefab 和 HUD 集成到现有 `Level_01`，不修改 `SampleScene`。
+首轮功能已经在独立验证副本中通过导入检查，并由 `Level_01` Scene owner 集成到现有场景；未修改 `SampleScene` 或 `ProjectSettings/`。
 
 ## 5. 与现有系统的集成
 
@@ -288,48 +304,42 @@ Keyboard: Space
 `MvpSessionStats` 是普通运行时 C# 对象，不是 ScriptableObject，也不写入 PlayerPrefs。
 
 ```csharp
-public int RecruitedCount { get; private set; }
-public int CurrentFlockCount { get; private set; }
-public int SuccessfulPoopCount { get; private set; }
-public float ElapsedSeconds { get; private set; }
-public IReadOnlyList<string> MemberNames { get; }
-
-public void RecordRecruit(string sheepName);
+public int PoopUses { get; private set; }
 public void RecordPoop();
-public void Tick(float deltaTime);
+public MvpResultSnapshot Complete(IReadOnlyList<SheepMember> members, int recruitedTotal);
 ```
 
 统计规则：
 
-- 创建本局时先记录初始成员羊名称和当前成员数。
-- 每次成功招募记录数量和新成员名称。
 - 每次成功生成 `Poop.prefab` 后记录一次拉屎。
-- 计时使用 `Time.deltaTime`，暂停时间不会计入。
-- 游戏完成后停止计时。
+- 计时使用未暂停的运行时间；暂停时间不会计入。
+- 完成时从 `FlockController.Members` 生成不可变结算快照，包含名称、招募数、分数和用时。
 - 重新加载关卡后全部重置，不跨局保存。
 
 第一版结算字段保持简单：
 
 ```text
-族群规模：6
+当前羊数：51
+成功招募：50
+当前分数：50
 拉屎次数：12
 游戏用时：01:43
-成员：云朵、豆豆、奶盖、白团、毛球、小雪
+本局同伴：云朵、豆豆、奶盖……
 ```
 
 ### 6.11 MvpGameController
 
 负责连接羊群、任务和 UI：
 
-- 初始化目标为 5 的 `RecruitSheepTask`。
-- 使用 `SheepNameGenerator` 为 6 只羊分配单局名称。
+- 根据实际成功生成的羊数创建 `MvpTaskSystem`，避免任务目标与场景数量脱节。
+- 使用 `MvpSheepSpawnDistributor` 创建本局待招募羊，并使用 `SheepNameGenerator` 分配单局不重复名称。
 - 创建并持有本局 `MvpSessionStats`。
 - 监听 `FlockController.SheepRecruited`。
 - 驱动任务进度、名称提示、统计和 HUD。
 - 监听 PoopAbility 的成功释放事件并记录次数。
-- 第 5 只羊加入后只触发一次完成状态。
+- 全部必做任务完成后只触发一次结算状态。
 - 完成时停止统计计时、关闭玩家输入并显示结算面板。
-- 重新开始优先调用现有 `SceneLoader.Instance.ReloadCurrentScene()`。
+- 结算面板返回标题时优先调用现有 `SceneLoader.Instance.LoadMainMenu()`。
 
 ### 6.12 UI
 
@@ -344,21 +354,49 @@ HUD 使用 uGUI，Canvas 参数：
 
 | 状态 | 任务 | 族群 | 技能 |
 |---|---|---|---|
-| 开局 | 找到羊：0/5 | 族群：1 | Space：拉屎 |
-| 加入后 | 找到羊：1/5 | 族群：2 | Space：拉屎 |
+| 开局 | 必做/可选任务列表 | 族群：1 | Space：拉屎 |
+| 加入后 | 实时更新各任务进度 | 族群：2 | Space：拉屎 |
 | 冷却中 | 保持当前进度 | 保持当前数量 | 拉屎：1.4秒 |
-| 完成 | 找到羊：5/5 | 族群：6 | 打开本局统计 |
+| 完成 | 全部必做任务完成 | 实际族群数 | 打开本局统计 |
 
 `JoinToastView` 每次招募时显示 `“{羊名}”加入了族群！`，持续 1.5 秒后淡出。
 
-`ResultPanelView` 在完成时显示：
+`MvpResultPanelView` 在完成时显示：
 
-- `你找到了所有羊！`
-- 族群规模。
+- `羊群集合完毕！`
+- 族群规模、成功招募数和当前分数。
 - 拉屎次数。
 - 格式化后的游戏用时。
 - 本局成员名称列表。
-- 重新开始按钮。
+- 返回标题按钮。
+
+`MvpCodexView` 是 MVP 占位实现，由暂停菜单进入，提供“当前同伴”和“羊图鉴”两个页签。名册读取真实成员与随机别名；图鉴当前按内容 ID 展示基础类型资料。特殊羊能力和完整卡片式图鉴仍属于后续内容设计。
+
+### 6.13 MvpTaskSystem
+
+任务系统使用普通 C# 定义和运行时状态，支持：
+
+- `RecruitedTotal`、`CurrentFlockCount`、`PoopUses` 三种指标。
+- 单任务多个条件以及 `All` / `Any` 条件模式。
+- 必做与可选任务、首次出现标记、完成状态和进度快照。
+- 全部必做任务完成事件；事件只触发一次。
+
+当前任务由 `MvpGameController` 在每局开始时根据实际生成数量创建，避免额外维护一份可变运行时 ScriptableObject。
+
+### 6.14 MvpSheepSpawnDistributor
+
+生成器把 Scene 中预摆的待招募羊视为编辑参考并隐藏，每局重新实例化精确的目标数量：
+
+- 普通羊按 1、2、3 只成组，权重可在 Inspector 中调整。
+- 特殊羊始终单只放置，数量包含在生成总数中。
+- 先使用有效固定特殊羊点位，再为剩余特殊羊选择随机位置。
+- 特殊羊 Prefab 从 `SpecialSheepPool` 加权抽取；固定点位可以覆盖 Prefab。
+- 所有位置避开玩家安全区、Collider 和过密区域；随机布局失败时使用网格回退。
+- `fixedSpawnSeed = 0` 时每局随机，非 0 时便于复现布局。
+
+### 6.15 特殊羊扩展边界
+
+`SpecialSheepMarker` 当前只标记特殊身份，不包含未确定的特殊能力。新增特殊羊时创建包含 `RecruitableSheep` 与该标记的 Prefab，再加入 `DefaultSpecialSheepPool.asset`；只有真正确定能力后才向对应 Prefab 组合新组件。
 
 ## 7. 场景结构
 
@@ -371,40 +409,24 @@ Level_01
 ├── SheepGameplay
 │   ├── MvpGameController
 │   ├── SheepFlock（输入、成员集合、技能）
-│   ├── Sheep_Initial（普通成员）
-│   ├── Sheep_01
-│   ├── Sheep_02
-│   ├── Sheep_03
-│   ├── Sheep_04
-│   └── Sheep_05
+│   └── Sheep_Initial（普通成员）
+├── RuntimeRecruitableSheep（运行时创建）
+│   ├── RecruitableSheep_XX（普通羊，1～3只成组）
+│   └── SpecialSheep_XX（特殊羊，单只）
 ├── GameCanvas（已有）
 │   ├── SheepHUD
 │   │   ├── TaskText
 │   │   ├── FlockCountText
 │   │   ├── PoopCooldownText
 │   │   └── JoinToast
-│   ├── ResultPanel
-│   │   ├── ResultText
-│   │   ├── MemberNamesText
-│   │   └── RestartButton
+│   ├── MvpResultPanel（运行时占位 UI）
+│   ├── MvpCodexPanel（运行时占位 UI）
 │   └── PausePanel（已有）
 ├── PauseManager（已有）
 └── EventSystem（已有）
 ```
 
-建议地图约为 `20 × 14` 个世界单位。
-
-初始位置参考：
-
-| 对象 | 坐标 |
-|---|---|
-| SheepFlock / Sheep_Initial | `(0, 0)` |
-| Sheep_01 | `(-4, 2)` |
-| Sheep_02 | `(4, 3)` |
-| Sheep_03 | `(-6, -3)` |
-| Sheep_04 | `(6, -2)` |
-| Sheep_05 | `(1, 6)` |
-| SheepMvp_SizeGate | `(7.5, 0)` |
+当前 `Level_01` 的生成区域为 `100 × 50` 个世界单位；背景、移动边界和相机边界由同一配置同步。Scene 中可以添加 `SpecialSheepSpawnPoint` 作为固定特殊羊点位。
 
 ## 8. 数据流
 
@@ -415,11 +437,11 @@ Level_01
 → 登记 SheepMember
 → SheepRecruited 事件
 → MvpGameController
-→ RecruitSheepTask 更新进度
-→ MvpSessionStats 记录羊名和数量
+→ MvpTaskSystem 更新所有相关任务
+→ MvpSessionStats 在结算时读取最终成员与数量
 → HUD 显示带名称的加入提示
-→ 达到 5/5 后进入完成状态
-→ ResultPanelView 显示本局统计
+→ 全部必做任务完成后进入结算状态
+→ MvpResultPanelView 显示本局统计
 ```
 
 ```text
@@ -435,7 +457,13 @@ Level_01
 
 | 配置 | 编辑者 | 读取者 | 默认值 | 校验规则 | 运行时可变 |
 |---|---|---|---|---|---|
-| 任务目标 | 策划 | RecruitSheepTask | 5 | 大于0且不超过场景羊数 | 否 |
+| 生成总数 | 策划 | MvpGameController | Level_01：50 | 1～50；包含特殊羊 | 否 |
+| 生成区域 | 策划/关卡 | MvpGameController | Level_01：100×50 | 两轴大于羊间距 | 否 |
+| 普通羊组权重 | 策划/关卡 | MvpSheepSpawnDistributor | 60/30/10 | 非负且总和大于0 | 否 |
+| 特殊羊数量 | 策划/关卡 | MvpGameController | Level_01：5 | 0～生成总数 | 否 |
+| 特殊羊池 | 策划/美术 | SpecialSheepPool | 4 个外观 Prefab | 忽略空项和非正权重 | 否 |
+| 固定特殊点位 | 关卡 | SpecialSheepSpawnPoint | 空 | 必须位于有效区域；可覆盖 Prefab | 否 |
+| 任务目标 | 程序 | MvpTaskSystem | 实际生成数 | 由成功生成结果计算 | 本局初始化时确定 |
 | 名称池 | 策划/文案 | SheepNameGenerator | 至少12个名称 | 去空、去重，不足时使用后备名 | 否 |
 | 族群移动速度 | 策划/程序 | FlockMovementController | 4 | 大于0 | 否 |
 | 成员最大速度 | 策划/程序 | SheepFlockAgent | 5.2 | 大于0 | 转向时变化 |
@@ -464,31 +492,34 @@ Level_01
 - 不修改 Build Settings。
 - 不修改分辨率或目标平台。
 
-招募使用组件检测；显示层级暂时使用 `SpriteRenderer.sortingOrder`；Dev Scene 直接在 Editor 中运行，不加入 Build Settings。
+招募使用组件检测；显示层级暂时使用 `SpriteRenderer.sortingOrder`；现有 Build Settings 保持不变。
 
-## 11. 实现顺序
+## 11. 实现与集成状态
 
-1. 创建 `SheepMvp_Dev`，实现 WASD 移动和自定义相机跟随。
-2. 制作通用成员羊和待招募羊 Prefab。
-3. 实现随机名称分配和单局去重。
-4. 实现任意成员接触招募和动态羊群转向。
-5. 实现任务计数、带名字的加入提示和 HUD。
-6. 实现 Space 拉屎、生成物限制和冷却 UI。
-7. 实现 `MvpSessionStats` 与结算面板。
-8. 接入现有 SceneLoader、AudioManager 和暂停状态。
-9. 添加 EditMode 测试。
-10. 由 Level_01 owner 集成并在 Unity 中完成完整试玩和编译验证。
+1. 已实现 WASD 羊群移动、自定义相机跟随和动态世界边界。
+2. 已实现成员羊、待招募羊、随机名称和单局去重。
+3. 已实现可配置随机生成、1～3 只普通羊群组、单只特殊羊和特殊羊池。
+4. 已实现任意成员接触招募、任务列表、加入提示和 HUD。
+5. 已实现 Space 拉屎、生成物限制和冷却 UI。
+6. 已实现 `MvpSessionStats`、结算面板和返回标题流程。
+7. 已实现同伴名册和羊图鉴占位界面，并复用暂停菜单入口。
+8. 已接入 `SceneLoader`、`AudioManager`、设置和暂停状态。
+9. 已集成 `MainMenu → Level_01`，未修改 `ProjectSettings/`。
+10. 已在独立 Unity 验证副本中完成 Sprite 导入、Prefab/Scene 引用、特殊池、生成规则和脚本编译检查。
 
 ## 12. 验收标准
 
 - WASD 可以稳定控制羊群中心，输入不依赖任何成员羊。
 - 斜向移动不会更快。
 - 每只羊只能加入一次。
-- 初始成员羊和 5 只待招募羊都有非空名称。
-- 单局 6 个羊名不重复；名称池不足时正确使用后备名称。
+- 初始成员羊和本局生成的所有待招募羊都有非空名称。
+- 单局羊名不重复；名称池不足时正确使用后备名称。
 - 加入提示显示实际加入羊的名称。
-- 任务进度严格从 `0/5` 增加到 `5/5`。
-- 族群数量严格从 1 增加到 6。
+- 修改生成总数后，实际生成数、任务目标和结算统计一致。
+- 当前 `Level_01` 精确生成 50 只待招募羊，其中 5 只为特殊羊。
+- 普通羊群组大小为 1～3，权重可调；特殊羊不与其他羊组成生成组。
+- 固定特殊点位优先使用，剩余特殊羊继续随机生成。
+- 特殊羊池可通过增加带权 Prefab 扩展，不需要修改生成器。
 - 所有成员羊都能围绕族群中心自然换位，静止后不抖动。
 - 移除任一成员后，族群输入和镜头仍保持有效。
 - 族群数量不超过 5 时无法穿过人数障碍，达到 6 后接触可将其破坏。
@@ -500,7 +531,7 @@ Level_01
 - 拉屎次数只统计成功生成的粪便。
 - 游戏用时不包含暂停时间，并在完成后停止增加。
 - 结算正确显示族群规模、拉屎次数、游戏用时和成员名单。
-- 第 5 只羊加入后只触发一次完成界面。
+- 全部必做任务完成后只触发一次完成界面。
 - 重新开始后羊、任务、UI 和技能状态全部重置。
 - Unity Console 无编译错误或 Missing Reference。
 - 本功能没有修改 `ProjectSettings/`。

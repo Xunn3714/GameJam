@@ -7,6 +7,7 @@ using UnityEngine.InputSystem;
 public sealed class FlockMovementController : MonoBehaviour
 {
     private const string MoveActionName = "Player/Move";
+    private const float CenterColliderRadius = 0.35f;
 
     [SerializeField, Min(0f)] private float moveSpeed = 4f;
 
@@ -16,6 +17,8 @@ public sealed class FlockMovementController : MonoBehaviour
     private Vector2 positionBeforeFixedMove;
     private bool movedThisStep;
     private bool controlEnabled = true;
+    private bool restrictToMovementBounds;
+    private Rect movementBounds;
 
     public Vector2 LastMoveDirection { get; private set; } = Vector2.down;
     public bool IsMoving => controlEnabled && moveInput.sqrMagnitude > 0.0001f;
@@ -32,7 +35,7 @@ public sealed class FlockMovementController : MonoBehaviour
 
         CircleCollider2D centerTrigger = GetComponent<CircleCollider2D>();
         centerTrigger.isTrigger = true;
-        centerTrigger.radius = 0.35f;
+        centerTrigger.radius = CenterColliderRadius;
 
         moveAction = InputSystem.actions?.FindAction(MoveActionName);
     }
@@ -65,7 +68,28 @@ public sealed class FlockMovementController : MonoBehaviour
         positionBeforeFixedMove = body.position;
         movedThisStep = true;
         Vector2 displacement = moveInput * moveSpeed * Time.fixedDeltaTime;
-        body.MovePosition(body.position + displacement);
+        Vector2 targetPosition = body.position + displacement;
+
+        if (restrictToMovementBounds)
+        {
+            targetPosition.x = ClampInside(
+                targetPosition.x,
+                movementBounds.xMin + CenterColliderRadius,
+                movementBounds.xMax - CenterColliderRadius);
+            targetPosition.y = ClampInside(
+                targetPosition.y,
+                movementBounds.yMin + CenterColliderRadius,
+                movementBounds.yMax - CenterColliderRadius);
+        }
+
+        body.MovePosition(targetPosition);
+    }
+
+    public void ConfigureMovementBounds(Rect bounds)
+    {
+        movementBounds = bounds;
+        restrictToMovementBounds = bounds.width > CenterColliderRadius * 2f
+            && bounds.height > CenterColliderRadius * 2f;
     }
 
     public void RejectCurrentMovement()
@@ -104,5 +128,12 @@ public sealed class FlockMovementController : MonoBehaviour
     private static float ReadAxis(bool negativePressed, bool positivePressed)
     {
         return (positivePressed ? 1f : 0f) - (negativePressed ? 1f : 0f);
+    }
+
+    private static float ClampInside(float value, float minimum, float maximum)
+    {
+        return minimum <= maximum
+            ? Mathf.Clamp(value, minimum, maximum)
+            : (minimum + maximum) * 0.5f;
     }
 }
