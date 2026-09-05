@@ -564,7 +564,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4281479730
+    rgba: 4280760641
   m_fontColor: {r: 0.25490198, g: 0.22352941, b: 0.15294118, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -1050,7 +1050,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4281479730
+    rgba: 4280760641
   m_fontColor: {r: 0.25490198, g: 0.22352941, b: 0.15294118, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -1324,7 +1324,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4281479730
+    rgba: 4280760641
   m_fontColor: {r: 0.25490198, g: 0.22352941, b: 0.15294118, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -2319,7 +2319,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 4282079333
   m_fontColor: {r: 0.39607844, g: 0.34509805, b: 0.23137255, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -2332,7 +2332,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -4618,53 +4618,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1393961484
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1393961486}
-  - component: {fileID: 1393961485}
-  m_Layer: 0
-  m_Name: SheepCollectionManager
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1393961485
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1393961484}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 54b105f8a2cd7a34a82edc4f6d242bc8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SheepCollectionManager
-  database: {fileID: 11400000, guid: 5972de8120af8e0499ee01a0d57e5127, type: 2}
-  specialSheepCatalog: {fileID: 11400000, guid: 266b09c8ae7308e4ba500ac43e410fcf, type: 2}
-  progressList: []
---- !u!4 &1393961486
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1393961484}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 284.9736, y: 180.35242, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1440604214
 GameObject:
   m_ObjectHideFlags: 0
@@ -6157,6 +6110,51 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1721125192}
   m_CullTransparentMesh: 1
+--- !u!1 &1731050448
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1731050450}
+  - component: {fileID: 1731050449}
+  m_Layer: 0
+  m_Name: SceneAudio
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1731050449
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1731050448}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bb4b16a65920c0e45986bbfa2c9cee9b, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::SceneBGM
+  bgmClip: {fileID: 8300000, guid: bdc1f2459666f3143bb9c3a39d869037, type: 3}
+--- !u!4 &1731050450
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1731050448}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1741325426
 GameObject:
   m_ObjectHideFlags: 0
@@ -6593,7 +6591,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4281479730
+    rgba: 4280760641
   m_fontColor: {r: 0.25490198, g: 0.22352941, b: 0.15294118, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -6730,7 +6728,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4281479730
+    rgba: 4280760641
   m_fontColor: {r: 0.25490198, g: 0.22352941, b: 0.15294118, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -7065,7 +7063,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 4280760641
   m_fontColor: {r: 0.25490198, g: 0.22352941, b: 0.15294118, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -7078,7 +7076,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -7345,6 +7343,63 @@ RectTransform:
   m_AnchoredPosition: {x: 116, y: 62}
   m_SizeDelta: {x: 190, y: 75}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!1001 &4525505727445597931
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 2145544618540628748, guid: 3ff0f359bbae928459fc38b3d6630650, type: 3}
+      propertyPath: m_Name
+      value: SheepCollectionManager
+      objectReference: {fileID: 0}
+    - target: {fileID: 6186598744322022961, guid: 3ff0f359bbae928459fc38b3d6630650, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 284.9736
+      objectReference: {fileID: 0}
+    - target: {fileID: 6186598744322022961, guid: 3ff0f359bbae928459fc38b3d6630650, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 180.35242
+      objectReference: {fileID: 0}
+    - target: {fileID: 6186598744322022961, guid: 3ff0f359bbae928459fc38b3d6630650, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6186598744322022961, guid: 3ff0f359bbae928459fc38b3d6630650, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6186598744322022961, guid: 3ff0f359bbae928459fc38b3d6630650, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6186598744322022961, guid: 3ff0f359bbae928459fc38b3d6630650, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6186598744322022961, guid: 3ff0f359bbae928459fc38b3d6630650, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6186598744322022961, guid: 3ff0f359bbae928459fc38b3d6630650, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6186598744322022961, guid: 3ff0f359bbae928459fc38b3d6630650, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6186598744322022961, guid: 3ff0f359bbae928459fc38b3d6630650, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 3ff0f359bbae928459fc38b3d6630650, type: 3}
 --- !u!1001 &6761181741232818045
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -7504,4 +7559,5 @@ SceneRoots:
   - {fileID: 825844842}
   - {fileID: 1340102967}
   - {fileID: 1226466683}
-  - {fileID: 1393961486}
+  - {fileID: 4525505727445597931}
+  - {fileID: 1731050450}

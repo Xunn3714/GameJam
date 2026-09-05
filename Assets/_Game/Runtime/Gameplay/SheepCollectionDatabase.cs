@@ -13,6 +13,13 @@ public class SheepCollectionEntry
     [Header("Visual")]
     public Sprite icon;
 
+    [Header("Rarity")]
+    public SheepQuality quality = SheepQuality.Common;
+
+    // 例如：
+    // 普通羊 / 绿色羊 / 蓝色羊 / 紫色羊 / 金色羊 / 彩色羊
+    public string rarityName;
+
     [Header("Description")]
     [TextArea(2, 5)]
     public string description;

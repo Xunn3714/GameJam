@@ -101,7 +101,7 @@ public sealed class WildSheepWander : MonoBehaviour
         if (isRecruited || body == null || Time.timeScale == 0f)
             return;
 
-        if (scatteredSheep != null && scatteredSheep.IsScattered)
+        if (scatteredSheep != null && scatteredSheep.IsKnockbackActive)
             return;
 
         if (visualAnimator != null && visualAnimator.IsMovementLocked)

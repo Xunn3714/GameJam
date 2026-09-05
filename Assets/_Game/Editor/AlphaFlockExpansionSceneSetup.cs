@@ -29,6 +29,30 @@ public static class AlphaFlockExpansionSceneSetup
     private const string PauseSystemPrefabPath = "Assets/_Game/Content/Perfabs/UI/PauseSystem.prefab";
     private const string ResultPanelPrefabPath = "Assets/_Game/Content/Perfabs/UI/ResultPanel.prefab";
     private const string TaskSystemPrefabPath = "Assets/_Game/Content/Perfabs/UI/TaskSystem.prefab";
+    private const string GameplayBgmPath = "Assets/_Game/Content/Audio/BGM/SheepMvp/sheep-coming.wav";
+    private const string WolfSpawnClipPath = "Assets/_Game/Content/Audio/BGM/sound efct/woof/woof.wav";
+    private const string WolfAttack1ClipPath = "Assets/_Game/Content/Audio/BGM/sound efct/woof/attact1.wav";
+    private const string WolfAttack2ClipPath = "Assets/_Game/Content/Audio/BGM/sound efct/woof/attack2.wav";
+    private const string WolfAttack3ClipPath = "Assets/_Game/Content/Audio/BGM/sound efct/woof/attack3.wav";
+    private const string WolfCaptureClipPath = "Assets/_Game/Content/Audio/BGM/sound efct/sheep/sheep (8).wav";
+
+    private static readonly string[] GrassFootstepPaths =
+    {
+        "Assets/_Game/Content/Audio/SFX/Grass1.wav",
+        "Assets/_Game/Content/Audio/SFX/Grass2.wav",
+        "Assets/_Game/Content/Audio/SFX/Grass3.wav",
+        "Assets/_Game/Content/Audio/SFX/Grass4.wav"
+    };
+
+    private static readonly string[] SandFootstepPaths =
+    {
+        "Assets/_Game/Content/Audio/SFX/Sand/Sand1.wav",
+        "Assets/_Game/Content/Audio/SFX/Sand/Sand2.wav",
+        "Assets/_Game/Content/Audio/SFX/Sand/Sand3.wav",
+        "Assets/_Game/Content/Audio/SFX/Sand/Sand4.wav",
+        "Assets/_Game/Content/Audio/SFX/Sand/Sand5.wav",
+        "Assets/_Game/Content/Audio/SFX/Sand/Sand6.wav"
+    };
 
     // 地图与羊圈尺寸（世界单位）。
     private static readonly Rect WorldRect = new Rect(-120f, -70f, 240f, 140f);
@@ -63,6 +87,7 @@ public static class AlphaFlockExpansionSceneSetup
         "GameCanvas",
         "PauseManager",
         "EventSystem",
+        "SceneAudio",
         "AlphaFlockExpansionController"
     };
 
@@ -73,6 +98,24 @@ public static class AlphaFlockExpansionSceneSetup
         Scene scene = OpenOrCreateScene();
         BuildScene(scene);
         Selection.activeGameObject = scene.GetRootGameObjects().FirstOrDefault(root => root.name == "SheepFlock");
+    }
+
+    [MenuItem("Game Jam/Alpha Flock Expansion/Apply Audio Integration")]
+    public static void ApplyAudioIntegration()
+    {
+        Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+        FlockMovementController movement = FindComponentInScene<FlockMovementController>(scene);
+        WolfEventDirector wolfDirector = FindComponentInScene<WolfEventDirector>(scene);
+
+        if (movement == null || wolfDirector == null)
+            throw new System.InvalidOperationException("Alpha scene is missing its flock or wolf system.");
+
+        EnsureSceneAudio(scene);
+        ConfigureFootstepAudio(movement);
+        ConfigureWolfAudio(wolfDirector);
+        EditorSceneManager.MarkSceneDirty(scene);
+        EditorSceneManager.SaveScene(scene, ScenePath);
+        AssetDatabase.SaveAssets();
     }
 
     [MenuItem("Game Jam/Alpha Flock Expansion/Apply Main Menu UI")]
@@ -132,6 +175,7 @@ public static class AlphaFlockExpansionSceneSetup
 
         ClearManagedObjects(scene);
 
+        EnsureSceneAudio(scene);
         CreateWorld(scene);
         WorldSeed worldSeed = CreateWorldSeed(scene);
         BorderFenceRing borderRing = CreateBorderFence(scene, fencePrefab, borderFenceDefinition);
@@ -523,6 +567,8 @@ public static class AlphaFlockExpansionSceneSetup
         actions = flockObject.AddComponent<FlockActionController>();
         actions.Configure(flock, movement);
 
+        ConfigureFootstepAudio(movement);
+
         GameObject initialSheep = (GameObject)PrefabUtility.InstantiatePrefab(sheepPrefab, scene);
         initialSheep.name = "Sheep_Initial";
         initialSheep.transform.position = Vector3.zero;
@@ -590,6 +636,56 @@ public static class AlphaFlockExpansionSceneSetup
         // 由关卡控制器在羊圈打开后再启动节奏。
         directorSerialized.FindProperty("runOnStart").boolValue = false;
         directorSerialized.ApplyModifiedPropertiesWithoutUndo();
+
+        ConfigureWolfAudio(director);
+
+        // 正式节奏表：按羊群规模抽取一只狼 / 多只狼 / 本场损失最多的攻击。
+        WolfAttackScheduleSetup.ApplyToDirector(director);
+    }
+
+    private static void EnsureSceneAudio(Scene scene)
+    {
+        GameObject audioObject = scene.GetRootGameObjects().FirstOrDefault(root => root.name == "SceneAudio");
+        if (audioObject == null)
+        {
+            audioObject = new GameObject("SceneAudio");
+            SceneManager.MoveGameObjectToScene(audioObject, scene);
+        }
+
+        SceneBGM sceneBgm = audioObject.GetComponent<SceneBGM>();
+        if (sceneBgm == null)
+            sceneBgm = audioObject.AddComponent<SceneBGM>();
+        sceneBgm.Configure(LoadRequired<AudioClip>(GameplayBgmPath));
+    }
+
+    private static void ConfigureFootstepAudio(FlockMovementController movement)
+    {
+        FlockFootstepAudio footstepAudio = movement.GetComponent<FlockFootstepAudio>();
+        if (footstepAudio == null)
+            footstepAudio = movement.gameObject.AddComponent<FlockFootstepAudio>();
+
+        footstepAudio.Configure(
+            LoadAudioClips(GrassFootstepPaths),
+            LoadAudioClips(SandFootstepPaths),
+            0.7f,
+            0.35f);
+    }
+
+    private static void ConfigureWolfAudio(WolfEventDirector director)
+    {
+        WolfEventAudio wolfAudio = director.GetComponent<WolfEventAudio>();
+        if (wolfAudio == null)
+            wolfAudio = director.gameObject.AddComponent<WolfEventAudio>();
+
+        wolfAudio.Configure(
+            LoadRequired<AudioClip>(WolfSpawnClipPath),
+            new[]
+            {
+                LoadRequired<AudioClip>(WolfAttack1ClipPath),
+                LoadRequired<AudioClip>(WolfAttack2ClipPath),
+                LoadRequired<AudioClip>(WolfAttack3ClipPath)
+            },
+            LoadRequired<AudioClip>(WolfCaptureClipPath));
     }
 
     // ------------------------------------------------------------------ UI
@@ -1007,5 +1103,25 @@ public static class AlphaFlockExpansionSceneSetup
         if (asset == null)
             throw new System.InvalidOperationException($"Missing required asset at {path}.");
         return asset;
+    }
+
+    private static AudioClip[] LoadAudioClips(string[] paths)
+    {
+        AudioClip[] clips = new AudioClip[paths.Length];
+        for (int index = 0; index < paths.Length; index++)
+            clips[index] = LoadRequired<AudioClip>(paths[index]);
+        return clips;
+    }
+
+    private static T FindComponentInScene<T>(Scene scene) where T : Component
+    {
+        foreach (GameObject root in scene.GetRootGameObjects())
+        {
+            T component = root.GetComponentInChildren<T>(true);
+            if (component != null)
+                return component;
+        }
+
+        return null;
     }
 }

@@ -15,6 +15,7 @@ using UnityEngine.UI;
 public static class UiVisualPolish
 {
     private const string MainMenuScenePath = "Assets/_Game/Scenes/MainMenu.unity";
+    private const string MainMenuBgmPath = "Assets/_Game/Content/Audio/BGM/SheepMvp/sheep-coming(city).wav";
     private const string SettingPrefabPath = "Assets/_Game/Content/Perfabs/UI/SettingPanel.prefab";
     private const string CollectionPrefabPath = "Assets/_Game/Content/Perfabs/UI/CollectionPanel.prefab";
     private const string SheepCardPrefabPath = "Assets/_Game/Content/Perfabs/UI/SheepCard.prefab";
@@ -84,6 +85,22 @@ public static class UiVisualPolish
         }
         foreach (GameObject sceneRoot in scene.GetRootGameObjects())
             RemoveMissingScripts(sceneRoot);
+
+        GameObject sceneAudio = Find(scene, "SceneAudio");
+        if (sceneAudio == null)
+        {
+            sceneAudio = new GameObject("SceneAudio");
+            SceneManager.MoveGameObjectToScene(sceneAudio, scene);
+        }
+
+        SceneBGM sceneBgm = sceneAudio.GetComponent<SceneBGM>();
+        if (sceneBgm == null)
+            sceneBgm = sceneAudio.AddComponent<SceneBGM>();
+        AudioClip mainMenuBgm = AssetDatabase.LoadAssetAtPath<AudioClip>(MainMenuBgmPath);
+        if (mainMenuBgm == null)
+            throw new System.InvalidOperationException($"Missing main menu BGM at {MainMenuBgmPath}.");
+        sceneBgm.Configure(mainMenuBgm);
+        EditorUtility.SetDirty(sceneBgm);
 
         CanvasScaler scaler = canvasObject.GetComponent<CanvasScaler>();
         if (scaler != null)

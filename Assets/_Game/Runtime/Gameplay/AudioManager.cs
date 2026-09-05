@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class AudioManager : MonoBehaviour
@@ -18,6 +19,7 @@ public class AudioManager : MonoBehaviour
     private float bgmVolume = 1f;
     private float sfxVolume = 1f;
     private float sheepVolume = 1f;
+    private readonly Dictionary<AudioClip, float> nextSfxPlayTimes = new Dictionary<AudioClip, float>();
 
 
     private void Awake()
@@ -68,22 +70,31 @@ public class AudioManager : MonoBehaviour
 
 
     // 播放普通 SFX
-    public void PlaySFX(AudioClip clip)
+    public void PlaySFX(AudioClip clip, float volumeScale = 1f, float minimumRepeatInterval = 0f)
     {
-        if (clip == null)
+        if (clip == null || sfxSource == null)
             return;
 
-        sfxSource.PlayOneShot(clip);
+        if (minimumRepeatInterval > 0f)
+        {
+            float now = Time.unscaledTime;
+            if (nextSfxPlayTimes.TryGetValue(clip, out float nextPlayTime) && now < nextPlayTime)
+                return;
+
+            nextSfxPlayTimes[clip] = now + minimumRepeatInterval;
+        }
+
+        sfxSource.PlayOneShot(clip, Mathf.Clamp01(volumeScale));
     }
 
 
     // 播放 Sheep 音效
-    public void PlaySheepSFX(AudioClip clip)
+    public void PlaySheepSFX(AudioClip clip, float volumeScale = 1f)
     {
-        if (clip == null)
+        if (clip == null || sheepSource == null)
             return;
 
-        sheepSource.PlayOneShot(clip);
+        sheepSource.PlayOneShot(clip, Mathf.Clamp01(volumeScale));
     }
 
 
