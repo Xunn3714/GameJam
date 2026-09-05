@@ -152,6 +152,7 @@ RectTransform:
   m_Children:
   - {fileID: 1390761056}
   - {fileID: 1122711761}
+  - {fileID: 869687464}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -169,7 +170,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: dc42784cf147c0c48a680349fa168899, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.GraphicRaycaster
   m_IgnoreReversedGraphics: 1
   m_BlockingObjects: 0
@@ -186,7 +187,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.CanvasScaler
   m_UiScaleMode: 1
   m_ReferencePixelsPerUnit: 100
@@ -272,7 +273,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
   m_Navigation:
     m_Mode: 3
@@ -328,7 +329,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -403,7 +404,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -548,7 +549,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -668,7 +669,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a79441f348de89743a2939f4d699eac1, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: 
   m_RenderShadows: 1
   m_RequiresDepthTextureOption: 2
@@ -778,7 +779,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d2b6835fd778d7f47a9297fd32b16a3e, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CameraFollow2D
   target: {fileID: 930155412}
   smoothTime: 0.15
@@ -829,7 +830,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -946,7 +947,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 073797afb82c5a1438f328866b10b3f0, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: 
   m_ComponentVersion: 4
   m_LightType: 4
@@ -1079,7 +1080,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 43fe8e983f090a34a90a4d05d1a485d2, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PauseManager
   pausePanel: {fileID: 1390761053}
   pauseWindow: {fileID: 1680964076}
@@ -1129,7 +1130,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 52b84b8587c54d12b97343ab9123e05c, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FlockSizeObstacle
   minimumMembersToBreak: 6
   obstacleRenderer: {fileID: 0}
@@ -1312,7 +1313,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -1421,6 +1422,73 @@ RectTransform:
   m_AnchoredPosition: {x: 320, y: -250}
   m_SizeDelta: {x: 300, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!1 &869687463
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 869687464}
+  - component: {fileID: 869687465}
+  m_Layer: 0
+  m_Name: WolfEventHud
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &869687464
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 869687463}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 78480403}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 1}
+  m_AnchorMax: {x: 0.5, y: 1}
+  m_AnchoredPosition: {x: 0, y: -16}
+  m_SizeDelta: {x: 520, y: 80}
+  m_Pivot: {x: 0.5, y: 1}
+--- !u!114 &869687465
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 869687463}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 384f4008a65ba77489f044931928bde0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WolfEventHudView
+  director: {fileID: 1598037234}
+  iconImage: {fileID: 0}
+  phaseText: {fileID: 0}
+  countdownText: {fileID: 0}
+  calmIcon: {fileID: 0}
+  howlIcon: {fileID: 0}
+  attackIcon: {fileID: 0}
+  retreatIcon: {fileID: 0}
+  calmColor: {r: 0.62, g: 0.62, b: 0.65, a: 1}
+  howlColor: {r: 0.95, g: 0.65, b: 0.2, a: 1}
+  attackColor: {r: 0.85, g: 0.2, b: 0.15, a: 1}
+  retreatColor: {r: 0.4, g: 0.55, b: 0.85, a: 1}
+  calmText: "\u7F8A\u7FA4\u5E73\u9759"
+  howlText: "\u72FC\u568E\u2026\u2026\u72FC\u8981\u6765\u4E86\uFF01"
+  attackText: "\u4E00\u53EA\u72FC\u6765\u5566\uFF01"
+  retreatText: "\u653B\u51FB\u7ED3\u675F\uFF0C\u72FC\u8DD1\u8DEF\u4E86"
+  dormantText: "\u7F8A\u7FA4\u8FD8\u5C0F\uFF0C\u72FC\u7FA4\u5C1A\u672A\u51FA\u73B0\uFF08{0}/{1}\uFF09"
+  hideIconWhenDormant: 1
+  howlFlashFrequency: 3
 --- !u!1 &881671392
 GameObject:
   m_ObjectHideFlags: 0
@@ -1468,11 +1536,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5bdf35bc18924f340a52783c24ac59b6, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FlockController
   movementController: {fileID: 881671395}
   startingMembers:
   - {fileID: 930155418}
+  velocityHistorySeconds: 2
+  huddleCompactness: 0.55
+  huddleTransitionSpeed: 1.2
 --- !u!114 &881671395
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1483,7 +1554,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7f74e97ce4434e64a2d0c58e88a6aa67, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FlockMovementController
   moveSpeed: 4
 --- !u!114 &881671396
@@ -1496,7 +1567,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 53a708b0ad6044b594063aec52566f51, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PoopAbility
   poopAction: {fileID: 11400000, guid: 17bc173d972edda449f29844fc283b86, type: 2}
   spawnPoint: {fileID: 930155416}
@@ -1767,7 +1838,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2cf943e4a5c9400d9a2ab35a802e8238, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SheepMember
 --- !u!1001 &971120304
 PrefabInstance:
@@ -1943,7 +2014,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0f5cdb53705e1fb4eb623f493766f1ca, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MvpGameController
   flockController: {fileID: 881671394}
   poopAbility: {fileID: 0}
@@ -2012,7 +2083,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 221a33d6576a1fe44aafd9004bbeb160, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MvpHudView
   taskText: {fileID: 304555635}
   flockCountText: {fileID: 853393891}
@@ -2048,7 +2119,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5c8e745d7b2783449839ba2f15c8ca62, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::JoinToastView
   messageText: {fileID: 1579820157}
   displayDuration: 1.5
@@ -2172,7 +2243,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0, g: 0, b: 0, a: 0.47058824}
@@ -2248,7 +2319,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ae6c2220258e9844ba2c9bc84a1b2cf0, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SheepNameGenerator
   namePool: {fileID: 11400000, guid: c92b8606274c4f341b8ede76d1b9e527, type: 2}
   sheep:
@@ -2301,7 +2372,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 01614664b831546d2ae94a42149d80ac, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Unity.InputSystem::UnityEngine.InputSystem.UI.InputSystemUIInputModule
   m_SendPointerHoverToParent: 1
   m_MoveRepeatDelay: 0.5
@@ -2332,7 +2403,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 76c392e42b5098c458856cdf6ecaaaa1, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.EventSystems.EventSystem
   m_FirstSelected: {fileID: 0}
   m_sendNavigationEvents: 1
@@ -2759,6 +2830,104 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: -150}
   m_SizeDelta: {x: 800, y: 60}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!1 &1598037232
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1598037236}
+  - component: {fileID: 1598037235}
+  - component: {fileID: 1598037234}
+  - component: {fileID: 1598037233}
+  m_Layer: 0
+  m_Name: WolfSystem
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1598037233
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1598037232}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b0a353b22ce1cc4fb037e690aac609b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WolfDefeatHandler
+  flock: {fileID: 881671394}
+  flockMovement: {fileID: 881671395}
+  director: {fileID: 1598037234}
+  pauseManager: {fileID: 795313249}
+  resultPanelPrefab: {fileID: 3088816046812421370, guid: 4174f917a49478048a58f688d2b83f0c, type: 3}
+  canvas: {fileID: 78480406}
+  defeatDescription: "\u6700\u540E\u4E00\u53EA\u7F8A\u88AB\u72FC\u53FC\u8D70\u4E86\u2026\u2026"
+--- !u!114 &1598037234
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1598037232}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fab6f6ea091ca9e42a6043896e4117c6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WolfEventDirector
+  spawner: {fileID: 1598037235}
+  flock: {fileID: 881671394}
+  requiredMemberCount: 6
+  huddleDuringHowl: 1
+  huddleDuringAttack: 1
+  calmDurationMin: 15
+  calmDurationMax: 20
+  howlDuration: 3
+  retreatDuration: 1.5
+  attackTimeout: 25
+  firstCalmDurationOverride: 0
+  howlClip: {fileID: 0}
+  fallbackAudioSource: {fileID: 0}
+  runOnStart: 1
+--- !u!114 &1598037235
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1598037232}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8b8c021a2bc49fb438830cb1f7f2d39d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WolfSpawner
+  flock: {fileID: 881671394}
+  wolfPrefab: {fileID: 6246638143151926226, guid: 078cbc44bf98c3f459915d12bc0b1398, type: 3}
+  firstSpawnDelay: 3
+  spawnInterval: 6
+  waitForPreviousWolf: 0
+  maxAliveWolves: 3
+  spawnDistance: 12
+--- !u!4 &1598037236
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1598037232}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1645455494
 GameObject:
   m_ObjectHideFlags: 0
@@ -3123,3 +3292,4 @@ SceneRoots:
   - {fileID: 881671393}
   - {fileID: 767428713}
   - {fileID: 798352864}
+  - {fileID: 1598037236}

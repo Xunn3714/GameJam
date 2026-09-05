@@ -11,11 +11,24 @@ public sealed class SheepFlockAgent : MonoBehaviour
     [SerializeField, Min(0f)] private float idleBraking = 18f;
 
     [Header("Flock Shape")]
-    [SerializeField, Min(0f)] private float comfortableRadius = 1.65f;
-    [SerializeField, Min(0f)] private float separationRadius = 1.15f;
+    [Tooltip("羊群只有 1 只羊时的舒适半径；羊越多半径按 radiusGrowthPerSheep * sqrt(羊数-1) 变大。")]
+    [SerializeField, Min(0f)] private float comfortableRadius = 1f;
+    [SerializeField, Min(0f)] private float radiusGrowthPerSheep = 0.8f;
+    [Tooltip("两只羊之间开始互相推开的距离，建议 ≈ 羊贴图的宽度。")]
+    [SerializeField, Min(0f)] private float separationRadius = 1.9f;
     [SerializeField, Min(0f)] private float cohesionWeight = 2.2f;
     [SerializeField, Min(0f)] private float separationWeight = 4f;
     [SerializeField, Min(0f)] private float alignmentWeight = 0.35f;
+
+    [Header("Leader Ripple")]
+    [Tooltip("领头羊贴着羊群中心走的半径。")]
+    [SerializeField, Min(0f)] private float leaderRadius = 0.1f;
+    [Tooltip("离领头羊每远 1 单位，跟随输入就晚多少秒。")]
+    [SerializeField, Min(0f)] private float followDelayPerUnit = 0.14f;
+    [SerializeField, Min(0f)] private float maximumFollowDelay = 0.8f;
+    [Tooltip("延迟值的变化速度（秒/秒），避免羊在群里换位置时突然抖动。")]
+    [SerializeField, Min(0f)] private float followDelayAdjustSpeed = 2f;
+    [SerializeField, Range(0f, 1f)] private float leaderWanderScale = 0.2f;
 
     [Header("Organic Wander")]
     [SerializeField, Min(0f)] private float wanderStrength = 0.7f;
@@ -34,8 +47,11 @@ public sealed class SheepFlockAgent : MonoBehaviour
     private Vector2 targetWanderDirection;
     private Vector2 fallbackSeparationDirection;
     private float wanderTimer;
+    private float followDelay;
 
     public Vector2 Velocity => velocity;
+    public bool IsLeader => flock != null && flock.Leader != null && flock.Leader.gameObject == gameObject;
+    public float FollowDelay => followDelay;
 
     private void Awake()
     {
@@ -47,6 +63,7 @@ public sealed class SheepFlockAgent : MonoBehaviour
     {
         flock = owner;
         velocity = Vector2.zero;
+        followDelay = 0f;
         ResetWander();
         enabled = flock != null;
     }
@@ -57,8 +74,17 @@ public sealed class SheepFlockAgent : MonoBehaviour
             return;
 
         float deltaTime = Time.fixedDeltaTime;
-        bool flockIsMoving = flock.IsMoving;
-        Vector2 steeringVelocity = CalculateSteeringVelocity(flockIsMoving, deltaTime);
+        bool isLeader = IsLeader;
+
+        // 离领头羊越远，跟随玩家输入就越晚：移动从领头羊开始一圈圈向外扩散。
+        float targetDelay = isLeader
+            ? 0f
+            : Mathf.Min((flock.Center - body.position).magnitude * followDelayPerUnit, maximumFollowDelay);
+        followDelay = Mathf.MoveTowards(followDelay, targetDelay, followDelayAdjustSpeed * deltaTime);
+
+        Vector2 driveVelocity = flock.GetMovementVelocity(followDelay);
+        bool flockIsMoving = driveVelocity.sqrMagnitude > 0.0001f;
+        Vector2 steeringVelocity = CalculateSteeringVelocity(driveVelocity, flockIsMoving, isLeader, deltaTime);
         float response = flockIsMoving ? acceleration : idleBraking;
         velocity = Vector2.MoveTowards(velocity, steeringVelocity, response * deltaTime);
 
@@ -73,16 +99,22 @@ public sealed class SheepFlockAgent : MonoBehaviour
         body.MovePosition(body.position + velocity * deltaTime);
     }
 
-    private Vector2 CalculateSteeringVelocity(bool flockIsMoving, float deltaTime)
+    private Vector2 CalculateSteeringVelocity(
+        Vector2 driveVelocity,
+        bool flockIsMoving,
+        bool isLeader,
+        float deltaTime)
     {
         Vector2 position = body.position;
-        Vector2 desiredVelocity = flock.MovementVelocity;
+        Vector2 desiredVelocity = driveVelocity;
         Vector2 centerOffset = flock.Center - position;
         float centerDistance = centerOffset.magnitude;
 
-        float activeRadius = flockIsMoving
-            ? comfortableRadius
-            : comfortableRadius + idleCorrectionMargin;
+        float activeRadius = isLeader ? leaderRadius : GetComfortableRadius();
+        if (!flockIsMoving)
+        {
+            activeRadius += idleCorrectionMargin;
+        }
         if (centerDistance > activeRadius)
         {
             float outsideDistance = centerDistance - activeRadius;
@@ -94,7 +126,9 @@ public sealed class SheepFlockAgent : MonoBehaviour
         Vector2 averageNeighborVelocity = Vector2.zero;
         int velocityNeighborCount = 0;
         IReadOnlyList<SheepMember> members = flock.Members;
-        float separationRadiusSquared = separationRadius * separationRadius;
+        // 抱团时允许羊挨得更近一些（最多缩到 70%）。
+        float activeSeparationRadius = separationRadius * Mathf.Lerp(0.7f, 1f, flock.Compactness);
+        float separationRadiusSquared = activeSeparationRadius * activeSeparationRadius;
 
         for (int index = 0; index < members.Count; index++)
         {
@@ -121,7 +155,7 @@ public sealed class SheepFlockAgent : MonoBehaviour
             }
 
             float distance = Mathf.Sqrt(squaredDistance);
-            float closeness = 1f - distance / separationRadius;
+            float closeness = 1f - distance / activeSeparationRadius;
             float avoidance = closeness + closeness * closeness;
             separation += away / distance * avoidance;
         }
@@ -137,7 +171,7 @@ public sealed class SheepFlockAgent : MonoBehaviour
             }
 
             UpdateWander(deltaTime);
-            desiredVelocity += wanderDirection * wanderStrength;
+            desiredVelocity += wanderDirection * wanderStrength * (isLeader ? leaderWanderScale : 1f);
         }
         else
         {
@@ -148,6 +182,13 @@ public sealed class SheepFlockAgent : MonoBehaviour
         }
 
         return Vector2.ClampMagnitude(desiredVelocity, maximumSpeed);
+    }
+
+    /// <summary>舒适半径随羊数增长，保证羊多了也有足够空间彼此分开。</summary>
+    private float GetComfortableRadius()
+    {
+        int others = Mathf.Max(0, flock.MemberCount - 1);
+        return (comfortableRadius + radiusGrowthPerSheep * Mathf.Sqrt(others)) * flock.Compactness;
     }
 
     private void UpdateWander(float deltaTime)
@@ -182,6 +223,5 @@ public sealed class SheepFlockAgent : MonoBehaviour
     private void OnValidate()
     {
         maximumWanderDuration = Mathf.Max(maximumWanderDuration, minimumWanderDuration);
-        comfortableRadius = Mathf.Max(comfortableRadius, separationRadius);
     }
 }

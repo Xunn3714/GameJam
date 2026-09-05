@@ -28,6 +28,29 @@ public static class MvpTmpUiFont
         sourceFont = null;
     }
 
+#if UNITY_EDITOR
+    [UnityEditor.InitializeOnLoadMethod]
+    private static void RegisterEditorCleanup()
+    {
+        // 退出 Play 模式后，运行时创建的字体图集和材质已被销毁，但 TMP_Settings 的
+        // fallback 列表仍指向那个字体资源；编辑器里任何 TMP 文本重建都会走到它，
+        // 抛出 "MissingReferenceException: Material has been destroyed"。这里在回到
+        // Edit 模式时把它摘掉并销毁干净。
+        UnityEditor.EditorApplication.playModeStateChanged -= HandlePlayModeStateChanged;
+        UnityEditor.EditorApplication.playModeStateChanged += HandlePlayModeStateChanged;
+        RemoveInvalidRuntimeFallbacks();
+    }
+
+    private static void HandlePlayModeStateChanged(UnityEditor.PlayModeStateChange state)
+    {
+        if (state != UnityEditor.PlayModeStateChange.EnteredEditMode)
+            return;
+
+        RemoveInvalidRuntimeFallbacks();
+        DestroyRuntimeFont();
+    }
+#endif
+
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void RegisterGlobalFallback()
     {
@@ -116,10 +139,34 @@ public static class MvpTmpUiFont
         {
             TMP_FontAsset fallback = fallbackFonts[i];
             if (fallback == null ||
+                fallback.material == null ||
                 string.Equals(fallback.name, RuntimeFontAssetName, StringComparison.Ordinal))
             {
                 fallbackFonts.RemoveAt(i);
             }
         }
+    }
+
+    private static void DestroyRuntimeFont()
+    {
+        if (cachedFontAsset != null)
+        {
+            if (cachedFontAsset.material != null)
+                UnityEngine.Object.DestroyImmediate(cachedFontAsset.material);
+
+            if (cachedFontAsset.atlasTextures != null)
+            {
+                foreach (Texture2D atlas in cachedFontAsset.atlasTextures)
+                {
+                    if (atlas != null)
+                        UnityEngine.Object.DestroyImmediate(atlas);
+                }
+            }
+
+            UnityEngine.Object.DestroyImmediate(cachedFontAsset);
+        }
+
+        cachedFontAsset = null;
+        sourceFont = null;
     }
 }
