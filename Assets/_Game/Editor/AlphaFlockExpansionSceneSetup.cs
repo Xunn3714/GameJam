@@ -21,7 +21,6 @@ public static class AlphaFlockExpansionSceneSetup
     private const string WarningRectAssetPath = "Assets/_Game/Content/Art/Prototype/WolfWarningRect.asset";
     private const string SheepMemberPrefabPath = "Assets/_Game/Content/Perfabs/Sheep/SheepMember.prefab";
     private const string RecruitableSheepPrefabPath = "Assets/_Game/Content/Perfabs/Sheep/RecruitableSheep.prefab";
-    private const string SpecialSheepFolder = "Assets/_Game/Content/Perfabs/Sheep";
     private const string WolfPrefabPath = "Assets/_Game/Content/Perfabs/Wolf/Wolf.prefab";
     private const string NamePoolPath = "Assets/_Game/Content/Data/SheepNamePool.asset";
     private const string Level01ScenePath = "Assets/_Game/Scenes/Old/Legacy/Level_01.unity";
@@ -135,7 +134,7 @@ public static class AlphaFlockExpansionSceneSetup
             out FlockActionController actions);
         CameraFollow2D cameraFollow = ConfigureCamera(scene, flockObject.transform, out Camera gameplayCamera);
         ConfigureLighting(scene);
-        ProgressiveSheepSpawner sheepSpawner = CreateSheepSpawner(scene, flock, recruitablePrefab, namePool, gameplayCamera, worldSeed);
+        ProgressiveSheepSpawner sheepSpawner = CreateSheepSpawner(scene, flock, namePool, gameplayCamera, worldSeed);
         CreateWolfSystem(scene, flock, wolfPrefab.GetComponent<Wolf>(), out WolfSpawner wolfSpawner, out WolfEventDirector director);
         LevelUi ui = CreateLevelUi(scene, director);
         CreateGameController(
@@ -539,7 +538,6 @@ public static class AlphaFlockExpansionSceneSetup
     private static ProgressiveSheepSpawner CreateSheepSpawner(
         Scene scene,
         FlockController flock,
-        GameObject recruitablePrefab,
         SheepNamePool namePool,
         Camera gameplayCamera,
         WorldSeed worldSeed)
@@ -548,45 +546,15 @@ public static class AlphaFlockExpansionSceneSetup
         SceneManager.MoveGameObjectToScene(spawnerObject, scene);
         ProgressiveSheepSpawner spawner = spawnerObject.AddComponent<ProgressiveSheepSpawner>();
 
-        RecruitableSheep common = recruitablePrefab.GetComponent<RecruitableSheep>();
         SerializedObject serialized = new SerializedObject(spawner);
         serialized.FindProperty("flock").objectReferenceValue = flock;
-        serialized.FindProperty("sheepPrefab").objectReferenceValue = common;
         serialized.FindProperty("namePool").objectReferenceValue = namePool;
         serialized.FindProperty("gameplayCamera").objectReferenceValue = gameplayCamera;
         serialized.FindProperty("worldSeed").objectReferenceValue = worldSeed;
+        serialized.FindProperty("specialSheepCatalog").objectReferenceValue =
+            SpecialSheepCatalogEditorUtility.LoadOrCreateAndSynchronize();
         serialized.FindProperty("spawnAreaCenter").vector2Value = WorldRect.center;
         serialized.FindProperty("spawnAreaSize").vector2Value = WorldRect.size;
-
-        // 普通 90%，四种特殊羊各 2.5%。
-        (string file, string typeId, string displayName, float weight)[] table =
-        {
-            ("RecruitableSheep", MvpSheepCatalog.DefaultTypeId, "普通羊", 90f),
-            ("SpecialSheep_Black", "sheep.special.black", "黑羊", 2.5f),
-            ("SpecialSheep_Horned", "sheep.special.horned", "角羊", 2.5f),
-            ("SpecialSheep_TopHat", "sheep.special.tophat", "礼帽羊", 2.5f),
-            ("SpecialSheep_RedBow", "sheep.special.redbow", "红蝴蝶结羊", 2.5f)
-        };
-
-        SerializedProperty types = serialized.FindProperty("sheepTypes");
-        types.arraySize = 0;
-        foreach ((string file, string typeId, string displayName, float weight) in table)
-        {
-            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>($"{SpecialSheepFolder}/{file}.prefab");
-            RecruitableSheep recruitable = prefab != null ? prefab.GetComponent<RecruitableSheep>() : null;
-            if (recruitable == null)
-            {
-                Debug.LogWarning($"Sheep prefab {file} not found or has no RecruitableSheep; skipped.");
-                continue;
-            }
-
-            types.arraySize++;
-            SerializedProperty entry = types.GetArrayElementAtIndex(types.arraySize - 1);
-            entry.FindPropertyRelative("prefab").objectReferenceValue = recruitable;
-            entry.FindPropertyRelative("typeId").stringValue = typeId;
-            entry.FindPropertyRelative("displayName").stringValue = displayName;
-            entry.FindPropertyRelative("weight").floatValue = weight;
-        }
 
         SerializedProperty zones = serialized.FindProperty("exclusionZones");
         zones.arraySize = 1;

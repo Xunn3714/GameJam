@@ -17,11 +17,26 @@ public sealed class SpecialSheepMarker : MonoBehaviour
 
     public void Configure(SpecialSheepSelection selection)
     {
-        sheepTypeId = selection.TypeId;
-        typeName = selection.TypeName;
-        quality = selection.Quality;
-        visualEffectId = selection.VisualEffectId;
-        abilityId = selection.AbilityId;
+        Configure(
+            selection.TypeId,
+            selection.TypeName,
+            selection.Quality,
+            selection.VisualEffectId,
+            selection.AbilityId);
+    }
+
+    public void Configure(
+        string typeId,
+        string displayName,
+        SheepQuality sheepQuality,
+        string effectId = "",
+        string featureId = "")
+    {
+        sheepTypeId = typeId?.Trim();
+        typeName = displayName?.Trim();
+        quality = sheepQuality;
+        visualEffectId = effectId?.Trim();
+        abilityId = featureId?.Trim();
 
         SheepIdentity identity = GetComponent<SheepIdentity>();
         identity ??= gameObject.AddComponent<SheepIdentity>();
