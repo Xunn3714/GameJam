@@ -3,10 +3,7 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public sealed class SpecialSheepSpawnPoint : MonoBehaviour
 {
-    [SerializeField] private RecruitableSheep prefabOverride;
-
     public Vector2 Position => transform.position;
-    public RecruitableSheep PrefabOverride => prefabOverride;
 
     private void OnDrawGizmos()
     {
