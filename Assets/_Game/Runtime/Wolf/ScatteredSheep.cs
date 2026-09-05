@@ -62,6 +62,10 @@ public sealed class ScatteredSheep : MonoBehaviour
         IsScattered = true;
         enabled = true;
 
+        Color colorBeforeScatter = spriteRenderer != null
+            ? spriteRenderer.color
+            : Color.white;
+
         if (spriteRenderer != null)
         {
             spriteRenderer.color = scatteredColor;
@@ -72,7 +76,7 @@ public sealed class ScatteredSheep : MonoBehaviour
         {
             recruitable = gameObject.AddComponent<RecruitableSheep>();
         }
-        recruitable.ReleaseForRecruitment(recruitLockout);
+        recruitable.ReleaseForRecruitment(recruitLockout, colorBeforeScatter);
     }
 
     private void FixedUpdate()

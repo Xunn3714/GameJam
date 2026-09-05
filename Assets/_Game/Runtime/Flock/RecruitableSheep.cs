@@ -5,7 +5,7 @@ using UnityEngine;
 public sealed class RecruitableSheep : MonoBehaviour
 {
     [SerializeField] private SpriteRenderer spriteRenderer;
-    [SerializeField] private Color recruitedColor = new Color(0.65f, 1f, 0.65f, 1f);
+    [SerializeField] private Color recruitedColor = Color.white;
 
     private CircleCollider2D recruitTrigger;
     private WildSheepWander wildWander;
@@ -71,8 +71,18 @@ public sealed class RecruitableSheep : MonoBehaviour
     /// <param name="lockoutSeconds">多少秒内暂不允许被招募。</param>
     public void ReleaseForRecruitment(float lockoutSeconds)
     {
+        ReleaseForRecruitment(lockoutSeconds, recruitedColor);
+    }
+
+    /// <summary>
+    /// 让羊重新可招募，并指定它归队后应恢复的颜色。
+    /// 被狼打散时使用撞击前的颜色，避免运行时新增组件的默认颜色污染外观。
+    /// </summary>
+    internal void ReleaseForRecruitment(float lockoutSeconds, Color colorOnRecruitment)
+    {
         IsRecruited = false;
         recruitLockedUntil = Time.time + Mathf.Max(0f, lockoutSeconds);
+        recruitedColor = colorOnRecruitment;
         wildWander?.SetRecruited(false);
     }
 
