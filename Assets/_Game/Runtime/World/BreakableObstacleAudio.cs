@@ -4,6 +4,8 @@ using UnityEngine;
 [RequireComponent(typeof(BreakableObstacle))]
 public sealed class BreakableObstacleAudio : MonoBehaviour
 {
+    private const float SharedClipCooldown = 0.2f;
+
     [Header("Break SFX")]
     [SerializeField] private AudioClip breakClip;
     [SerializeField, Range(0f, 1f)] private float volumeScale = 0.6f;
@@ -39,6 +41,6 @@ public sealed class BreakableObstacleAudio : MonoBehaviour
             return;
 
         if (breakClip != null && AudioManager.Instance != null)
-            AudioManager.Instance.PlaySFX(breakClip, volumeScale);
+            AudioManager.Instance.PlaySFX(breakClip, volumeScale, SharedClipCooldown);
     }
 }

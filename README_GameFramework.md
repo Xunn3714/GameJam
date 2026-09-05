@@ -450,6 +450,9 @@ PlayBGM(AudioClip)
 StopBGM()
 PlaySFX(AudioClip)
 
+// 可选：限制同一音频片段的最短重复间隔
+PlaySFX(AudioClip, volumeScale, minimumRepeatInterval)
+
 SetBGMVolume(float)
 SetSFXVolume(float)
 ```
