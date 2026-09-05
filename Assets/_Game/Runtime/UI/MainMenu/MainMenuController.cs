@@ -2,13 +2,18 @@ using UnityEngine;
 
 public class MainMenuController : MonoBehaviour
 {
-    [Header("UI Panel")]
+    [Header("Main Menu")]
     public GameObject menuPanel;
-    public GameObject settingPanel;
 
-    [Header("Main Menu UI")]
+    [Header("Sub Panels")]
+    public GameObject settingPanel;
+    public GameObject collectionPanel;
+    public GameObject statisticsPanel;
+
+    [Header("Independent Main Menu UI")]
     public GameObject gameTitle;
     public GameObject settingButton;
+    public GameObject developersButton;
 
 
     private void Start()
@@ -17,49 +22,89 @@ public class MainMenuController : MonoBehaviour
     }
 
 
-    // 显示主菜单
     public void ShowMenu()
     {
-        menuPanel.SetActive(true);
-        settingPanel.SetActive(false);
+        if (menuPanel != null)
+            menuPanel.SetActive(true);
+
+        if (settingPanel != null)
+            settingPanel.SetActive(false);
+
+        if (collectionPanel != null)
+            collectionPanel.SetActive(false);
+
+        if (statisticsPanel != null)
+            statisticsPanel.SetActive(false);
 
         if (gameTitle != null)
             gameTitle.SetActive(true);
 
         if (settingButton != null)
             settingButton.SetActive(true);
+
+        if (developersButton != null)
+            developersButton.SetActive(true);
     }
 
 
-    // 打开设置
     public void ShowSettings()
     {
-        menuPanel.SetActive(false);
-        settingPanel.SetActive(true);
+        HideMainMenu();
+
+        if (settingPanel != null)
+            settingPanel.SetActive(true);
+    }
+
+
+    public void ShowCollection()
+    {
+        HideMainMenu();
+
+        if (collectionPanel != null)
+            collectionPanel.SetActive(true);
+    }
+
+
+    public void ShowStatistics()
+    {
+        HideMainMenu();
+
+        if (statisticsPanel != null)
+            statisticsPanel.SetActive(true);
+    }
+
+
+    public void BackToMenu()
+    {
+        ShowMenu();
+    }
+
+
+    private void HideMainMenu()
+    {
+        if (menuPanel != null)
+            menuPanel.SetActive(false);
+
+        if (settingPanel != null)
+            settingPanel.SetActive(false);
+
+        if (collectionPanel != null)
+            collectionPanel.SetActive(false);
+
+        if (statisticsPanel != null)
+            statisticsPanel.SetActive(false);
 
         if (gameTitle != null)
             gameTitle.SetActive(false);
 
         if (settingButton != null)
             settingButton.SetActive(false);
+
+        if (developersButton != null)
+            developersButton.SetActive(false);
     }
 
 
-    // 返回主菜单
-    public void BackToMenu()
-    {
-        settingPanel.SetActive(false);
-        menuPanel.SetActive(true);
-
-        if (gameTitle != null)
-            gameTitle.SetActive(true);
-
-        if (settingButton != null)
-            settingButton.SetActive(true);
-    }
-
-
-    // 开始游戏
     public void StartGame()
     {
         if (SceneLoader.Instance != null)
@@ -73,11 +118,8 @@ public class MainMenuController : MonoBehaviour
     }
 
 
-    // 退出游戏
     public void QuitGame()
     {
-        Debug.Log("Quit Game");
-
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.isPlaying = false;
 #else
