@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 5f49e625b73b4384e949c099bba3223a
+guid: 148d46c65b8972245b5f7f811af4f0aa
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -4884740227942375945
-    second: obstacle_rock_128_0
+      213: 3186357021730727262
+    second: "\u7A3B\u7530_0"
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,13 +100,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: obstacle_rock_128_0
+      name: "\u7A3B\u7530_0"
       rect:
         serializedVersion: 2
-        x: 19
-        y: 14
-        width: 95
-        height: 91
+        x: 144
+        y: 102
+        width: 294
+        height: 251
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 7fd1f65a4aae53cb0800000000000000
-      internalID: -4884740227942375945
+      spriteID: e55e4d744d6383c20800000000000000
+      internalID: 3186357021730727262
       vertices: []
       indices: 
       edges: []
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      obstacle_rock_128_0: -4884740227942375945
+      "\u7A3B\u7530_0": 3186357021730727262
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 30893b22f8356574fa3123f97c628b4e
+guid: 0dd4eb01724710c4490048e6ba4f150d
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 3328482725859309266
-    second: obstacle_barrel_broken_128_0
+      213: -3841725500654314512
+    second: "\u5E72\u8349\u579B_0"
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,13 +100,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: obstacle_barrel_broken_128_0
+      name: "\u5E72\u8349\u579B_0"
       rect:
         serializedVersion: 2
-        x: 13
-        y: 14
-        width: 107
-        height: 45
+        x: 67
+        y: 74
+        width: 303
+        height: 266
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 2d63ed37765213e20800000000000000
-      internalID: 3328482725859309266
+      spriteID: 0fb90f0f2037faac0800000000000000
+      internalID: -3841725500654314512
       vertices: []
       indices: 
       edges: []
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      obstacle_barrel_broken_128_0: 3328482725859309266
+      "\u5E72\u8349\u579B_0": -3841725500654314512
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

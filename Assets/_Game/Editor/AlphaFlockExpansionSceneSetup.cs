@@ -483,32 +483,16 @@ public static class AlphaFlockExpansionSceneSetup
         SceneManager.MoveGameObjectToScene(spawnerObject, scene);
         WorldDebrisSpawner spawner = spawnerObject.AddComponent<WorldDebrisSpawner>();
 
-        GameObject flower = AssetDatabase.LoadAssetAtPath<GameObject>(WorldObstaclePrefabBuilder.FlowerPrefabPath);
-        GameObject rock = AssetDatabase.LoadAssetAtPath<GameObject>(WorldObstaclePrefabBuilder.RockPrefabPath);
-        GameObject barrel = AssetDatabase.LoadAssetAtPath<GameObject>(WorldObstaclePrefabBuilder.BarrelPrefabPath);
-
         SerializedObject serialized = new SerializedObject(spawner);
         serialized.FindProperty("worldSeed").objectReferenceValue = worldSeed;
-        SerializedProperty entries = serialized.FindProperty("entries");
-        entries.arraySize = 3;
-        SetDebrisEntry(entries.GetArrayElementAtIndex(0), flower, 5f, 1.0f);
-        SetDebrisEntry(entries.GetArrayElementAtIndex(1), rock, 2f, 1.5f);
-        SetDebrisEntry(entries.GetArrayElementAtIndex(2), barrel, 1.5f, 1.5f);
+        // 散布物种类、权重、间距、密度统一由 WorldObstaclePrefabBuilder.DebrisSpecs 决定。
+        WorldObstaclePrefabBuilder.ApplyDebrisEntries(serialized);
         serialized.FindProperty("area").rectValue = WorldRect;
-        serialized.FindProperty("densityPer100SquareUnits").floatValue = 1.5f;
-        serialized.FindProperty("maximumCount").intValue = 520;
         SerializedProperty zones = serialized.FindProperty("exclusionZones");
         zones.arraySize = 1;
         zones.GetArrayElementAtIndex(0).rectValue = Expand(PenRect, 4f);
         serialized.ApplyModifiedPropertiesWithoutUndo();
         return spawner;
-    }
-
-    private static void SetDebrisEntry(SerializedProperty entry, GameObject prefab, float weight, float clearance)
-    {
-        entry.FindPropertyRelative("prefab").objectReferenceValue = prefab;
-        entry.FindPropertyRelative("weight").floatValue = weight;
-        entry.FindPropertyRelative("clearance").floatValue = clearance;
     }
 
     // ------------------------------------------------------------------ flock & spawners
