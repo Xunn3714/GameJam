@@ -14,8 +14,10 @@
 | 1～4 | 1 | 5 | 不生成 |
 | 5～19 | 2～3 | 7 | 不生成 |
 | 20～49 | 5～7 | 10 | 开始生成 |
-| 50～99 | 10～15 | 14 | 持续生成 |
-| 100 及以上 | 20～30 | 18 | 持续生成 |
+| 50～89 | 10～15 | 14 | 持续生成 |
+| 90 及以上 | 20～30 | 18 | 持续生成 |
+
+羊潮在历史最高达到 90 只时解锁；外围围栏仍需历史最高达到 100 只才能撞破，两者独立判断。
 
 阶段以本局历史最高羊数判断，只能升级，不能降级。狼撞散或叼走羊之后，相机、批次规模和狼的解锁状态均不会回退。被撞散的旧成员重新加入时不计作新消耗的野生羊，因此不会额外抬高周边密度。
 
@@ -78,7 +80,7 @@
 
 ### 验证
 
-- EditMode 测试：`Assets/_Game/Editor/Tests/AlphaProgressionTests.cs`（阶段不降级、100 只解锁出口、门槛可配）、`AlphaRunStatsTests.cs`（统计准确）。
+- EditMode 测试：`Assets/_Game/Editor/Tests/AlphaProgressionTests.cs`（阶段不降级、100 只解锁出口、门槛可配）、`AlphaRunStatsTests.cs`（统计准确）、`FlockSeparationTests.cs`（主群连通、持续脱队与重新招募）。
 - 菜单：`Game Jam → Alpha Flock Expansion → Setup Scene`（会先执行 `Game Jam → World → Build Obstacle Prefabs`）。
 
 ### 2026-09-05 第二轮调整

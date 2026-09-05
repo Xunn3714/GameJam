@@ -421,12 +421,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WolfEventDirector
   spawner: {fileID: 717531088}
-  calmDurationMin: 15
-  calmDurationMax: 20
-  howlDuration: 3
-  retreatDuration: 1.5
+  calmDurationMin: 3
+  calmDurationMax: 5
+  howlDuration: 2
+  retreatDuration: 1
   attackTimeout: 25
-  firstCalmDurationOverride: 5
+  firstCalmDurationOverride: 3
   howlClip: {fileID: 0}
   fallbackAudioSource: {fileID: 0}
   runOnStart: 1

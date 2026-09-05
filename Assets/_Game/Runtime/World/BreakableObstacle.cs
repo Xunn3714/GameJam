@@ -91,6 +91,19 @@ public sealed class BreakableObstacle : MonoBehaviour
 
         Broken?.Invoke(this);
 
+        ObstacleBrokenBehavior behavior = definition != null
+            ? definition.BrokenBehavior
+            : ObstacleBrokenBehavior.BecomeBackground;
+
+        if (behavior == ObstacleBrokenBehavior.Disappear)
+        {
+            // 花草：被踩扁——压矮、变宽、淡出，然后销毁。花草本身在羊下面（order -1），压扁过程不会盖住羊。
+            float duration = definition != null ? definition.BreakAnimationDuration : 0.4f;
+            StartCoroutine(TrampleThenDestroy(duration));
+            return;
+        }
+
+        // 有坏图的：立刻换成坏图并沉到 Background 层，成为地面的一部分，羊从上面走过。
         if (animator != null && !string.IsNullOrEmpty(breakTriggerName))
         {
             animator.SetTrigger(breakTriggerName);
@@ -100,11 +113,44 @@ public sealed class BreakableObstacle : MonoBehaviour
             spriteRenderer.sprite = definition.BrokenSprite;
         }
 
-        // 碎片立刻切到背景层，不然碎裂动画那几帧会压在羊上面。
         ApplyBrokenSorting();
+    }
 
-        float duration = definition != null ? definition.BreakAnimationDuration : 0.4f;
-        StartCoroutine(FinishBreakAfter(duration));
+    private IEnumerator TrampleThenDestroy(float duration)
+    {
+        SpriteRenderer[] renderers = GetComponentsInChildren<SpriteRenderer>(true);
+        Color[] startColors = new Color[renderers.Length];
+        for (int index = 0; index < renderers.Length; index++)
+            startColors[index] = renderers[index] != null ? renderers[index].color : Color.white;
+
+        Vector3 startScale = transform.localScale;
+        Vector3 squashedScale = new Vector3(startScale.x * 1.25f, startScale.y * 0.3f, startScale.z);
+        float tilt = UnityEngine.Random.Range(-12f, 12f);
+        Quaternion startRotation = transform.rotation;
+        Quaternion endRotation = startRotation * Quaternion.Euler(0f, 0f, tilt);
+
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / Mathf.Max(0.0001f, duration));
+            // 前 40% 快速压扁，之后慢慢淡出。
+            float squash = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(t / 0.4f));
+            float fade = Mathf.Clamp01((t - 0.3f) / 0.7f);
+            transform.localScale = Vector3.Lerp(startScale, squashedScale, squash);
+            transform.rotation = Quaternion.Slerp(startRotation, endRotation, squash);
+            for (int index = 0; index < renderers.Length; index++)
+            {
+                if (renderers[index] == null)
+                    continue;
+                Color color = startColors[index];
+                color.a = startColors[index].a * (1f - fade);
+                renderers[index].color = color;
+            }
+            yield return null;
+        }
+
+        Destroy(gameObject);
     }
 
     private void ApplyBrokenSorting()
@@ -127,26 +173,5 @@ public sealed class BreakableObstacle : MonoBehaviour
                 renderer.sortingLayerID = layerId;
             renderer.sortingOrder = definition.BrokenSortingOrder;
         }
-    }
-
-    private IEnumerator FinishBreakAfter(float duration)
-    {
-        if (duration > 0f)
-        {
-            yield return new WaitForSeconds(duration);
-        }
-
-        ObstacleBrokenBehavior behavior = definition != null
-            ? definition.BrokenBehavior
-            : ObstacleBrokenBehavior.BecomeBackground;
-
-        if (behavior == ObstacleBrokenBehavior.Disappear)
-        {
-            Destroy(gameObject);
-            yield break;
-        }
-
-        // BecomeBackground：保留物体，只是换到背景层，让羊能从上面走过去。
-        ApplyBrokenSorting();
     }
 }

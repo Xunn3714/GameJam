@@ -13,12 +13,13 @@ MonoBehaviour:
   m_Name: obstacle.flower
   m_EditorClassIdentifier: Assembly-CSharp::ObstacleDefinition
   obstacleId: obstacle.flower
-  displayName: "\u82B1"
+  displayName: "\u5C0F\u82B1"
   sizeCategory: 0
   breakRule: 0
-  requiredFlockCount: 6
+  requiredFlockCount: 1
+  countSource: 0
   brokenBehavior: 1
-  breakAnimationDuration: 0.4
+  breakAnimationDuration: 0.6
   brokenSortingLayer: Background
-  brokenSortingOrder: 0
+  brokenSortingOrder: 10
   brokenSprite: {fileID: 0}

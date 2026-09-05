@@ -2,41 +2,84 @@ using System.Collections.Generic;
 using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
+using Stopwatch = System.Diagnostics.Stopwatch;
 
 public sealed class FlockSeparationTests
 {
     [Test]
-    public void ConnectivityWalksNeighborChainAndHonorsBlockedLinks()
+    public void NeighborChainKeepsEveryReachableMemberInTheMainGroup()
     {
-        Vector2[] positions =
+        List<GameObject> objects = new List<GameObject>();
+        try
         {
-            Vector2.zero,
-            new Vector2(2f, 0f),
-            new Vector2(4f, 0f),
-            new Vector2(10f, 0f),
-        };
-        HashSet<int> connected = new HashSet<int>();
-        Queue<int> traversal = new Queue<int>();
+            FlockController flock = CreateObject("TestFlock", Vector2.zero, objects)
+                .AddComponent<FlockController>();
+            MethodInfo addMember = GetPrivateMethod("AddMember");
+            MethodInfo evaluate = GetPrivateMethod("EvaluateMemberSeparation");
 
-        FlockConnectivity.CollectConnectedIndices(
-            positions,
-            0,
-            2.5f,
-            null,
-            connected,
-            traversal);
+            SheepMember anchor = CreateMember("Anchor", Vector2.zero, objects);
+            SheepMember middle = CreateMember("Middle", new Vector2(2f, 0f), objects);
+            SheepMember edge = CreateMember("Edge", new Vector2(4f, 0f), objects);
+            Assert.IsTrue((bool)addMember.Invoke(flock, new object[] { anchor }));
+            Assert.IsTrue((bool)addMember.Invoke(flock, new object[] { middle }));
+            Assert.IsTrue((bool)addMember.Invoke(flock, new object[] { edge }));
 
-        CollectionAssert.AreEquivalent(new[] { 0, 1, 2 }, connected);
+            SetField(flock, "mainGroupLinkDistance", 2.5f);
+            SetField(flock, "detachDistanceFromMainGroup", 3f);
+            SetField(flock, "detachDelay", 0f);
+            evaluate.Invoke(flock, new object[] { 10f });
 
-        FlockConnectivity.CollectConnectedIndices(
-            positions,
-            0,
-            2.5f,
-            (from, to) => !(from == 0 && to == 1),
-            connected,
-            traversal);
+            Assert.AreEqual(3, flock.MemberCount);
+            Assert.AreSame(flock, edge.Flock);
+        }
+        finally
+        {
+            DestroyObjects(objects);
+        }
+    }
 
-        CollectionAssert.AreEquivalent(new[] { 0 }, connected);
+    [Test]
+    public void BlockingObstacleBreaksConnectivityBeforeDistanceDetachment()
+    {
+        List<GameObject> objects = new List<GameObject>();
+        try
+        {
+            int blockingLayer = LayerMask.NameToLayer(MovementBlocking.BlockingLayerName);
+            Assert.That(blockingLayer, Is.GreaterThanOrEqualTo(0));
+
+            FlockController flock = CreateObject("TestFlock", Vector2.zero, objects)
+                .AddComponent<FlockController>();
+            MethodInfo addMember = GetPrivateMethod("AddMember");
+            MethodInfo evaluate = GetPrivateMethod("EvaluateMemberSeparation");
+
+            SheepMember anchor = CreateMember("Anchor", Vector2.zero, objects);
+            SheepMember bridge = CreateMember("Bridge", new Vector2(3f, 0f), objects);
+            SheepMember distant = CreateMember("Distant", new Vector2(6f, 0f), objects);
+            Assert.IsTrue((bool)addMember.Invoke(flock, new object[] { anchor }));
+            Assert.IsTrue((bool)addMember.Invoke(flock, new object[] { bridge }));
+            Assert.IsTrue((bool)addMember.Invoke(flock, new object[] { distant }));
+
+            GameObject wall = CreateObject("BlockingWall", new Vector2(1.5f, 0f), objects);
+            wall.layer = blockingLayer;
+            BoxCollider2D collider = wall.AddComponent<BoxCollider2D>();
+            collider.size = new Vector2(0.5f, 4f);
+            Physics2D.SyncTransforms();
+
+            SetField(flock, "mainGroupLinkDistance", 3.5f);
+            SetField(flock, "detachDistanceFromMainGroup", 5f);
+            SetField(flock, "detachDelay", 0f);
+            SetField(flock, "detachScatterSpeed", 0f);
+            SetField(flock, "separationBlockingLayers", (LayerMask)(1 << blockingLayer));
+            evaluate.Invoke(flock, new object[] { 10f });
+
+            Assert.AreEqual(2, flock.MemberCount);
+            Assert.AreSame(flock, bridge.Flock);
+            Assert.IsNull(distant.Flock);
+        }
+        finally
+        {
+            DestroyObjects(objects);
+        }
     }
 
     [Test]
@@ -47,14 +90,8 @@ public sealed class FlockSeparationTests
         {
             GameObject flockObject = CreateObject("TestFlock", Vector2.zero, objects);
             FlockController flock = flockObject.AddComponent<FlockController>();
-            MethodInfo addMember = typeof(FlockController).GetMethod(
-                "AddMember",
-                BindingFlags.Instance | BindingFlags.NonPublic);
-            MethodInfo evaluate = typeof(FlockController).GetMethod(
-                "EvaluateMemberSeparation",
-                BindingFlags.Instance | BindingFlags.NonPublic);
-            Assert.IsNotNull(addMember);
-            Assert.IsNotNull(evaluate);
+            MethodInfo addMember = GetPrivateMethod("AddMember");
+            MethodInfo evaluate = GetPrivateMethod("EvaluateMemberSeparation");
 
             SheepMember anchor = CreateMember("Anchor", Vector2.zero, objects);
             SheepMember near = CreateMember("Near", new Vector2(2.5f, 0f), objects);
@@ -89,9 +126,103 @@ public sealed class FlockSeparationTests
         }
         finally
         {
-            for (int index = objects.Count - 1; index >= 0; index--)
-                Object.DestroyImmediate(objects[index]);
+            DestroyObjects(objects);
         }
+    }
+
+    [Test]
+    public void DistantMemberMustRemainDisconnectedForTheConfiguredDelay()
+    {
+        List<GameObject> objects = new List<GameObject>();
+        try
+        {
+            GameObject flockObject = CreateObject("TestFlock", Vector2.zero, objects);
+            FlockController flock = flockObject.AddComponent<FlockController>();
+            MethodInfo addMember = GetPrivateMethod("AddMember");
+            MethodInfo evaluate = GetPrivateMethod("EvaluateMemberSeparation");
+
+            SheepMember anchor = CreateMember("Anchor", Vector2.zero, objects);
+            SheepMember distant = CreateMember("Distant", new Vector2(10f, 0f), objects);
+            Assert.IsTrue((bool)addMember.Invoke(flock, new object[] { anchor }));
+            Assert.IsTrue((bool)addMember.Invoke(flock, new object[] { distant }));
+
+            SetField(flock, "mainGroupLinkDistance", 3.5f);
+            SetField(flock, "detachDistanceFromMainGroup", 6f);
+            SetField(flock, "detachDelay", 1.5f);
+            SetField(flock, "detachScatterSpeed", 0f);
+
+            evaluate.Invoke(flock, new object[] { 10f });
+            evaluate.Invoke(flock, new object[] { 11.49f });
+            Assert.AreEqual(2, flock.MemberCount);
+            Assert.AreSame(flock, distant.Flock);
+
+            evaluate.Invoke(flock, new object[] { 11.5f });
+            Assert.AreEqual(1, flock.MemberCount);
+            Assert.IsNull(distant.Flock);
+        }
+        finally
+        {
+            DestroyObjects(objects);
+        }
+    }
+
+    [TestCase(100)]
+    [TestCase(200)]
+    [TestCase(500)]
+    public void SpatialConnectivityScaleCheckKeepsConnectedMembers(int memberCount)
+    {
+        List<GameObject> objects = new List<GameObject>(memberCount + 1);
+        try
+        {
+            FlockController flock = CreateObject("ScaleTestFlock", Vector2.zero, objects)
+                .AddComponent<FlockController>();
+            MethodInfo addMember = GetPrivateMethod("AddMember");
+            MethodInfo evaluate = GetPrivateMethod("EvaluateMemberSeparation");
+
+            const int membersPerRow = 25;
+            const float spacing = 1.5f;
+            for (int index = 0; index < memberCount; index++)
+            {
+                Vector2 position = new Vector2(
+                    index % membersPerRow * spacing,
+                    index / membersPerRow * spacing);
+                SheepMember member = CreateMember($"Member_{index:000}", position, objects);
+                Assert.IsTrue((bool)addMember.Invoke(flock, new object[] { member }));
+            }
+
+            SetField(flock, "mainGroupLinkDistance", 2f);
+            SetField(flock, "detachDistanceFromMainGroup", 3f);
+            SetField(flock, "detachDelay", 0f);
+            SetField(flock, "separationBlockingLayers", (LayerMask)0);
+
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            evaluate.Invoke(flock, new object[] { 10f });
+            stopwatch.Stop();
+
+            Assert.AreEqual(memberCount, flock.MemberCount);
+            Debug.Log(
+                $"Spatial separation check: {memberCount} connected members in " +
+                $"{stopwatch.Elapsed.TotalMilliseconds:0.###} ms.");
+        }
+        finally
+        {
+            DestroyObjects(objects);
+        }
+    }
+
+    private static MethodInfo GetPrivateMethod(string name)
+    {
+        MethodInfo method = typeof(FlockController).GetMethod(
+            name,
+            BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.IsNotNull(method);
+        return method;
+    }
+
+    private static void DestroyObjects(List<GameObject> objects)
+    {
+        for (int index = objects.Count - 1; index >= 0; index--)
+            Object.DestroyImmediate(objects[index]);
     }
 
     private static SheepMember CreateMember(string name, Vector2 position, List<GameObject> objects)

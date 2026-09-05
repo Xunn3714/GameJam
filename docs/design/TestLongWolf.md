@@ -18,8 +18,12 @@
 
 | 组件 | 参数 | 新原型默认值 | 校验 |
 |---|---|---:|---|
-| LongWolfSweep | Body Length | 7 世界单位 | 至少 0.5 |
-| LongWolfSweep | Body Width | 1.3 世界单位 | 至少 0.1；同时决定预警宽度 |
+| LongWolfSweep | Body Length | 7 世界单位 | 至少 0.5；关闭自适应或无有效正交镜头时的后备长度 |
+| LongWolfSweep | Scale Length To Screen | true | 按随机覆盖时长和冲锋开始时的镜头计算长度 |
+| LongWolfSweep | Min / Max Coverage Seconds | 0.8 / 1.2 秒 | 非负，上限不小于下限；每只出场独立随机一次 |
+| LongWolfSweep | Coverage Camera | 可空 | 优先 Inspector 引用，否则出场时读取 MainCamera |
+| LongWolfSweep | Body Width | 0.8 世界单位 | 至少 0.1；同时决定身体、预警和扫掠宽度，头部同比收细 |
+| Wolf | Warning Flash Frequency | 5 次/秒 | 非负；长狼红色预警按亮/灭各半周期闪烁，0 为常亮 |
 | Wolf | Warning Duration | 1.2 秒 | 非负 |
 | Wolf | Charge Speed | 14 | 非负 |
 | Wolf | Aim Follows Flock During Warning | false | 预警出现即锁定路线 |
@@ -27,6 +31,14 @@
 生成与休息参数仍使用场景中的 WolfSpawner / WolfEventDirector，场景限制同时一只狼。
 身体扫掠使用每只羊的 CircleCollider2D 中心及缩放后的半径，并覆盖两个物理帧之间的路段。
 普通 Wolf 不挂 LongWolfSweep 时继续使用原来的撞散/叼一只逻辑。
+
+自适应长度 = 镜头矩形沿冲锋方向的投影跨度 + 冲锋速度 × 覆盖时长。
+覆盖指狼身同时跨越镜头投影两端，不是整只狼的总在屏时间，也不是涂满屏幕；斜向采用保守投影跨度。
+覆盖时长在每次出场时于 0.8～1.2 秒之间均匀随机，不与羊数挂钩；进度通过镜头尺寸影响长度，镜头越大，狼越长。
+以上新增配置由策划在 Inspector 编辑，LongWolfSweep 读取；本次随机时长和实际长度为实例运行时状态，不回写 Prefab。
+长度在冲锋开始时锁定，后续镜头移动/缩放不实时重算，因此时长以锁定镜头为基准。宽度保持 0.8。
+长狼在逃离时保持冲锋速度，且寿命按清屏路程延长，避免尾巴仍在屏幕上就消失。
+长狼预警线覆盖镜头沿攻击方向的完整投影，两端额外留 2 世界单位；预警期间随镜头刷新长度，不因此改变锁定方向、闪烁频率或预警时长。
 
 ## 编辑器入口与验证
 

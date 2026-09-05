@@ -40,7 +40,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         new("小群", 5, 2, 3, 7f),
         new("狼群来袭", 20, 5, 7, 10f),
         new("暴力扩张", 50, 10, 15, 14f),
-        new("羊潮", 100, 20, 30, 18f)
+        new("羊潮", 90, 20, 30, 18f)
     };
     [Tooltip("镜头放大时整体提速：倍率 = (当前相机尺寸 / 第一阶段相机尺寸) ^ 指数。0 = 不提速。")]
     [SerializeField, Range(0f, 1.5f)] private float speedScaleExponent = 0.75f;
@@ -288,7 +288,13 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         if (!string.Equals(typeId, MvpSheepCatalog.DefaultTypeId, System.StringComparison.Ordinal))
         {
             specialRecruits++;
-            ShowBanner($"特殊羊加入：{sheepSpawner.GetTypeDisplayName(typeId)} {sheepName}".TrimEnd());
+            SpriteRenderer spriteRenderer = sheep.GetComponent<SpriteRenderer>();
+            if (spriteRenderer == null)
+                spriteRenderer = sheep.GetComponentInChildren<SpriteRenderer>(true);
+
+            string message =
+                $"特殊羊加入：{sheepSpawner.GetTypeDisplayName(typeId)} {sheepName}".TrimEnd();
+            ShowBanner(message, spriteRenderer != null ? spriteRenderer.sprite : null);
             RefreshObjectives();
         }
 
@@ -569,6 +575,12 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
             bannerView.Show(message);
     }
 
+    private void ShowBanner(string message, Sprite icon)
+    {
+        if (bannerView != null)
+            bannerView.Show(message, icon);
+    }
+
     private void ShowLatestBanner(string message)
     {
         if (bannerView != null)
@@ -660,6 +672,12 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         GUILayout.Label($"羊群：<b>{currentFlock}</b>　历史最高：{progression.HighestFlockSize}　速度 ×{CurrentSpeedMultiplier:0.00}", labelStyle);
         GUILayout.Label($"周围野生羊：{wildSheep}　密度目标：约 {desiredNearbySheep}", labelStyle);
         GUILayout.Label(wolfLine, labelStyle);
+        if (wolfSpawner != null && wolfSpawner.DodgeMemory.Count > 0)
+        {
+            GUILayout.Label(
+                $"狼记忆：{wolfSpawner.DodgeMemory.Count} 次，玩家平均躲 {wolfSpawner.DodgeMemory.AverageDegrees:0.0}°",
+                labelStyle);
+        }
         GUILayout.Label(exitLine, labelStyle);
         GUILayout.Label("WASD 移动 · E 整群后退蓄势冲刺 · Q 收拢 · Tab 统计", labelStyle);
         GUILayout.EndArea();

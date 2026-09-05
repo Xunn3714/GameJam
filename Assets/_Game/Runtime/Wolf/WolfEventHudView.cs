@@ -128,7 +128,13 @@ public sealed class WolfEventHudView : MonoBehaviour
                 sprite = howlIcon; color = howlColor; text = howlText; glyph = "爪";
                 break;
             case WolfEventPhase.Attack:
-                sprite = attackIcon; color = attackColor; text = attackText; glyph = "狼";
+                sprite = attackIcon; color = attackColor; glyph = "狼";
+                // 编队攻击时显示编队名（例如"长狼包夹！"），独狼沿用原文案。
+                text = director != null
+                       && !string.IsNullOrEmpty(director.CurrentAttackName)
+                       && director.CurrentAttackName != WolfFormation.DefaultName(WolfFormationType.Single)
+                    ? director.CurrentAttackName + "！"
+                    : attackText;
                 break;
             case WolfEventPhase.Retreat:
                 sprite = retreatIcon; color = retreatColor; text = retreatText; glyph = "逃";

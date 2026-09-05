@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ObstacleDefinition
   obstacleId: obstacle.barrel
   displayName: "\u6728\u6876"
-  sizeCategory: 1
+  sizeCategory: 0
   breakRule: 0
-  requiredFlockCount: 6
+  requiredFlockCount: 1
+  countSource: 0
   brokenBehavior: 0
   breakAnimationDuration: 0.4
   brokenSortingLayer: Background
   brokenSortingOrder: 10
-  brokenSprite: {fileID: 21300000, guid: 30893b22f8356574fa3123f97c628b4e, type: 3}
+  brokenSprite: {fileID: 21300000, guid: 4ccf2e734d50e6f4fa24f4930814ceb7, type: 3}

@@ -105,6 +105,7 @@ public static class LongWolfDevValidation
                 }
                 Physics2D.SyncTransforms();
                 wolf = Spawn(new Vector2(-8f, 0f));
+                ValidateWarningVisuals(wolf);
                 Time.timeScale = 0f;
                 Next(1);
             }
@@ -216,5 +217,33 @@ public static class LongWolfDevValidation
         Check(!LongWolfSweep.TouchesSweep(new Vector2(12f, 0f), 0.3f, Vector2.zero, new Vector2(10f, 0f), Vector2.right, 7f, 1.3f), "Does not capture sheep ahead of the head");
         Check(!LongWolfSweep.TouchesSweep(new Vector2(5f, 2f), 0.3f, Vector2.zero, new Vector2(10f, 0f), Vector2.right, 7f, 1.3f), "Off-path sheep are safe");
         Check(LongWolfSweep.TouchesSweep(new Vector2(0f, -4f), 0.3f, Vector2.zero, Vector2.up, Vector2.up, 7f, 1.3f), "Tail contact works after rotating direction");
+    }
+
+    private static void ValidateWarningVisuals(Wolf instance)
+    {
+        LongWolfSweep sweep = instance.GetComponent<LongWolfSweep>();
+        Check(Mathf.Approximately(sweep.BodyWidth, 0.8f), "Long wolf uses the narrower 0.8 width");
+        SerializedObject settings = new SerializedObject(instance);
+        SpriteRenderer warning = (SpriteRenderer)settings.FindProperty("warningRenderer").objectReferenceValue;
+        Check(Mathf.Approximately(warning.transform.localScale.y, sweep.BodyWidth), "Warning width matches swept hit width");
+        SerializedObject sweepSettings = new SerializedObject(sweep);
+        Transform visual = (Transform)sweepSettings.FindProperty("bodyVisual").objectReferenceValue;
+        Check(Mathf.Approximately(visual.localScale.y, sweep.BodyWidth), "Body visual width matches swept hit width");
+        FieldInfo timer = typeof(Wolf).GetField("stateTimer", BindingFlags.NonPublic | BindingFlags.Instance);
+        MethodInfo update = typeof(Wolf).GetMethod("UpdateWarning", BindingFlags.NonPublic | BindingFlags.Instance);
+        float previousScale = Time.timeScale;
+        Time.timeScale = 0f;
+        try
+        {
+            timer.SetValue(instance, 0f);
+            update.Invoke(instance, null);
+            float bright = warning.color.a;
+            timer.SetValue(instance, 0.15f);
+            update.Invoke(instance, null);
+            Check(bright > 0f && Mathf.Approximately(warning.color.a, 0f), "Warning alternates visible red and fully transparent");
+            timer.SetValue(instance, 0f);
+            update.Invoke(instance, null);
+        }
+        finally { Time.timeScale = previousScale; }
     }
 }

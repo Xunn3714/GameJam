@@ -71,9 +71,9 @@ public sealed class FlockController : MonoBehaviour
     private bool hasPendingGroupActionBlock;
     private SheepMember mainGroupAnchor;
     private float nextSeparationCheckTime;
-    private readonly List<Vector2> separationPositions = new List<Vector2>();
-    private readonly HashSet<int> connectedMemberIndices = new HashSet<int>();
-    private readonly Queue<int> connectivityTraversal = new Queue<int>();
+    private readonly HashSet<SheepMember> connectedMainGroup = new HashSet<SheepMember>();
+    private readonly Queue<SheepMember> connectivityTraversal = new Queue<SheepMember>();
+    private readonly List<SheepMember> separationNeighborBuffer = new List<SheepMember>(32);
     private readonly Dictionary<SheepMember, float> disconnectedSince =
         new Dictionary<SheepMember, float>();
     private readonly List<SheepMember> detachingMembers = new List<SheepMember>();
@@ -681,40 +681,21 @@ public sealed class FlockController : MonoBehaviour
         if (mainGroupAnchor == null)
             return;
 
-        separationPositions.Clear();
-        int anchorIndex = -1;
-        for (int index = 0; index < members.Count; index++)
-        {
-            SheepMember member = members[index];
-            separationPositions.Add(member != null ? (Vector2)member.transform.position : Vector2.positiveInfinity);
-            if (member == mainGroupAnchor)
-                anchorIndex = index;
-        }
+        CollectConnectedMainGroup();
 
-        if (anchorIndex < 0)
-            return;
-
-        FlockConnectivity.CollectConnectedIndices(
-            separationPositions,
-            anchorIndex,
-            mainGroupLinkDistance,
-            CanConnectForMainGroup,
-            connectedMemberIndices,
-            connectivityTraversal);
-
-        float detachDistanceSquared = detachDistanceFromMainGroup * detachDistanceFromMainGroup;
+        float effectiveDetachDistance = Mathf.Max(mainGroupLinkDistance, detachDistanceFromMainGroup);
         detachingMembers.Clear();
         for (int index = 0; index < members.Count; index++)
         {
             SheepMember member = members[index];
-            if (member == null || connectedMemberIndices.Contains(index))
+            if (member == null || connectedMainGroup.Contains(member))
             {
                 if (member != null)
                     disconnectedSince.Remove(member);
                 continue;
             }
 
-            if (DistanceSquaredToMainGroup(index) <= detachDistanceSquared)
+            if (IsNearConnectedMainGroup(member, effectiveDetachDistance))
             {
                 disconnectedSince.Remove(member);
                 continue;
@@ -734,26 +715,68 @@ public sealed class FlockController : MonoBehaviour
     }
 
 
-    private bool CanConnectForMainGroup(int firstIndex, int secondIndex)
+    private void CollectConnectedMainGroup()
     {
-        return !MovementBlocking.IsLineBlocked(
-            separationPositions[firstIndex],
-            separationPositions[secondIndex],
-            separationBlockingLayers);
+        connectedMainGroup.Clear();
+        connectivityTraversal.Clear();
+        connectedMainGroup.Add(mainGroupAnchor);
+        connectivityTraversal.Enqueue(mainGroupAnchor);
+
+        float linkDistance = Mathf.Max(0.5f, mainGroupLinkDistance);
+        float linkDistanceSquared = linkDistance * linkDistance;
+        while (connectivityTraversal.Count > 0 && connectedMainGroup.Count < members.Count)
+        {
+            SheepMember current = connectivityTraversal.Dequeue();
+            Vector2 currentPosition = GetMemberPosition(current);
+            CollectNearbyMembers(currentPosition, linkDistance, separationNeighborBuffer);
+
+            for (int index = 0; index < separationNeighborBuffer.Count; index++)
+            {
+                SheepMember candidate = separationNeighborBuffer[index];
+                if (candidate == null
+                    || candidate.Flock != this
+                    || connectedMainGroup.Contains(candidate))
+                    continue;
+
+                Vector2 candidatePosition = GetMemberPosition(candidate);
+                if ((candidatePosition - currentPosition).sqrMagnitude > linkDistanceSquared)
+                    continue;
+                if (MovementBlocking.IsLineBlocked(
+                        currentPosition,
+                        candidatePosition,
+                        separationBlockingLayers))
+                    continue;
+
+                connectedMainGroup.Add(candidate);
+                connectivityTraversal.Enqueue(candidate);
+            }
+        }
     }
 
 
-    private float DistanceSquaredToMainGroup(int memberIndex)
+    private bool IsNearConnectedMainGroup(SheepMember member, float distance)
     {
-        float closest = float.PositiveInfinity;
-        foreach (int connectedIndex in connectedMemberIndices)
+        Vector2 memberPosition = GetMemberPosition(member);
+        float distanceSquared = distance * distance;
+        CollectNearbyMembers(memberPosition, distance, separationNeighborBuffer);
+        for (int index = 0; index < separationNeighborBuffer.Count; index++)
         {
-            float distance = (separationPositions[memberIndex] - separationPositions[connectedIndex]).sqrMagnitude;
-            if (distance < closest)
-                closest = distance;
+            SheepMember candidate = separationNeighborBuffer[index];
+            if (candidate == null || !connectedMainGroup.Contains(candidate))
+                continue;
+            if ((GetMemberPosition(candidate) - memberPosition).sqrMagnitude <= distanceSquared)
+                return true;
         }
 
-        return closest;
+        return false;
+    }
+
+
+    private static Vector2 GetMemberPosition(SheepMember member)
+    {
+        return member.Agent != null
+            ? member.Agent.Position
+            : (Vector2)member.transform.position;
     }
 
 

@@ -1,0 +1,10 @@
+First contact capture / later contacts scatter: Unity EditMode tests
+CapturesFirstContactThenScattersSubsequentMembers: Passed 
+FirstContactAtEdgeStillCaptures: Passed 
+LogicalCenterDoesNotCaptureOrArmDelayedAttack: Passed 
+SeparatedSheepDoesNotTriggerCapture: Passed 
+WildSheepDoesNotCountAsFlockContact: Passed 
+WolfContactTests: Passed 
+Assembly-CSharp-Editor.dll: Passed 
+GameJam: Passed 
+RESULT: Passed, passed=5, failed=0
