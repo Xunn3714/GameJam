@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 5420706126420520357}
   - component: {fileID: 809593680477257511}
   - component: {fileID: 8997763054613674817}
+  - component: {fileID: 3371852694062622975}
   m_Layer: 5
   m_Name: SheepCard
   m_TagString: Untagged
@@ -142,6 +143,22 @@ MonoBehaviour:
   button: {fileID: 809593680477257511}
   normalBackground: {fileID: 21300000, guid: 5247dbd2d800d7644bc6f3b45a1edd24, type: 3}
   selectedBackground: {fileID: 21300000, guid: f4d128afdbbcbb345a2f688217a0fbcf, type: 3}
+  rarityOutline: {fileID: 3371852694062622975}
+--- !u!114 &3371852694062622975
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1655681646384717444}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Outline
+  m_EffectColor: {r: 1, g: 1, b: 1, a: 0.5}
+  m_EffectDistance: {x: 4, y: -4}
+  m_UseGraphicAlpha: 1
 --- !u!1 &1788951428887612565
 GameObject:
   m_ObjectHideFlags: 0
@@ -176,7 +193,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 0, y: -110}
+  m_AnchoredPosition: {x: 0, y: -200}
   m_SizeDelta: {x: 190, y: 28}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!222 &2226977041764473407
@@ -216,7 +233,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4278190080
+    rgba: 4282079333
   m_fontColor: {r: 0.39607844, g: 0.34509805, b: 0.23137255, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -388,7 +405,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 0, y: -82}
+  m_AnchoredPosition: {x: 0, y: -170}
   m_SizeDelta: {x: 190, y: 38}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!222 &4112277320860437571
@@ -428,7 +445,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4278190080
+    rgba: 4280760641
   m_fontColor: {r: 0.25490198, g: 0.22352941, b: 0.15294118, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
