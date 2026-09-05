@@ -6292,29 +6292,6 @@ MonoBehaviour:
   largeSteeringInterval: 3
   idlePacingRatio: 0.2
   maximumIdlePacingMembers: 24
---- !u!114 &493499562
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 493499556}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c8db10cc0a6c46e69bc29ec8df5daf87, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::FlockActionController
-  flock: {fileID: 493499559}
-  movement: {fileID: 493499558}
-  retreatSpeed: 3
-  retreatDistance: 0.65
-  windupDuration: 0.3
-  dashSpeed: 8
-  dashDistance: 2.2
-  minimumManualCompactness: 0.45
-  compactingSpeed: 0.45
-  restoringSpeed: 0.2
-  compactedMoveSpeedMultiplier: 0.58
 --- !u!58 &493499560
 CircleCollider2D:
   m_ObjectHideFlags: 0
@@ -6378,6 +6355,29 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 4
+--- !u!114 &493499562
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 493499556}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c8db10cc0a6c46e69bc29ec8df5daf87, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FlockActionController
+  flock: {fileID: 493499559}
+  movement: {fileID: 493499558}
+  retreatSpeed: 3
+  retreatDistance: 0.65
+  windupDuration: 0.3
+  dashSpeed: 8
+  dashDistance: 2.2
+  minimumManualCompactness: 0.45
+  compactingSpeed: 0.45
+  restoringSpeed: 0.2
+  compactedMoveSpeedMultiplier: 0.58
 --- !u!1001 &494587411
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -11688,6 +11688,10 @@ MonoBehaviour:
   waitForPreviousWolf: 0
   maxAliveWolves: 3
   spawnDistance: 16
+  spawnOffscreen: 1
+  offscreenMargin: 2.5
+  viewCamera: {fileID: 0}
+  dodgeMemoryCapacity: 20
 --- !u!114 &874111970
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11713,6 +11717,8 @@ MonoBehaviour:
   firstCalmDurationOverride: 0
   howlClip: {fileID: 0}
   fallbackAudioSource: {fileID: 0}
+  formationRunner: {fileID: 0}
+  formations: []
   runOnStart: 0
 --- !u!4 &874111971
 Transform:
@@ -15094,13 +15100,46 @@ MonoBehaviour:
   entries:
   - prefab: {fileID: 7509237637596112746, guid: 484d06ace29f0c14e8ce288b69e774e8, type: 3}
     weight: 5
-    clearance: 1
-  - prefab: {fileID: 8458269541540090481, guid: 4d905793f721484448277c7ee8da7235, type: 3}
-    weight: 2
-    clearance: 1.5
+    clearance: 1.8
+  - prefab: {fileID: 2689274103439182307, guid: be981f687e8c221429bc21ae8b590568, type: 3}
+    weight: 5
+    clearance: 1.8
+  - prefab: {fileID: 1103139361953522537, guid: 4b2d95a614b81344c99df198b108608a, type: 3}
+    weight: 3
+    clearance: 2.2
+  - prefab: {fileID: 8373902696720333534, guid: 6fcb0cb10c422524884dc94954cf12e9, type: 3}
+    weight: 6
+    clearance: 1.6
+  - prefab: {fileID: 1189197347636829024, guid: 20bf4f02e8a5328469535438ed7cf1e1, type: 3}
+    weight: 6
+    clearance: 1.6
+  - prefab: {fileID: 6964224743327308981, guid: 265f8bfd41f55594ab8102165ea5ec9f, type: 3}
+    weight: 6
+    clearance: 1.6
+  - prefab: {fileID: 4702857796126438201, guid: 647b93891bd51a542a978f06f77ce3fa, type: 3}
+    weight: 3
+    clearance: 2.4
+  - prefab: {fileID: 6565664883197415086, guid: d7a638c2205d5fa4aa4163fbf838c8b2, type: 3}
+    weight: 3
+    clearance: 2.4
   - prefab: {fileID: 1211418967172175065, guid: 48bf27d9b2753b24b87864dd87aeea0e, type: 3}
     weight: 1.5
-    clearance: 1.5
+    clearance: 3
+  - prefab: {fileID: 8458269541540090481, guid: 4d905793f721484448277c7ee8da7235, type: 3}
+    weight: 1.5
+    clearance: 3.2
+  - prefab: {fileID: 100352485650224219, guid: 21302d46eaa94aa4dac3d3204ca68bd1, type: 3}
+    weight: 2
+    clearance: 2
+  - prefab: {fileID: 6772962434580481586, guid: b248cd3cf32957b40be9ed6ec232de74, type: 3}
+    weight: 1
+    clearance: 3.5
+  - prefab: {fileID: 8428475946545878596, guid: b9793f477397fdf439e15dcbaec30f99, type: 3}
+    weight: 1
+    clearance: 3.5
+  - prefab: {fileID: 5154007170766394758, guid: 0fd82638f6b24d545946e0a3abb7921f, type: 3}
+    weight: 2.5
+    clearance: 4.5
   area:
     serializedVersion: 2
     x: -120
@@ -15114,9 +15153,10 @@ MonoBehaviour:
     y: -9
     width: 26
     height: 18
-  densityPer100SquareUnits: 1.5
-  maximumCount: 520
+  densityPer100SquareUnits: 0.8
+  maximumCount: 300
   placementAttemptsPerItem: 6
+  minimumSpacing: 2.2
   spawnOnStart: 1
 --- !u!4 &1253690889
 Transform:

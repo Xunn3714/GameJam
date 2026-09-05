@@ -46,12 +46,16 @@ public sealed class WorldDebrisSpawner : MonoBehaviour
 
     [Header("Amount")]
     [Tooltip("每 100 平方单位放多少个。")]
-    [SerializeField, Min(0f)] private float densityPer100SquareUnits = 1.5f;
-    [SerializeField, Min(0)] private int maximumCount = 520;
-    [SerializeField, Min(1)] private int placementAttemptsPerItem = 6;
+    [SerializeField, Min(0f)] private float densityPer100SquareUnits = 0.8f;
+    [SerializeField, Min(0)] private int maximumCount = 300;
+    [SerializeField, Min(1)] private int placementAttemptsPerItem = 8;
+    [Tooltip("任意两个散布物之间的最小距离（世界单位），和各自的 clearance 取大者。防止同一帧放下的东西挤成一团。")]
+    [SerializeField, Min(0f)] private float minimumSpacing = 2.2f;
     [SerializeField] private bool spawnOnStart = true;
 
     private readonly List<GameObject> spawned = new List<GameObject>();
+    private readonly List<Vector2> placedPositions = new List<Vector2>();
+    private readonly List<float> placedClearances = new List<float>();
     private Transform debrisRoot;
 
     public int SpawnedCount => spawned.Count;
@@ -105,6 +109,8 @@ public sealed class WorldDebrisSpawner : MonoBehaviour
             Mathf.RoundToInt(inner.width * inner.height / 100f * densityPer100SquareUnits));
 
         Physics2D.SyncTransforms();
+        placedPositions.Clear();
+        placedClearances.Clear();
 
         int placed = 0;
         for (int index = 0; index < targetCount; index++)
@@ -121,12 +127,18 @@ public sealed class WorldDebrisSpawner : MonoBehaviour
 
                 if (IsInsideExclusionZone(position))
                     continue;
+                // 场景里原有的碰撞体（围栏、羊圈……）用物理查询避开。
                 if (Physics2D.OverlapCircle(position, entry.Clearance) != null)
+                    continue;
+                // 同一次散布里已经放下的东西，用记录的位置和间距判断（新生成的碰撞体这一帧还查不到）。
+                if (IsTooCloseToPlaced(position, entry.Clearance))
                     continue;
 
                 GameObject instance = Instantiate(entry.Prefab, position, Quaternion.identity, debrisRoot);
                 instance.name = $"{entry.Prefab.name}_{placed + 1:000}";
                 spawned.Add(instance);
+                placedPositions.Add(position);
+                placedClearances.Add(entry.Clearance);
                 placed++;
                 break;
             }
@@ -145,6 +157,8 @@ public sealed class WorldDebrisSpawner : MonoBehaviour
         }
 
         spawned.Clear();
+        placedPositions.Clear();
+        placedClearances.Clear();
         if (debrisRoot != null)
         {
             Destroy(debrisRoot.gameObject);
@@ -166,6 +180,18 @@ public sealed class WorldDebrisSpawner : MonoBehaviour
         }
 
         return null;
+    }
+
+    private bool IsTooCloseToPlaced(Vector2 position, float clearance)
+    {
+        for (int index = 0; index < placedPositions.Count; index++)
+        {
+            float required = Mathf.Max(minimumSpacing, clearance, placedClearances[index]);
+            if ((placedPositions[index] - position).sqrMagnitude < required * required)
+                return true;
+        }
+
+        return false;
     }
 
     private bool IsInsideExclusionZone(Vector2 position)

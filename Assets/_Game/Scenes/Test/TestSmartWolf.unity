@@ -1393,6 +1393,9 @@ MonoBehaviour:
   waitForPreviousWolf: 0
   maxAliveWolves: 3
   spawnDistance: 11
+  spawnOffscreen: 1
+  offscreenMargin: 2.5
+  viewCamera: {fileID: 0}
   dodgeMemoryCapacity: 20
 --- !u!4 &1050208663
 Transform:
@@ -1463,9 +1466,17 @@ MonoBehaviour:
   - {fileID: 736601828}
   - {fileID: 1370357788}
   - {fileID: 227261189}
-  velocityHistorySeconds: 2
   huddleCompactness: 0.55
   huddleTransitionSpeed: 1.2
+  shapeDirectionTurnSpeed: 4
+  facingIntentCommitDelay: 0.1
+  neighborCellSize: 3.2
+  mediumFlockThreshold: 50
+  largeFlockThreshold: 120
+  mediumSteeringInterval: 2
+  largeSteeringInterval: 3
+  idlePacingRatio: 0.2
+  maximumIdlePacingMembers: 24
 --- !u!114 &1086566316
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2036,6 +2047,112 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1834142821
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1834142823}
+  - component: {fileID: 1834142822}
+  m_Layer: 0
+  m_Name: WorldDebrisSpawner
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1834142822
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1834142821}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dc749acff15183d41afd7245d7279e74, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WorldDebrisSpawner
+  worldSeed: {fileID: 0}
+  entries:
+  - prefab: {fileID: 7509237637596112746, guid: 484d06ace29f0c14e8ce288b69e774e8, type: 3}
+    weight: 5
+    clearance: 1.8
+  - prefab: {fileID: 2689274103439182307, guid: be981f687e8c221429bc21ae8b590568, type: 3}
+    weight: 5
+    clearance: 1.8
+  - prefab: {fileID: 1103139361953522537, guid: 4b2d95a614b81344c99df198b108608a, type: 3}
+    weight: 3
+    clearance: 2.2
+  - prefab: {fileID: 8373902696720333534, guid: 6fcb0cb10c422524884dc94954cf12e9, type: 3}
+    weight: 6
+    clearance: 1.6
+  - prefab: {fileID: 1189197347636829024, guid: 20bf4f02e8a5328469535438ed7cf1e1, type: 3}
+    weight: 6
+    clearance: 1.6
+  - prefab: {fileID: 6964224743327308981, guid: 265f8bfd41f55594ab8102165ea5ec9f, type: 3}
+    weight: 6
+    clearance: 1.6
+  - prefab: {fileID: 4702857796126438201, guid: 647b93891bd51a542a978f06f77ce3fa, type: 3}
+    weight: 3
+    clearance: 2.4
+  - prefab: {fileID: 6565664883197415086, guid: d7a638c2205d5fa4aa4163fbf838c8b2, type: 3}
+    weight: 3
+    clearance: 2.4
+  - prefab: {fileID: 1211418967172175065, guid: 48bf27d9b2753b24b87864dd87aeea0e, type: 3}
+    weight: 1.5
+    clearance: 3
+  - prefab: {fileID: 8458269541540090481, guid: 4d905793f721484448277c7ee8da7235, type: 3}
+    weight: 1.5
+    clearance: 3.2
+  - prefab: {fileID: 100352485650224219, guid: 21302d46eaa94aa4dac3d3204ca68bd1, type: 3}
+    weight: 2
+    clearance: 2
+  - prefab: {fileID: 6772962434580481586, guid: b248cd3cf32957b40be9ed6ec232de74, type: 3}
+    weight: 1
+    clearance: 3.5
+  - prefab: {fileID: 8428475946545878596, guid: b9793f477397fdf439e15dcbaec30f99, type: 3}
+    weight: 1
+    clearance: 3.5
+  - prefab: {fileID: 5154007170766394758, guid: 0fd82638f6b24d545946e0a3abb7921f, type: 3}
+    weight: 2.5
+    clearance: 4.5
+  area:
+    serializedVersion: 2
+    x: -30
+    y: -20
+    width: 60
+    height: 40
+  borderPadding: 1
+  exclusionZones:
+  - serializedVersion: 2
+    x: -4
+    y: -4
+    width: 8
+    height: 8
+  densityPer100SquareUnits: 1.2
+  maximumCount: 40
+  placementAttemptsPerItem: 8
+  minimumSpacing: 2.2
+  spawnOnStart: 1
+--- !u!4 &1834142823
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1834142821}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1879193975
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2146,6 +2263,8 @@ MonoBehaviour:
   firstCalmDurationOverride: 3
   howlClip: {fileID: 0}
   fallbackAudioSource: {fileID: 0}
+  formationRunner: {fileID: 0}
+  formations: []
   runOnStart: 1
 --- !u!4 &1891637611
 Transform:
@@ -2416,3 +2535,4 @@ SceneRoots:
   - {fileID: 1154768099}
   - {fileID: 2052491279}
   - {fileID: 1753978241}
+  - {fileID: 1834142823}

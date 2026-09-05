@@ -129,7 +129,8 @@ public sealed class WolfFormationRunner : MonoBehaviour
         Track(SpawnLane(longPrefab, direction, 0f, formation.escortLongWolfWarningDuration));
 
         // 生成那一刻的玩家位置与所在侧。
-        Vector2 playerPosition = flock.Leader != null ? (Vector2)flock.Leader.transform.position : flock.Center;
+        // 玩家位置取羊群中心（主控羊就是羊群的移动中心）。
+        Vector2 playerPosition = flock.Center;
         Vector2 perpendicular = new Vector2(-direction.y, direction.x);
         float playerSide = DeterminePlayerSide(flock, playerPosition, perpendicular);
         bool sameSide = UnityEngine.Random.value < formation.escortSameSideChance;
@@ -153,7 +154,7 @@ public sealed class WolfFormationRunner : MonoBehaviour
     /// <summary>玩家在路线哪一侧（+1 = perpendicular 那一侧）。先看羊群运动方向，再看主控羊相对羊群中心的偏移，都不明显就随机。</summary>
     private static float DeterminePlayerSide(FlockController flock, Vector2 playerPosition, Vector2 perpendicular)
     {
-        Vector2 velocity = flock.GetMovementVelocity(0f);
+        Vector2 velocity = flock.MovementVelocity;
         float moving = Vector2.Dot(velocity, perpendicular);
         if (Mathf.Abs(moving) > 0.3f)
             return Mathf.Sign(moving);
