@@ -638,6 +638,9 @@ public static class AlphaFlockExpansionSceneSetup
         directorSerialized.ApplyModifiedPropertiesWithoutUndo();
 
         ConfigureWolfAudio(director);
+
+        // 正式节奏表：按羊群规模抽取一只狼 / 多只狼 / 本场损失最多的攻击。
+        WolfAttackScheduleSetup.ApplyToDirector(director);
     }
 
     private static void EnsureSceneAudio(Scene scene)

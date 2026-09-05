@@ -88,6 +88,9 @@ public sealed class FlockController : MonoBehaviour
         ? (Vector2)movementController.transform.position
         : (Vector2)transform.position;
 
+    /// <summary>羊群当前的速度上限（含阶段倍率）；没有移动控制器时给个默认值。</summary>
+    public float CurrentSpeedLimit => movementController != null ? movementController.CurrentSpeedLimit : 4f;
+
     public Vector2 MovementVelocity => movementController != null
         ? movementController.DesiredVelocity
         : Vector2.zero;

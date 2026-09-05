@@ -10617,51 +10617,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 3ff0f359bbae928459fc38b3d6630650, type: 3}
---- !u!1 &862772642
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 862772644}
-  - component: {fileID: 862772643}
-  m_Layer: 0
-  m_Name: SceneAudio
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &862772643
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 862772642}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bb4b16a65920c0e45986bbfa2c9cee9b, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::SceneBGM
-  bgmClip: {fileID: 8300000, guid: 708d01cf5f145a746ba4862da6e16366, type: 3}
---- !u!4 &862772644
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 862772642}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &864242450
 GameObject:
   m_ObjectHideFlags: 0
@@ -11685,6 +11640,7 @@ MonoBehaviour:
     cameraSize: 18
   speedScaleExponent: 0.75
   wolfUnlockFlockSize: 6
+  wolfPackWarningFlockSize: 80
   failedSpawnRetryDelay: 1.5
   impactShakeAmplitude: 0.16
   impactShakeDuration: 0.2
@@ -15071,6 +15027,51 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1122875614}
   m_CullTransparentMesh: 1
+--- !u!1 &1132015352
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1132015354}
+  - component: {fileID: 1132015353}
+  m_Layer: 0
+  m_Name: SceneAudio
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1132015353
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1132015352}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bb4b16a65920c0e45986bbfa2c9cee9b, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::SceneBGM
+  bgmClip: {fileID: 8300000, guid: 708d01cf5f145a746ba4862da6e16366, type: 3}
+--- !u!4 &1132015354
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1132015352}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1132095781
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -28655,6 +28656,7 @@ GameObject:
   - component: {fileID: 2103598737}
   - component: {fileID: 2103598738}
   - component: {fileID: 2103598740}
+  - component: {fileID: 2103598741}
   m_Layer: 0
   m_Name: WolfSystem
   m_TagString: Untagged
@@ -28706,12 +28708,31 @@ MonoBehaviour:
   calmDurationMax: 20
   howlDuration: 3
   retreatDuration: 1.5
-  attackTimeout: 25
+  attackTimeout: 30
   firstCalmDurationOverride: 0
   howlClip: {fileID: 0}
   fallbackAudioSource: {fileID: 0}
-  formationRunner: {fileID: 0}
+  formationRunner: {fileID: 2103598740}
   formations: []
+  schedule: {fileID: 11400000, guid: 1b4e478a6f16ce343bff1794351a08ee, type: 2}
+  formationTemplate:
+    displayName: 
+    type: 0
+    wolfPrefab: {fileID: 6246638143151926226, guid: 078cbc44bf98c3f459915d12bc0b1398, type: 3}
+    longWolfPrefab: {fileID: 207988252112000246, guid: 12b7d5256cfcf0049bf45c7c8264bc2c, type: 3}
+    count: 3
+    laneSpacing: 2.6
+    sequentialDelay: 0.7
+    escortDelay: 0.8
+    escortLongWolfWarningDuration: 2.4
+    escortSameSideChance: 0.7
+    escortFanSpread: 35
+    pentagramRadius: 16
+    pentagramUsesLongWolves: 1
+    pentagramWarningDuration: 1.5
+    pentagramStagger: 0.3
+    pentagramChargeSpeed: 9
+    chainHandoffDistance: 14
   runOnStart: 0
 --- !u!4 &2103598739
 Transform:
@@ -28729,6 +28750,19 @@ Transform:
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2103598740
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2103598736}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 837e82d0018fcbd478f1e33e29759cb8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WolfFormationRunner
+  spawner: {fileID: 2103598737}
+--- !u!114 &2103598741
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -29051,4 +29085,4 @@ SceneRoots:
   - {fileID: 1408143813}
   - {fileID: 936743428}
   - {fileID: 855286882}
-  - {fileID: 862772644}
+  - {fileID: 1132015354}
