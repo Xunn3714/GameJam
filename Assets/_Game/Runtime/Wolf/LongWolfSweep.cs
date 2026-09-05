@@ -10,15 +10,74 @@ using UnityEngine;
 public sealed class LongWolfSweep : MonoBehaviour
 {
     [SerializeField, Min(0.5f)] private float bodyLength = 7f;
-    [SerializeField, Min(0.1f)] private float bodyWidth = 1.3f;
+    [SerializeField, Min(0.1f)] private float bodyWidth = 0.8f;
+    [Header("Screen Coverage Growth")]
+    [Tooltip("Optional gameplay camera. Falls back to the tagged main camera at launch.")]
+    [SerializeField] private Camera coverageCamera;
+    [SerializeField] private bool scaleLengthToScreen = true;
+    [SerializeField, Min(0f)] private float minCoverageSeconds = 0.8f;
+    [SerializeField, Min(0f)] private float maxCoverageSeconds = 1.2f;
     [Tooltip("Unit body: local X from -1 to 0, local Y from -0.5 to 0.5.")]
     [SerializeField] private Transform bodyVisual;
     [SerializeField] private Transform headVisual;
 
     private readonly List<SheepMember> candidates = new List<SheepMember>();
-    public float BodyLength => bodyLength;
+    private float runtimeLength;
+    public float BodyLength => runtimeLength > 0f ? runtimeLength : bodyLength;
     public float BodyWidth => bodyWidth;
     public int CapturedCount { get; private set; }
+    public float CoverageSeconds { get; private set; }
+    public float ClearTravelDistance { get; private set; }
+
+    public void Prepare()
+    {
+        runtimeLength = 0f;
+        ClearTravelDistance = 0f;
+        CoverageSeconds = Random.Range(minCoverageSeconds, maxCoverageSeconds);
+        if (coverageCamera == null) coverageCamera = Camera.main;
+    }
+
+    public void ConfigureCharge(Vector2 origin, Vector2 direction, float speed)
+    {
+        if (!scaleLengthToScreen || speed <= 0f || !TryGetScreenSpan(origin, direction, out float min, out float max))
+            return;
+
+        runtimeLength = CalculateCoverageLength(max - min, speed, CoverageSeconds);
+        ClearTravelDistance = Mathf.Max(0f, max) + runtimeLength + bodyWidth;
+        SetDirection(direction);
+    }
+
+    // Visual only: extend both ends beyond the viewport without changing the attack duration.
+    public Vector2 GetWarningSpan(Vector2 origin, Vector2 direction, float fallbackLength)
+    {
+        if (!TryGetScreenSpan(origin, direction, out float min, out float max))
+            return new Vector2(0f, fallbackLength);
+        const float screenMargin = 2f;
+        return new Vector2(Mathf.Min(0f, min - screenMargin), Mathf.Max(fallbackLength, max + screenMargin));
+    }
+
+    private bool TryGetScreenSpan(Vector2 origin, Vector2 direction, out float min, out float max)
+    {
+        min = float.PositiveInfinity;
+        max = float.NegativeInfinity;
+        if (coverageCamera == null || !coverageCamera.orthographic || direction.sqrMagnitude < 0.0001f)
+            return false;
+        // Project the viewport onto the attack axis. This also covers diagonal attacks.
+        Plane gamePlane = new Plane(Vector3.forward, Vector3.zero);
+        for (int y = 0; y < 2; y++)
+        for (int x = 0; x < 2; x++)
+        {
+            Ray ray = coverageCamera.ViewportPointToRay(new Vector3(x, y, 0f));
+            if (!gamePlane.Raycast(ray, out float distance)) return false;
+            float along = Vector2.Dot((Vector2)ray.GetPoint(distance) - origin, direction.normalized);
+            min = Mathf.Min(min, along);
+            max = Mathf.Max(max, along);
+        }
+        return true;
+    }
+
+    public static float CalculateCoverageLength(float screenSpan, float speed, float seconds)
+        => Mathf.Max(0.5f, Mathf.Max(0f, screenSpan) + Mathf.Max(0f, speed) * Mathf.Max(0f, seconds));
 
     public void SetDirection(Vector2 direction)
     {
@@ -26,10 +85,14 @@ public sealed class LongWolfSweep : MonoBehaviour
         if (bodyVisual != null)
         {
             bodyVisual.localRotation = rotation;
-            bodyVisual.localScale = new Vector3(bodyLength, bodyWidth, 1f);
+            bodyVisual.localScale = new Vector3(BodyLength, bodyWidth, 1f);
         }
         if (headVisual != null)
+        {
             headVisual.localRotation = rotation;
+            // Keep the original head proportions relative to the narrower body.
+            headVisual.localScale = Vector3.one * (bodyWidth / 1.3f);
+        }
     }
 
     public void Sweep(Wolf wolf, FlockController flock, Vector2 previousHead, Vector2 nextHead, Vector2 direction)
@@ -51,7 +114,7 @@ public sealed class LongWolfSweep : MonoBehaviour
             Vector2 center = collider.transform.TransformPoint(collider.offset);
             Vector3 scale = collider.transform.lossyScale;
             float radius = collider.radius * Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.y));
-            if (!TouchesSweep(center, radius, previousHead, nextHead, direction, bodyLength, bodyWidth))
+            if (!TouchesSweep(center, radius, previousHead, nextHead, direction, BodyLength, bodyWidth))
                 continue;
 
             wolf.CaptureAlongPath(sheep, CapturedCount++);
@@ -76,6 +139,8 @@ public sealed class LongWolfSweep : MonoBehaviour
     {
         bodyLength = Mathf.Max(0.5f, bodyLength);
         bodyWidth = Mathf.Max(0.1f, bodyWidth);
+        minCoverageSeconds = Mathf.Max(0f, minCoverageSeconds);
+        maxCoverageSeconds = Mathf.Max(minCoverageSeconds, maxCoverageSeconds);
         SetDirection(Vector2.right);
     }
 }

@@ -8,8 +8,22 @@ public sealed class AlphaProgressionTests
         new FlockGrowthStage("小群", 5, 2, 3, 7f),
         new FlockGrowthStage("狼群来袭", 20, 5, 7, 10f),
         new FlockGrowthStage("暴力扩张", 50, 10, 15, 14f),
-        new FlockGrowthStage("羊潮", 100, 20, 30, 18f)
+        new FlockGrowthStage("羊潮", 90, 20, 30, 18f)
     };
+
+    [Test]
+    public void SheepTideUnlocksAtNinetyBeforeExitAtOneHundred()
+    {
+        AlphaProgression progression = new AlphaProgression(Stages(), 100, 1);
+        progression.Observe(89);
+        Assert.AreEqual(3, progression.StageIndex);
+        Assert.IsTrue(progression.Observe(90).StageChanged);
+        Assert.AreEqual(4, progression.StageIndex);
+        Assert.IsFalse(progression.ExitUnlocked);
+        progression.Observe(99);
+        Assert.IsFalse(progression.ExitUnlocked);
+        Assert.IsTrue(progression.Observe(100).ExitJustUnlocked);
+    }
 
     [Test]
     public void StartsAtFirstStageWithOneSheep()

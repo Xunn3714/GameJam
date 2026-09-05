@@ -58,6 +58,12 @@ public static class LongWolfTestSceneSetup
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
     }
 
+    /// <summary>取现有的 LongWolf prefab，没有就按 Wolf.prefab 生成一份。供多狼编队的测试场景复用。</summary>
+    public static GameObject GetOrCreatePrefab()
+    {
+        return AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath) ?? CreatePrefab();
+    }
+
     private static GameObject CreatePrefab()
     {
         GameObject source = AssetDatabase.LoadAssetAtPath<GameObject>(SourcePrefab);

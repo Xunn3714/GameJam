@@ -1419,7 +1419,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LongWolfSweep
   bodyLength: 7
-  bodyWidth: 1.3
+  bodyWidth: 0.8
   bodyVisual: {fileID: 2554929068669317477}
   headVisual: {fileID: 107092709158989259}
 --- !u!1 &6466680177048256120
