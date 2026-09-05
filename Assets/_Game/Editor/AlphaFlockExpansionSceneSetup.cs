@@ -156,7 +156,7 @@ public static class AlphaFlockExpansionSceneSetup
         Debug.Log(
             $"Alpha 羊群扩张场景已生成：{ScenePath}。" +
             $"地图 {WorldRect.width}x{WorldRect.height}，出生羊圈 5 只教程羊，狼在 {WolfUnlockFlockSize} 只后出现，" +
-            $"历史最高 {ExitUnlockFlockSize} 只后可撞开外围围栏冲出草原。");
+            $"历史最高 {ExitUnlockFlockSize} 只后解锁出口，冲刺时当前羊数达标才能撞开外围围栏。");
     }
 
     // ------------------------------------------------------------------ scene

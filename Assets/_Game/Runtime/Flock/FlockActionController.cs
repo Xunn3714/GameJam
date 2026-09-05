@@ -306,7 +306,7 @@ public sealed class FlockActionController : MonoBehaviour
             return;
 
         float compressionScale = CalculateCompressionSpeedScale(
-            flock != null ? flock.Compactness : manualCompactness,
+            flock != null ? flock.ManualCompactness : manualCompactness,
             minimumManualCompactness,
             compactedMoveSpeedMultiplier);
         movement.SetActionSpeedScale(compressionScale);

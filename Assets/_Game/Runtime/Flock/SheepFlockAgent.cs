@@ -209,12 +209,28 @@ public sealed class SheepFlockAgent : MonoBehaviour
 
         Vector2 from = body.position;
         Vector2 desiredStep = velocity * deltaTime;
-        Vector2 target = MovementBlocking.ResolveMove(
-            from,
-            from + desiredStep,
-            blockingRadius,
-            blockingLayers,
-            out MovementBlockResult blockResult);
+        Vector2 target;
+        MovementBlockResult blockResult;
+        if (flock.IsGroupActionActive)
+        {
+            // 整群动作会瞬时提高成员速度，必须扫掠整段位移，
+            // 否则终点重叠检查可能跨过较薄的围栏。主动动作期间也不应贴墙滑动。
+            target = MovementBlocking.ResolveDashMove(
+                from,
+                from + desiredStep,
+                blockingRadius,
+                blockingLayers,
+                out blockResult);
+        }
+        else
+        {
+            target = MovementBlocking.ResolveMove(
+                from,
+                from + desiredStep,
+                blockingRadius,
+                blockingLayers,
+                out blockResult);
+        }
 
         if (blockResult.WasBlocked)
         {
