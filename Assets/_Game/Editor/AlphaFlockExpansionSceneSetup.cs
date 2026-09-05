@@ -451,7 +451,7 @@ public static class AlphaFlockExpansionSceneSetup
         label.fontStyle = FontStyles.Bold;
         label.sortingOrder = -50;
         label.rectTransform.sizeDelta = new Vector2(12f, 2f);
-        // 中文字形靠 MvpTmpUiFont 在运行时注册的全局 fallback，这里不直接指定运行时字体（不可序列化）。
+        // 中文字形由 TMP Settings 中随仓库提交的 Noto Sans SC fallback 提供，Edit/Play 模式保持一致。
     }
 
     private static void CreateKeycap(Transform parent, Sprite sprite, string letter, Vector2 position, Color color)
