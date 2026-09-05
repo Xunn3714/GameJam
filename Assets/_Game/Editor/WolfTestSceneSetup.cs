@@ -12,7 +12,7 @@ using UnityEngine.UI;
 /// </summary>
 public static class WolfTestSceneSetup
 {
-    private const string SceneFolder = "Assets/_Game/Scenes/Dev";
+    private const string SceneFolder = "Assets/_Game/Scenes/Old/Tests";
     private const string ScenePath = SceneFolder + "/TestWolf.unity";
     private const string SceneTemplatePath = "Assets/Settings/Scenes/URP2DSceneTemplate.unity";
 
@@ -73,7 +73,7 @@ public static class WolfTestSceneSetup
             "Press Play, move with WASD, press R to restart after Game Over.");
     }
 
-    private const string Level01ScenePath = "Assets/_Game/Scenes/Level_01.unity";
+    private const string Level01ScenePath = "Assets/_Game/Scenes/Old/Legacy/Level_01.unity";
     private const string ResultPanelPrefabPath = "Assets/_Game/Content/Perfabs/UI/ResultPanel.prefab";
     private const string Level01WolfRootName = "WolfSystem";
     private const string Level01WolfHudName = "WolfEventHud";

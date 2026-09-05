@@ -9,7 +9,7 @@
 
 ## 创建开发场景
 
-在 Unity 顶部菜单选择 **GameJam → UI → Create Menu UI Dev Scene**。它会用 Unity 的场景 API 创建 `Assets/_Game/Scenes/Dev/MenuUiDev.unity`，不会修改现有 `SampleScene`。
+在 Unity 顶部菜单选择 **GameJam → UI → Create Menu UI Dev Scene**。若未来恢复该历史工具，测试场景应生成到 `Assets/_Game/Scenes/Old/Tests/MenuUiDev.unity`，不会修改当前主流程场景。
 
 若需要把 UI 加进当前已打开的个人开发场景，选择 **GameJam → UI → Create Menu UI In Active Scene**。同一场景已经存在 `MenuUIController` 时工具会停止，以避免重复创建。
 

@@ -21,6 +21,8 @@ public sealed class FenceObstacle : MonoBehaviour
     private InputAction interactAction;
     private FlockController flockInRange;
     private bool wasInteractable;
+    private bool wasInRange;
+    private int lastReportedCount = int.MinValue;
 
     public bool IsFlockInRange => flockInRange != null;
     public int CurrentFlockCount => flockInRange == null
@@ -74,14 +76,29 @@ public sealed class FenceObstacle : MonoBehaviour
 
         PruneDestroyedColliders();
 
-        if (!CanBreak)
-            return;
+        bool interactPressed = InteractPressedThisFrame();
+        if (interactPressed)
+            AttemptCharge();
 
-        if (breakOnContact || InteractPressedThisFrame())
+        if (CanBreak && breakOnContact)
         {
             breakable.Break();
             ClearRange();
         }
+    }
+
+    private void AttemptCharge()
+    {
+        if (flockInRange == null)
+            return;
+
+        bool canBreak = CanBreak;
+        flockInRange.ReportFenceChargeImpact(hardImpact: !canBreak);
+        if (!canBreak)
+            return;
+
+        breakable.Break();
+        ClearRange();
     }
 
     private void OnTriggerEnter2D(Collider2D other)
@@ -149,9 +166,16 @@ public sealed class FenceObstacle : MonoBehaviour
 
     private void NotifyIfChanged(bool force = false)
     {
+        bool inRange = IsFlockInRange;
+        int currentCount = CurrentFlockCount;
         bool interactable = CanBreak;
-        if (force || interactable != wasInteractable)
+        if (force
+            || inRange != wasInRange
+            || currentCount != lastReportedCount
+            || interactable != wasInteractable)
         {
+            wasInRange = inRange;
+            lastReportedCount = currentCount;
             wasInteractable = interactable;
             StateChanged?.Invoke(this);
         }

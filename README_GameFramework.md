@@ -4,7 +4,7 @@ Unity 版本：**Unity 6.5（6000.5.9f1）**
 
 本 README 用于总结当前已经完成并测试通过的 Game Jam 基础工程内容。
 
-当前工程的基础框架已经完成，“俯视角羊群 MVP”原型已集成到 `Level_01`。
+当前工程的基础框架已经完成，主菜单当前进入 `AlphaFlockExpansion`；早期 `Level_01` 与 Ending 已归档到 `Scenes/Old/Legacy`。
 
 实现玩法前请阅读：
 
@@ -24,9 +24,9 @@ Unity 版本：**Unity 6.5（6000.5.9f1）**
 
 * 玩家控制对象：羊群整体，不存在固定头羊。
 * 视角：2D俯视角。
-* 操作：WASD移动，Space拉屎。
-* MVP目标：接触并招募本局按配置随机生成的羊。
-* 当前 `Level_01`：`100 × 50` 区域，共 50 只待招募羊，其中 5 只是特殊羊。
+* 操作：WASD 移动，E 冲撞围栏。
+* 当前目标：持续扩张羊群，达到出口门槛后撞开外围围栏。
+* 当前 `AlphaFlockExpansion`：`240 × 140` 草原，按阶段维持周边野生羊密度。
 * 生成规则：普通羊按 1～3 只成组，特殊羊单只出现并支持加权池与固定点位。
 * 完成反馈：显示羊名、族群规模、招募数、分数、拉屎次数和游戏用时。
 * 占位界面：任务列表、结算、同伴名册和羊图鉴。
@@ -51,7 +51,7 @@ Unity 版本：**Unity 6.5（6000.5.9f1）**
 
 ```text
 MainMenu
-├─ START GAME → Level\_01
+├─ START GAME → AlphaFlockExpansion
 ├─ SET → SettingPanel
 └─ EXIT GAME
 ```
@@ -82,28 +82,29 @@ SettingPanel   OFF
 
 ```text
 \_Game/Scenes/MainMenu.unity
-\_Game/Scenes/Level\_01.unity
-\_Game/Scenes/Ending.unity
+\_Game/Scenes/AlphaFlockExpansion.unity
+\_Game/Scenes/Old/Legacy/Level\_01.unity
+\_Game/Scenes/Old/Legacy/Ending.unity
 ```
 
 当前 Build Profiles Scene List：
 
 ```text
 0  MainMenu
-1  Level\_01
+1  AlphaFlockExpansion
 ```
 
-`Ending.unity` 资产已经存在，但当前没有进入 `EditorBuildSettings` Scene List，且没有与 Level\_01 接通。
+`Level_01` 与 `Ending` 仍保留为历史资产，但不属于当前主流程。
 
 目前真正接通的流程：
 
 ```text
 MainMenu
    ↓
-Level\_01
+AlphaFlockExpansion
 ```
 
-Ending 当前已经做好，但**暂时不与 Level\_01 写死连接**。
+Ending 当前作为历史资产保留，**不与 AlphaFlockExpansion 写死连接**。
 
 原因：
 
@@ -168,8 +169,10 @@ Assets
     │
     └── Scenes
         ├── MainMenu.unity
-        ├── Level\_01.unity
-        └── Ending.unity
+        ├── AlphaFlockExpansion.unity
+        └── Old
+            ├── Legacy
+            └── Tests
 ```
 
 除非团队统一决定，否则不要随意修改这套目录结构。
@@ -412,7 +415,7 @@ SFXVolume
 音量保持上一次设置
 ```
 
-MainMenu → Level\_01 后音量也会继续保持。
+MainMenu → AlphaFlockExpansion 后音量也会继续保持。
 
 \---
 
