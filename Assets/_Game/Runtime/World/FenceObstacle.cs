@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-/// 围栏：羊群数量达到 ObstacleDefinition.RequiredFlockCount 且按下交互键才碎。
-/// 数量不够时靠 Blocking 层的实体碰撞体挡住羊群
+/// 围栏：羊群数量达到 ObstacleDefinition.RequiredFlockCount 后，接触时自动撞碎。
+/// 数量不够时靠 Blocking 层的实体碰撞体挡住羊群；也保留手动交互模式供以后使用。
 [DisallowMultipleComponent]
 [RequireComponent(typeof(BreakableObstacle))]
 public sealed class FenceObstacle : MonoBehaviour
@@ -75,7 +75,7 @@ public sealed class FenceObstacle : MonoBehaviour
         if (!CanBreak)
             return;
 
-        if (InteractPressedThisFrame())
+        if (breakOnContact || InteractPressedThisFrame())
         {
             breakable.Break();
             ClearRange();

@@ -12,7 +12,7 @@ public enum ObstacleBreakRule
     /// 任意一只羊群成员接触即碎（建筑、木桶、石头、花草）。
     OnAnyContact,
 
-    /// 围栏：羊群数量达到要求且按下交互键才碎
+    /// 围栏：羊群数量达到要求后才允许破坏。具体触发方式由围栏组件决定。
     RequireCountAndInteract,
 }
 

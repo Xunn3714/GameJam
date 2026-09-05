@@ -92,6 +92,8 @@ public sealed class ScatteredSheep : MonoBehaviour
         if (velocity.sqrMagnitude <= stopSpeed * stopSpeed)
         {
             velocity = Vector2.zero;
+            IsScattered = false;
+            enabled = false;
             return;
         }
 

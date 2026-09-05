@@ -1,23 +1,49 @@
+using System;
 using UnityEditor;
 using UnityEngine;
 
-/// 本文件用于自动设定Tilemap美术图片文件的像素及格式
+/// 本文件用于自动设定世界美术图片文件的像素及格式。
 public class WorldSpriteImporter : AssetPostprocessor
 {
-    private const string TargetPath = "Art";
-    private const float PixelsPerUnit = 128f;
+    private const string WorldArtPath = "Assets/Art/";
+    private const string SheepSpritePath = WorldArtPath + "SheepSprites/";
+    private const string PoopSpritePath = WorldArtPath + "SkillSprites/Poop/";
+    private const string HandDrawnPoopPath = PoopSpritePath + "shit.png";
+    private const float WorldPixelsPerUnit = 128f;
+    private const float HandDrawnPoopPixelsPerUnit = 200f;
 
     void OnPreprocessTexture()
     {
-        if (!assetPath.Contains(TargetPath)) return;
+        if (!assetPath.StartsWith(WorldArtPath, StringComparison.OrdinalIgnoreCase)) return;
 
         var importer = (TextureImporter)assetImporter;
         importer.textureType = TextureImporterType.Sprite;
         importer.spriteImportMode = SpriteImportMode.Single;
         importer.filterMode = FilterMode.Bilinear;
-        importer.spritePixelsPerUnit = PixelsPerUnit;
+        importer.spritePixelsPerUnit = ResolvePixelsPerUnit(importer);
 
         importer.textureCompression = TextureImporterCompression.Compressed;
         importer.mipmapEnabled = false; // 2D 游戏一般不需要 mipmap，除非会做大幅缩放远近效果
+    }
+
+    private float ResolvePixelsPerUnit(TextureImporter importer)
+    {
+        if (string.Equals(assetPath, HandDrawnPoopPath, StringComparison.OrdinalIgnoreCase))
+        {
+            // 原图保留了较宽的透明画布，用主体像素范围匹配稀有大便的显示尺寸。
+            return HandDrawnPoopPixelsPerUnit;
+        }
+
+        bool normalizeCanvasWidth =
+            assetPath.StartsWith(SheepSpritePath, StringComparison.OrdinalIgnoreCase) ||
+            assetPath.StartsWith(PoopSpritePath, StringComparison.OrdinalIgnoreCase);
+        if (!normalizeCanvasWidth)
+        {
+            return WorldPixelsPerUnit;
+        }
+
+        // 角色和技能原画分辨率并不统一，让画布宽度恒为 1 世界单位。
+        importer.GetSourceTextureWidthAndHeight(out int sourceWidth, out _);
+        return Mathf.Max(1f, sourceWidth);
     }
 }
