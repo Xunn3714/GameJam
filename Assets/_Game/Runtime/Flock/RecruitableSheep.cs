@@ -13,6 +13,13 @@ public sealed class RecruitableSheep : MonoBehaviour
 
     public bool IsRecruited { get; private set; }
 
+    public void ConfigureSprite(Sprite sprite)
+    {
+        spriteRenderer ??= GetComponent<SpriteRenderer>();
+        if (spriteRenderer != null && sprite != null)
+            spriteRenderer.sprite = sprite;
+    }
+
     private void Awake()
     {
         recruitTrigger = GetComponent<CircleCollider2D>();

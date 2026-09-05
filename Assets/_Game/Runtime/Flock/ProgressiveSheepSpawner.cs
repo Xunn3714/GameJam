@@ -8,43 +8,16 @@ public sealed class ProgressiveSheepSpawner : MonoBehaviour
 {
     private const float GoldenAngle = 2.39996323f;
 
-    /// <summary>一种羊的刷新条目：预制体 + 类型 id + 显示名 + 权重。</summary>
-    [Serializable]
-    public sealed class SheepTypeEntry
-    {
-        [SerializeField] private RecruitableSheep prefab;
-        [SerializeField] private string typeId = MvpSheepCatalog.DefaultTypeId;
-        [SerializeField] private string displayName = "普通羊";
-        [SerializeField, Min(0f)] private float weight = 90f;
-
-        public SheepTypeEntry() { }
-
-        public SheepTypeEntry(RecruitableSheep prefab, string typeId, string displayName, float weight)
-        {
-            this.prefab = prefab;
-            this.typeId = typeId;
-            this.displayName = displayName;
-            this.weight = weight;
-        }
-
-        public RecruitableSheep Prefab => prefab;
-        public string TypeId => string.IsNullOrWhiteSpace(typeId) ? MvpSheepCatalog.DefaultTypeId : typeId.Trim();
-        public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? TypeId : displayName;
-        public float Weight => Mathf.Max(0f, weight);
-    }
-
     [Header("References")]
     [SerializeField] private FlockController flock;
-    [Tooltip("类型表为空时使用的默认羊。")]
-    [SerializeField] private RecruitableSheep sheepPrefab;
     [SerializeField] private SheepNamePool namePool;
     [SerializeField] private Camera gameplayCamera;
     [Tooltip("可选：提供后刷新位置与羊的类型都由种子决定，可复现。")]
     [SerializeField] private WorldSeed worldSeed;
 
-    [Header("Sheep Types")]
-    [Tooltip("按权重随机的羊类型表。建议：普通 90，四种特殊各 2.5。为空则只刷 sheepPrefab。")]
-    [SerializeField] private SheepTypeEntry[] sheepTypes = System.Array.Empty<SheepTypeEntry>();
+    [Header("Special Sheep Catalog")]
+    [Tooltip("当前主流程唯一的羊刷新配置：包含共用 Prefab、品质概率和文件夹登记的特殊羊。")]
+    [SerializeField] private SpecialSheepCatalog specialSheepCatalog;
 
     [Header("Spawn Area")]
     [SerializeField] private Vector2 spawnAreaCenter = Vector2.zero;
@@ -58,12 +31,26 @@ public sealed class ProgressiveSheepSpawner : MonoBehaviour
     private readonly List<RecruitableSheep> activeBatch = new();
     private readonly List<string> availableNames = new();
     private readonly HashSet<string> usedNames = new(StringComparer.Ordinal);
+    private readonly SpecialSheepRunState specialRunState = new();
+    private readonly Dictionary<RecruitableSheep, ActiveSpecialGroup> specialGroupBySheep = new();
     private Transform spawnRoot;
     private System.Random random;
     private int fallbackNameIndex = 1;
     private int groupSequence;
     private float spawnAngleOffset;
     private bool initialized;
+
+    private sealed class ActiveSpecialGroup
+    {
+        public ActiveSpecialGroup(string typeId)
+        {
+            TypeId = typeId;
+        }
+
+        public string TypeId { get; }
+        public bool Collected { get; set; }
+        public HashSet<RecruitableSheep> WildMembers { get; } = new();
+    }
 
     /// <summary>某种类型的羊被刷出时触发（类型 id, 羊）。</summary>
     public event Action<string, RecruitableSheep> SheepSpawned;
@@ -73,14 +60,15 @@ public sealed class ProgressiveSheepSpawner : MonoBehaviour
     {
         get
         {
-            activeBatch.RemoveAll(sheep => sheep == null || sheep.IsRecruited);
+            PruneInactiveSheep();
             return activeBatch.Count;
         }
     }
 
     public int TotalSpawned { get; private set; }
     public int ActiveWildSheepCount => ActiveBatchCount;
-    public IReadOnlyList<SheepTypeEntry> SheepTypes => sheepTypes;
+    public SpecialSheepCatalog Catalog => specialSheepCatalog;
+    public SpecialSheepRunStatus GetSpecialSheepStatus(string typeId) => specialRunState.GetStatus(typeId);
 
     /// <summary>类型 id 对应的显示名；表里没有则返回 id 本身。</summary>
     public string GetTypeDisplayName(string typeId)
@@ -88,13 +76,9 @@ public sealed class ProgressiveSheepSpawner : MonoBehaviour
         if (string.IsNullOrWhiteSpace(typeId))
             typeId = MvpSheepCatalog.DefaultTypeId;
 
-        foreach (SheepTypeEntry entry in sheepTypes)
-        {
-            if (entry != null && string.Equals(entry.TypeId, typeId, StringComparison.Ordinal))
-                return entry.DisplayName;
-        }
-
-        return typeId == MvpSheepCatalog.DefaultTypeId ? "普通羊" : typeId;
+        return specialSheepCatalog != null
+            ? specialSheepCatalog.GetDisplayName(typeId)
+            : typeId == MvpSheepCatalog.DefaultTypeId ? "普通羊" : typeId;
     }
 
     public void SetExclusionZones(params Rect[] zones)
@@ -115,6 +99,8 @@ public sealed class ProgressiveSheepSpawner : MonoBehaviour
 
         initialized = true;
         random = worldSeed != null ? worldSeed.CreateRandom(1) : new System.Random();
+        specialRunState.Reset();
+        specialGroupBySheep.Clear();
         BuildNamePool();
         AssignNamesToCurrentFlock();
         spawnAngleOffset = NextFloat() * Mathf.PI * 2f;
@@ -129,8 +115,14 @@ public sealed class ProgressiveSheepSpawner : MonoBehaviour
         if (!initialized)
             Initialize();
 
-        if (flock == null || (sheepPrefab == null && sheepTypes.Length == 0))
+        RecruitableSheep prefab = specialSheepCatalog != null
+            ? specialSheepCatalog.BaseSheepPrefab
+            : null;
+        if (flock == null || prefab == null)
+        {
+            Debug.LogWarning("羊刷新器缺少 Flock 或 Special Sheep Catalog 的基础羊 Prefab。", this);
             return false;
+        }
 
         minimumCount = Mathf.Max(1, minimumCount);
         maximumCount = Mathf.Max(minimumCount, maximumCount);
@@ -143,49 +135,189 @@ public sealed class ProgressiveSheepSpawner : MonoBehaviour
         }
 
         groupSequence++;
-
-        for (int index = 0; index < count; index++)
+        int groupId = groupSequence;
+        SpecialSheepCatalog.Entry catalogEntry = null;
+        SheepQuality quality = specialSheepCatalog.RollQuality(random.NextDouble() * 100d);
+        if (quality != SheepQuality.Common)
         {
-            Vector2 offset = GetClusterOffset(index);
-            SheepTypeEntry type = PickType();
-            RecruitableSheep prefab = type != null && type.Prefab != null ? type.Prefab : sheepPrefab;
-            if (prefab == null)
-                continue;
+            specialSheepCatalog.TryPickAvailable(
+                quality,
+                random,
+                specialRunState.IsAvailable,
+                out catalogEntry);
+        }
 
-            RecruitableSheep sheep = Instantiate(
+        string typeId = catalogEntry != null
+            ? catalogEntry.TypeId
+            : MvpSheepCatalog.DefaultTypeId;
+        List<RecruitableSheep> created = new(count);
+        if (!TryCreateGroupInstances(
                 prefab,
-                new Vector3(
-                    clusterCenter.x + offset.x,
-                    clusterCenter.y + offset.y,
-                    prefab.transform.position.z),
-                prefab.transform.rotation,
-                spawnRoot);
+                count,
+                clusterCenter,
+                groupId,
+                typeId,
+                catalogEntry,
+                quality,
+                created))
+        {
+            if (catalogEntry == null)
+                return false;
 
+            catalogEntry = null;
+            quality = SheepQuality.Common;
+            typeId = MvpSheepCatalog.DefaultTypeId;
+            if (!TryCreateGroupInstances(
+                    prefab,
+                    count,
+                    clusterCenter,
+                    groupId,
+                    typeId,
+                    catalogEntry,
+                    quality,
+                    created))
+                return false;
+        }
+
+        ActiveSpecialGroup specialGroup = null;
+        if (catalogEntry != null)
+        {
+            if (!specialRunState.TryActivate(typeId))
+            {
+                DestroyGroupInstances(created);
+                created.Clear();
+                catalogEntry = null;
+                quality = SheepQuality.Common;
+                typeId = MvpSheepCatalog.DefaultTypeId;
+                if (!TryCreateGroupInstances(
+                        prefab,
+                        count,
+                        clusterCenter,
+                        groupId,
+                        typeId,
+                        catalogEntry,
+                        quality,
+                        created))
+                    return false;
+            }
+            else
+            {
+                specialGroup = new ActiveSpecialGroup(typeId);
+            }
+        }
+
+        foreach (RecruitableSheep sheep in created)
+        {
             TotalSpawned++;
-            sheep.name = $"AlphaWildSheep_{TotalSpawned:000}";
-            SheepIdentity identity = sheep.GetComponent<SheepIdentity>();
-            if (identity == null)
-                identity = sheep.gameObject.AddComponent<SheepIdentity>();
-            if (type != null)
-                identity.AssignType(type.TypeId);
-            AssignName(identity);
-            sheep.gameObject.SetActive(true);
             activeBatch.Add(sheep);
+            if (specialGroup != null)
+            {
+                specialGroup.WildMembers.Add(sheep);
+                specialGroupBySheep[sheep] = specialGroup;
+            }
+
+            SheepIdentity identity = sheep.GetComponent<SheepIdentity>();
             SheepSpawned?.Invoke(identity.SheepTypeId, sheep);
         }
 
-        Debug.Log($"Alpha 刷新了一批 {count} 只羊；累计刷新 {TotalSpawned} 只。", this);
+        Debug.Log(
+            $"Alpha 刷新了第 {groupId} 组，共 {count} 只{GetTypeDisplayName(typeId)}；" +
+            $"累计刷新 {TotalSpawned} 只。",
+            this);
         return true;
+    }
+
+    private bool TryCreateGroupInstances(
+        RecruitableSheep prefab,
+        int count,
+        Vector2 clusterCenter,
+        int groupId,
+        string typeId,
+        SpecialSheepCatalog.Entry catalogEntry,
+        SheepQuality quality,
+        List<RecruitableSheep> created)
+    {
+        try
+        {
+            for (int index = 0; index < count; index++)
+            {
+                Vector2 offset = GetClusterOffset(index);
+                RecruitableSheep sheep = Instantiate(
+                    prefab,
+                    new Vector3(
+                        clusterCenter.x + offset.x,
+                        clusterCenter.y + offset.y,
+                        prefab.transform.position.z),
+                    prefab.transform.rotation,
+                    spawnRoot);
+                created.Add(sheep);
+
+                sheep.name = $"AlphaWildSheep_G{groupId:000}_{index + 1:00}";
+                SheepIdentity identity = sheep.GetComponent<SheepIdentity>();
+                identity ??= sheep.gameObject.AddComponent<SheepIdentity>();
+                identity.AssignType(typeId);
+
+                if (catalogEntry != null)
+                {
+                    sheep.ConfigureSprite(catalogEntry.Sprite);
+                    SpecialSheepMarker marker = sheep.GetComponent<SpecialSheepMarker>();
+                    marker ??= sheep.gameObject.AddComponent<SpecialSheepMarker>();
+                    marker.Configure(typeId, catalogEntry.DisplayName, quality);
+                }
+
+                AssignName(identity);
+                sheep.gameObject.SetActive(true);
+            }
+
+            return true;
+        }
+        catch (Exception exception)
+        {
+            Debug.LogException(exception, this);
+            DestroyGroupInstances(created);
+            created.Clear();
+            return false;
+        }
+    }
+
+    private static void DestroyGroupInstances(IEnumerable<RecruitableSheep> sheepGroup)
+    {
+        foreach (RecruitableSheep sheep in sheepGroup)
+            DestroySheepInstance(sheep);
+    }
+
+    private static void DestroySheepInstance(RecruitableSheep sheep)
+    {
+        if (sheep == null)
+            return;
+
+        sheep.gameObject.SetActive(false);
+#if UNITY_EDITOR
+        if (!Application.isPlaying)
+            DestroyImmediate(sheep.gameObject);
+        else
+#endif
+            Destroy(sheep.gameObject);
     }
 
     public bool MarkRecruited(RecruitableSheep sheep)
     {
-        return sheep != null && activeBatch.Remove(sheep);
+        if (sheep == null || !activeBatch.Remove(sheep))
+            return false;
+
+        if (specialGroupBySheep.TryGetValue(sheep, out ActiveSpecialGroup group))
+        {
+            group.Collected = true;
+            specialRunState.MarkCollected(group.TypeId);
+            RemoveSpecialGroupMember(sheep, knownGroup: group);
+        }
+
+        return true;
     }
 
     public int CountWildSheepNear(Vector2 center, float radius)
     {
-        activeBatch.RemoveAll(sheep => sheep == null || sheep.IsRecruited);
+        PruneInactiveSheep();
         float radiusSquared = Mathf.Max(0f, radius) * Mathf.Max(0f, radius);
         int count = 0;
         foreach (RecruitableSheep sheep in activeBatch)
@@ -207,6 +339,7 @@ public sealed class ProgressiveSheepSpawner : MonoBehaviour
             if (sheep == null || sheep.IsRecruited)
             {
                 activeBatch.RemoveAt(index);
+                RemoveSpecialGroupMember(sheep, sheep != null && sheep.IsRecruited);
                 continue;
             }
 
@@ -214,38 +347,49 @@ public sealed class ProgressiveSheepSpawner : MonoBehaviour
                 continue;
 
             activeBatch.RemoveAt(index);
-            Destroy(sheep.gameObject);
+            RemoveSpecialGroupMember(sheep);
+            DestroySheepInstance(sheep);
             removed++;
         }
 
         return removed;
     }
 
-    /// <summary>按权重挑一种羊；权重全为 0 或表为空时返回 null（用默认预制体）。</summary>
-    private SheepTypeEntry PickType()
+    private void PruneInactiveSheep()
     {
-        float total = 0f;
-        foreach (SheepTypeEntry entry in sheepTypes)
+        for (int index = activeBatch.Count - 1; index >= 0; index--)
         {
-            if (entry != null && entry.Prefab != null)
-                total += entry.Weight;
-        }
-
-        if (total <= 0f)
-            return null;
-
-        float roll = NextFloat() * total;
-        foreach (SheepTypeEntry entry in sheepTypes)
-        {
-            if (entry == null || entry.Prefab == null)
+            RecruitableSheep sheep = activeBatch[index];
+            if (sheep != null && !sheep.IsRecruited)
                 continue;
 
-            roll -= entry.Weight;
-            if (roll <= 0f)
-                return entry;
+            activeBatch.RemoveAt(index);
+            RemoveSpecialGroupMember(sheep, sheep != null && sheep.IsRecruited);
+        }
+    }
+
+    private void RemoveSpecialGroupMember(
+        RecruitableSheep sheep,
+        bool recruited = false,
+        ActiveSpecialGroup knownGroup = null)
+    {
+        if (ReferenceEquals(sheep, null))
+            return;
+
+        ActiveSpecialGroup group = knownGroup;
+        if (group == null && !specialGroupBySheep.TryGetValue(sheep, out group))
+            return;
+
+        if (recruited)
+        {
+            group.Collected = true;
+            specialRunState.MarkCollected(group.TypeId);
         }
 
-        return sheepTypes[sheepTypes.Length - 1];
+        specialGroupBySheep.Remove(sheep);
+        group.WildMembers.Remove(sheep);
+        if (group.WildMembers.Count == 0 && !group.Collected)
+            specialRunState.ReleaseIfActive(group.TypeId);
     }
 
     private float NextFloat()

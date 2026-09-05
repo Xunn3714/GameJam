@@ -14,7 +14,10 @@ public class WorldSpriteImporter : AssetPostprocessor
 
     void OnPreprocessTexture()
     {
-        if (!assetPath.StartsWith(WorldArtPath, StringComparison.OrdinalIgnoreCase)) return;
+        bool isSpecialSheep = assetPath.StartsWith(
+            SpecialSheepCatalog.DefaultSourceRootFolder.TrimEnd('/', '\\') + "/",
+            StringComparison.OrdinalIgnoreCase);
+        if (!assetPath.StartsWith(WorldArtPath, StringComparison.OrdinalIgnoreCase) && !isSpecialSheep) return;
 
         var importer = (TextureImporter)assetImporter;
         importer.textureType = TextureImporterType.Sprite;
@@ -24,6 +27,15 @@ public class WorldSpriteImporter : AssetPostprocessor
 
         importer.textureCompression = TextureImporterCompression.Compressed;
         importer.mipmapEnabled = false; // 2D 游戏一般不需要 mipmap，除非会做大幅缩放远近效果
+        if (isSpecialSheep)
+        {
+            importer.alphaIsTransparency = true;
+            importer.wrapMode = TextureWrapMode.Clamp;
+            TextureImporterSettings settings = new TextureImporterSettings();
+            importer.ReadTextureSettings(settings);
+            settings.spriteGenerateFallbackPhysicsShape = false;
+            importer.SetTextureSettings(settings);
+        }
     }
 
     private float ResolvePixelsPerUnit(TextureImporter importer)
@@ -36,7 +48,10 @@ public class WorldSpriteImporter : AssetPostprocessor
 
         bool normalizeCanvasWidth =
             assetPath.StartsWith(SheepSpritePath, StringComparison.OrdinalIgnoreCase) ||
-            assetPath.StartsWith(PoopSpritePath, StringComparison.OrdinalIgnoreCase);
+            assetPath.StartsWith(PoopSpritePath, StringComparison.OrdinalIgnoreCase) ||
+            assetPath.StartsWith(
+                SpecialSheepCatalog.DefaultSourceRootFolder.TrimEnd('/', '\\') + "/",
+                StringComparison.OrdinalIgnoreCase);
         if (!normalizeCanvasWidth)
         {
             return WorldPixelsPerUnit;
