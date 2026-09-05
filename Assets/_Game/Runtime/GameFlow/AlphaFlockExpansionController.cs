@@ -12,6 +12,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     [Header("References")]
     [SerializeField] private FlockController flock;
     [SerializeField] private FlockMovementController flockMovement;
+    [SerializeField] private FlockActionController flockActions;
     [SerializeField] private ProgressiveSheepSpawner sheepSpawner;
     [SerializeField] private CameraFollow2D cameraFollow;
     [Tooltip("狼群节奏（生长空挡 → 狼嚎 → 攻击 → 跑路）。有它时狼由它掌控；为空则退回旧的 WolfSpawner 定时。")]
@@ -39,7 +40,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         new("小群", 5, 2, 3, 7f),
         new("狼群来袭", 20, 5, 7, 10f),
         new("暴力扩张", 50, 10, 15, 14f),
-        new("羊潮", 100, 20, 30, 18f)
+        new("羊潮", 90, 20, 30, 18f)
     };
     [Tooltip("镜头放大时整体提速：倍率 = (当前相机尺寸 / 第一阶段相机尺寸) ^ 指数。0 = 不提速。")]
     [SerializeField, Range(0f, 1.5f)] private float speedScaleExponent = 0.75f;
@@ -47,8 +48,14 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     [SerializeField, Min(1)] private int wolfUnlockFlockSize = 6;
     [SerializeField, Min(0.1f)] private float failedSpawnRetryDelay = 1.5f;
 
+    [Header("Impact Feedback")]
+    [Tooltip("第一阶段镜头尺寸下的主动撞击振幅；实际值会随当前视野等比放大。")]
+    [SerializeField, Min(0f)] private float impactShakeAmplitude = 0.16f;
+    [SerializeField, Min(0f)] private float impactShakeDuration = 0.2f;
+    [SerializeField, Min(0.02f)] private float impactFeedbackInterval = 0.12f;
+
     [Header("Exit")]
-    [Tooltip("历史最高羊数达到这个值后永久解锁外围围栏。")]
+    [Tooltip("历史最高羊数达到这个值后永久解锁出口；撞开围栏时当前羊数也必须达标。")]
     [SerializeField, Min(1)] private int exitUnlockFlockSize = 100;
     [Tooltip("羊群中心越过地图边界多远算成功冲出。")]
     [SerializeField, Min(0.5f)] private float exitMargin = 2.5f;
@@ -84,6 +91,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     private int specialRecruits;
     private readonly List<MvpObjectiveSnapshot> objectiveScratch = new List<MvpObjectiveSnapshot>();
     private float nextPopulationRefreshTime;
+    private float nextImpactFeedbackTime;
     private float runStartTime;
     private readonly List<string> typeScratch = new List<string>();
 
@@ -98,6 +106,9 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     {
         if (flock != null && flockMovement == null)
             flockMovement = flock.GetComponent<FlockMovementController>();
+        if (flock != null && flockActions == null)
+            flockActions = flock.GetComponent<FlockActionController>();
+        flockActions?.Configure(flock, flockMovement);
     }
 
     private void OnEnable()
@@ -106,6 +117,8 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         {
             flock.MemberCountChanged += HandleMemberCountChanged;
             flock.SheepRecruited += HandleSheepRecruited;
+            flock.MembersSeparated += HandleMembersSeparated;
+            flock.FenceChargeImpact += HandleFenceChargeImpact;
         }
 
         if (wolfDirector != null)
@@ -120,7 +133,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         if (tutorialPen != null)
         {
             tutorialPen.Opened += HandleTutorialPenOpened;
-            tutorialPen.HintRequested += ShowBanner;
+            tutorialPen.HintRequested += ShowLatestBanner;
         }
     }
 
@@ -130,6 +143,8 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         {
             flock.MemberCountChanged -= HandleMemberCountChanged;
             flock.SheepRecruited -= HandleSheepRecruited;
+            flock.MembersSeparated -= HandleMembersSeparated;
+            flock.FenceChargeImpact -= HandleFenceChargeImpact;
         }
 
         if (wolfDirector != null)
@@ -144,7 +159,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         if (tutorialPen != null)
         {
             tutorialPen.Opened -= HandleTutorialPenOpened;
-            tutorialPen.HintRequested -= ShowBanner;
+            tutorialPen.HintRequested -= ShowLatestBanner;
         }
     }
 
@@ -237,7 +252,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         {
             ApplyStage(false);
             FlockGrowthStage stage = progression.CurrentStage;
-            ShowBanner($"阶段 {progression.StageIndex + 1} · {stage.DisplayName}");
+            ShowLatestBanner($"阶段 {progression.StageIndex + 1} · {stage.DisplayName}");
             Debug.Log($"羊群升级到阶段 {progression.StageIndex + 1}：{stage.DisplayName}。", this);
         }
 
@@ -273,12 +288,43 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         if (!string.Equals(typeId, MvpSheepCatalog.DefaultTypeId, System.StringComparison.Ordinal))
         {
             specialRecruits++;
-            ShowBanner($"特殊羊加入：{sheepSpawner.GetTypeDisplayName(typeId)} {sheepName}".TrimEnd());
+            SpriteRenderer spriteRenderer = sheep.GetComponent<SpriteRenderer>();
+            if (spriteRenderer == null)
+                spriteRenderer = sheep.GetComponentInChildren<SpriteRenderer>(true);
+
+            string message =
+                $"特殊羊加入：{sheepSpawner.GetTypeDisplayName(typeId)} {sheepName}".TrimEnd();
+            ShowBanner(message, spriteRenderer != null ? spriteRenderer.sprite : null);
             RefreshObjectives();
         }
 
         if (sheepSpawner.MarkRecruited(sheep))
             MaintainNearbyPopulation();
+    }
+
+    private void HandleMembersSeparated(int count)
+    {
+        if (!initialized || ended || count <= 0)
+            return;
+
+        ShowLatestBanner(count == 1 ? "一只羊脱队了！" : $"有 {count} 只羊脱队了！");
+    }
+
+    private void HandleFenceChargeImpact(bool hardImpact)
+    {
+        if (ended || Time.unscaledTime < nextImpactFeedbackTime)
+            return;
+
+        nextImpactFeedbackTime = Time.unscaledTime + impactFeedbackInterval;
+        float amplitude = hardImpact ? impactShakeAmplitude : impactShakeAmplitude * 0.65f;
+        float referenceSize = stages != null && stages.Length > 0 && stages[0] != null
+            ? Mathf.Max(0.1f, stages[0].CameraSize)
+            : 5f;
+        float currentSize = cameraFollow != null
+            ? Mathf.Max(referenceSize, cameraFollow.CurrentOrthographicSize)
+            : referenceSize;
+        amplitude *= currentSize / referenceSize;
+        cameraFollow?.Shake(amplitude, impactShakeDuration);
     }
 
     private void RefreshComposition()
@@ -341,7 +387,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     {
         borderRing?.ApplyRequiredCount(exitUnlockFlockSize);
         ExpandBoundsForExit();
-        ShowBanner($"历史最高达到 {exitUnlockFlockSize} 只！带羊群到外围围栏，按 E 撞开冲出草原");
+        ShowBanner($"历史最高达到 {exitUnlockFlockSize} 只！按 E 让整群蓄势冲刺，撞开围栏后冲出草原");
         Debug.Log("出口已解锁。", this);
     }
 
@@ -409,13 +455,16 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
 
         objectiveScratch.Clear();
         objectiveScratch.Add(new MvpObjectiveSnapshot(
-            "alpha.pen", "凑够羊，按 E 撞开羊圈", true, false, penOpened,
+            "alpha.pen", "凑够羊，按 E 整群冲刺撞开羊圈", true, false, penOpened,
             Mathf.Min(members, penNeed), penNeed));
         objectiveScratch.Add(new MvpObjectiveSnapshot(
             "alpha.exit_unlock", $"羊群壮大到 {exitUnlockFlockSize} 只", true, false, progression.ExitUnlocked,
             Mathf.Min(progression.HighestFlockSize, exitUnlockFlockSize), exitUnlockFlockSize));
+        string escapeObjective = progression.ExitUnlocked && !borderBroken && members < exitUnlockFlockSize
+            ? $"当前羊群恢复到 {exitUnlockFlockSize} 只后撞开外围围栏"
+            : "撞开外围围栏，冲出草原";
         objectiveScratch.Add(new MvpObjectiveSnapshot(
-            "alpha.escape", "撞开外围围栏，冲出草原", true, progression.ExitUnlocked && !borderBroken, escaped,
+            "alpha.escape", escapeObjective, true, progression.ExitUnlocked && !borderBroken, escaped,
             borderBroken ? 1 : 0, 1));
         objectiveScratch.Add(new MvpObjectiveSnapshot(
             "alpha.special", "招募一只特殊羊", false, false, specialRecruits > 0,
@@ -437,6 +486,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
 
         wolfDirector?.Stop();
         wolfSpawner?.StopSpawning();
+        flockActions?.SetControlEnabled(false);
         flockMovement?.SetControlEnabled(false);
         if (pauseManager != null)
             pauseManager.SetResultLocked(true);
@@ -525,6 +575,18 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
             bannerView.Show(message);
     }
 
+    private void ShowBanner(string message, Sprite icon)
+    {
+        if (bannerView != null)
+            bannerView.Show(message, icon);
+    }
+
+    private void ShowLatestBanner(string message)
+    {
+        if (bannerView != null)
+            bannerView.ShowLatest(message);
+    }
+
     private void MaintainNearbyPopulation()
     {
         FlockGrowthStage stage = progression.CurrentStage;
@@ -594,9 +656,15 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
             wolfLine = wolvesUnlocked ? $"狼：已解锁（场上 {wolves}）" : $"狼：达到 {wolfUnlockFlockSize} 只后出现";
         }
 
-        string exitLine = ExitUnlocked
-            ? (borderRing != null && borderRing.AnyBroken ? "出口：围栏已破，冲出去！" : "出口：已解锁，去外围围栏按 E")
-            : $"出口：历史最高 {progression.HighestFlockSize}/{exitUnlockFlockSize}";
+        string exitLine;
+        if (!ExitUnlocked)
+            exitLine = $"出口：历史最高 {progression.HighestFlockSize}/{exitUnlockFlockSize}";
+        else if (borderRing != null && borderRing.AnyBroken)
+            exitLine = "出口：围栏已破，冲出去！";
+        else if (currentFlock >= exitUnlockFlockSize)
+            exitLine = "出口：已解锁，按 E 整群冲刺破栏";
+        else
+            exitLine = $"出口：已解锁，当前羊数 {currentFlock}/{exitUnlockFlockSize}";
 
         GUI.Box(new Rect(12f, 12f, 390f, 200f), GUIContent.none);
         GUILayout.BeginArea(new Rect(24f, 20f, 370f, 190f));
@@ -604,8 +672,14 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         GUILayout.Label($"羊群：<b>{currentFlock}</b>　历史最高：{progression.HighestFlockSize}　速度 ×{CurrentSpeedMultiplier:0.00}", labelStyle);
         GUILayout.Label($"周围野生羊：{wildSheep}　密度目标：约 {desiredNearbySheep}", labelStyle);
         GUILayout.Label(wolfLine, labelStyle);
+        if (wolfSpawner != null && wolfSpawner.DodgeMemory.Count > 0)
+        {
+            GUILayout.Label(
+                $"狼记忆：{wolfSpawner.DodgeMemory.Count} 次，玩家平均躲 {wolfSpawner.DodgeMemory.AverageDegrees:0.0}°",
+                labelStyle);
+        }
         GUILayout.Label(exitLine, labelStyle);
-        GUILayout.Label("WASD 移动 · E 撞栅栏 · Tab 统计", labelStyle);
+        GUILayout.Label("WASD 移动 · E 整群后退蓄势冲刺 · Q 收拢 · Tab 统计", labelStyle);
         GUILayout.EndArea();
     }
 

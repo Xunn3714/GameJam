@@ -33,6 +33,8 @@ public sealed class FlockMovementController : MonoBehaviour
     private float temporarySpeedLimit;
     private float temporarySpeedLimitExpiresAt;
     private float speedMultiplier = 1f;
+    private float actionSpeedScale = 1f;
+    private bool externalMovementActive;
 
     /// <summary>随羊群规模 / 镜头放大整体提速；速度上限和加速度一起乘。</summary>
     public void SetSpeedMultiplier(float multiplier)
@@ -41,16 +43,21 @@ public sealed class FlockMovementController : MonoBehaviour
     }
 
     public float SpeedMultiplier => speedMultiplier;
+    public float ActionSpeedScale => actionSpeedScale;
+    public bool ControlEnabled => controlEnabled;
 
     public Vector2 LastMoveDirection { get; private set; } = Vector2.right;
     public bool FacingLeft { get; private set; }
+    public Vector2 MoveInput => moveInput;
+    public bool HasMoveInput => moveInput.sqrMagnitude > 0.0001f;
     public bool IsMoving => velocity.sqrMagnitude > StopSpeed * StopSpeed;
     public Vector2 DesiredVelocity => velocity;
     public Vector2 Velocity => velocity;
     public float NormalSpeedLimit => normalSpeedLimit;
-    public float CurrentSpeedLimit => (HasTemporarySpeedLimit
+    public float UnmodifiedCurrentSpeedLimit => (HasTemporarySpeedLimit
         ? Mathf.Max(normalSpeedLimit, temporarySpeedLimit)
         : normalSpeedLimit) * speedMultiplier;
+    public float CurrentSpeedLimit => UnmodifiedCurrentSpeedLimit * actionSpeedScale;
 
     private bool HasTemporarySpeedLimit =>
         temporarySpeedLimit > normalSpeedLimit &&
@@ -101,6 +108,9 @@ public sealed class FlockMovementController : MonoBehaviour
     {
         movedThisStep = false;
         if (Time.timeScale == 0f)
+            return;
+
+        if (externalMovementActive)
             return;
 
         if (!HasTemporarySpeedLimit)
@@ -179,7 +189,88 @@ public sealed class FlockMovementController : MonoBehaviour
     {
         temporarySpeedLimit = 0f;
         temporarySpeedLimitExpiresAt = 0f;
-        velocity = Vector2.ClampMagnitude(velocity, normalSpeedLimit);
+        velocity = Vector2.ClampMagnitude(velocity, CurrentSpeedLimit);
+    }
+
+    /// <summary>为收拢状态提供平滑移速倍率，不改变阶段提供的基础速度倍率。</summary>
+    public void SetActionSpeedScale(float scale)
+    {
+        actionSpeedScale = Mathf.Clamp(scale, 0.05f, 1f);
+        if (!externalMovementActive)
+            velocity = Vector2.ClampMagnitude(velocity, CurrentSpeedLimit);
+    }
+
+    public void BeginExternalMovement()
+    {
+        externalMovementActive = true;
+        movedThisStep = false;
+        velocity = Vector2.zero;
+    }
+
+    /// <summary>在外部动作仍占用移动控制时，让羊群中心原地停住。</summary>
+    public void HoldExternalMovement()
+    {
+        if (!externalMovementActive)
+            return;
+
+        movedThisStep = false;
+        velocity = Vector2.zero;
+    }
+
+    public void EndExternalMovement()
+    {
+        externalMovementActive = false;
+        movedThisStep = false;
+        velocity = Vector2.zero;
+    }
+
+    /// <summary>
+    /// 执行一段不受普通速度上限约束的冲刺位移，返回实际移动距离和首个阻挡物。
+    /// </summary>
+    public float MoveExternalStep(
+        Vector2 direction,
+        float distance,
+        out MovementBlockResult blockResult)
+    {
+        blockResult = default;
+        if (!externalMovementActive || body == null || distance <= 0f || direction.sqrMagnitude <= 0.0001f)
+            return 0f;
+
+        direction.Normalize();
+        Vector2 from = body.position;
+        Vector2 requestedTarget = from + direction * distance;
+        Vector2 boundedTarget = requestedTarget;
+        if (restrictToMovementBounds)
+        {
+            boundedTarget.x = ClampInside(
+                boundedTarget.x,
+                movementBounds.xMin + CenterColliderRadius,
+                movementBounds.xMax - CenterColliderRadius);
+            boundedTarget.y = ClampInside(
+                boundedTarget.y,
+                movementBounds.yMin + CenterColliderRadius,
+                movementBounds.yMax - CenterColliderRadius);
+        }
+
+        bool hitMovementBounds = (boundedTarget - requestedTarget).sqrMagnitude > 0.000001f;
+        Vector2 resolvedTarget = MovementBlocking.ResolveDashMove(
+            from,
+            boundedTarget,
+            blockingRadius,
+            blockingLayers,
+            out blockResult);
+        if (!blockResult.WasBlocked && hitMovementBounds)
+            blockResult = new MovementBlockResult(true, true, null);
+
+        Vector2 displacement = resolvedTarget - from;
+        float actualDistance = displacement.magnitude;
+        velocity = actualDistance > 0.0001f
+            ? displacement / Mathf.Max(Time.fixedDeltaTime, 0.0001f)
+            : Vector2.zero;
+        movedThisStep = actualDistance > 0.0001f;
+        if (movedThisStep)
+            body.MovePosition(resolvedTarget);
+        return actualDistance;
     }
 
     public void ConfigureMovementBounds(Rect bounds)

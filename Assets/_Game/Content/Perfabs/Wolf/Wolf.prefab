@@ -215,10 +215,19 @@ MonoBehaviour:
   chargeOverrun: 5
   centerHitRadius: 1
   grazeRadius: 1.1
+  alwaysCaptureOne: 0
+  homingTurnSpeed: 0
+  homingRange: 14
+  useDodgePrediction: 1
+  predictionLeadTime: 0.35
+  predictionMinimumSamples: 3
+  predictionStrength: 1
+  predictionMaxDegrees: 60
   scatterSpeed: 7.5
   scatterRandomness: 0.45
   carriedSheepColor: {r: 0.3, g: 0.5, b: 1, a: 1}
   carriedSheepDistance: 0.75
+  sheepContactInteraction: 1
   fleeSpeed: 9
   despawnDistance: 24
   maxLifetime: 20

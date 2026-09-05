@@ -2,31 +2,57 @@ using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEditor;
+using UnityEditor.Events;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 /// <summary>
-/// Builds the isolated AlphaFlockExpansion development scene without touching Level_01.
+/// Builds the primary AlphaFlockExpansion gameplay scene without modifying the legacy Level_01.
 /// 240x140 的草原、外圈围栏、出生羊圈（5 只教程羊 + 地面教程标识）、种子驱动的可破坏物、狼群节奏与 HUD。
 /// 可重复执行：只重建由它管理的对象。
 /// </summary>
 public static class AlphaFlockExpansionSceneSetup
 {
-    private const string SceneFolder = "Assets/_Game/Scenes/Dev";
+    private const string SceneFolder = "Assets/_Game/Scenes";
     private const string ScenePath = SceneFolder + "/AlphaFlockExpansion.unity";
     private const string SceneTemplatePath = "Assets/Settings/Scenes/URP2DSceneTemplate.unity";
     private const string GrassBackgroundPath = "Assets/Art/WorldSprites/Tiles/草原_背景.png";
     private const string WarningRectAssetPath = "Assets/_Game/Content/Art/Prototype/WolfWarningRect.asset";
     private const string SheepMemberPrefabPath = "Assets/_Game/Content/Perfabs/Sheep/SheepMember.prefab";
     private const string RecruitableSheepPrefabPath = "Assets/_Game/Content/Perfabs/Sheep/RecruitableSheep.prefab";
-    private const string SpecialSheepFolder = "Assets/_Game/Content/Perfabs/Sheep";
     private const string WolfPrefabPath = "Assets/_Game/Content/Perfabs/Wolf/Wolf.prefab";
     private const string NamePoolPath = "Assets/_Game/Content/Data/SheepNamePool.asset";
-    private const string Level01ScenePath = "Assets/_Game/Scenes/Level_01.unity";
     private const string BannerPrefabPath = "Assets/_Game/Content/Perfabs/UI/BannerSystem.prefab";
+    private const string CollectionPanelPrefabPath = "Assets/_Game/Content/Perfabs/UI/CollectionPanel.prefab";
+    private const string PauseSystemPrefabPath = "Assets/_Game/Content/Perfabs/UI/PauseSystem.prefab";
     private const string ResultPanelPrefabPath = "Assets/_Game/Content/Perfabs/UI/ResultPanel.prefab";
+    private const string TaskSystemPrefabPath = "Assets/_Game/Content/Perfabs/UI/TaskSystem.prefab";
+    private const string GameplayBgmPath = "Assets/_Game/Content/Audio/BGM/SheepMvp/sheep-coming.wav";
+    private const string WolfSpawnClipPath = "Assets/_Game/Content/Audio/BGM/sound efct/woof/woof.wav";
+    private const string WolfAttack1ClipPath = "Assets/_Game/Content/Audio/BGM/sound efct/woof/attact1.wav";
+    private const string WolfAttack2ClipPath = "Assets/_Game/Content/Audio/BGM/sound efct/woof/attack2.wav";
+    private const string WolfAttack3ClipPath = "Assets/_Game/Content/Audio/BGM/sound efct/woof/attack3.wav";
+    private const string WolfCaptureClipPath = "Assets/_Game/Content/Audio/BGM/sound efct/sheep/sheep (8).wav";
+
+    private static readonly string[] GrassFootstepPaths =
+    {
+        "Assets/_Game/Content/Audio/SFX/Grass1.wav",
+        "Assets/_Game/Content/Audio/SFX/Grass2.wav",
+        "Assets/_Game/Content/Audio/SFX/Grass3.wav",
+        "Assets/_Game/Content/Audio/SFX/Grass4.wav"
+    };
+
+    private static readonly string[] SandFootstepPaths =
+    {
+        "Assets/_Game/Content/Audio/SFX/Sand/Sand1.wav",
+        "Assets/_Game/Content/Audio/SFX/Sand/Sand2.wav",
+        "Assets/_Game/Content/Audio/SFX/Sand/Sand3.wav",
+        "Assets/_Game/Content/Audio/SFX/Sand/Sand4.wav",
+        "Assets/_Game/Content/Audio/SFX/Sand/Sand5.wav",
+        "Assets/_Game/Content/Audio/SFX/Sand/Sand6.wav"
+    };
 
     // 地图与羊圈尺寸（世界单位）。
     private static readonly Rect WorldRect = new Rect(-120f, -70f, 240f, 140f);
@@ -61,15 +87,43 @@ public static class AlphaFlockExpansionSceneSetup
         "GameCanvas",
         "PauseManager",
         "EventSystem",
+        "SceneAudio",
         "AlphaFlockExpansionController"
     };
 
     [MenuItem("Game Jam/Alpha Flock Expansion/Setup Scene")]
     public static void SetupScene()
     {
+        ConfigureUiPrefabs();
         Scene scene = OpenOrCreateScene();
         BuildScene(scene);
         Selection.activeGameObject = scene.GetRootGameObjects().FirstOrDefault(root => root.name == "SheepFlock");
+    }
+
+    [MenuItem("Game Jam/Alpha Flock Expansion/Apply Audio Integration")]
+    public static void ApplyAudioIntegration()
+    {
+        Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+        FlockMovementController movement = FindComponentInScene<FlockMovementController>(scene);
+        WolfEventDirector wolfDirector = FindComponentInScene<WolfEventDirector>(scene);
+
+        if (movement == null || wolfDirector == null)
+            throw new System.InvalidOperationException("Alpha scene is missing its flock or wolf system.");
+
+        EnsureSceneAudio(scene);
+        ConfigureFootstepAudio(movement);
+        ConfigureWolfAudio(wolfDirector);
+        EditorSceneManager.MarkSceneDirty(scene);
+        EditorSceneManager.SaveScene(scene, ScenePath);
+        AssetDatabase.SaveAssets();
+    }
+
+    [MenuItem("Game Jam/Alpha Flock Expansion/Apply Main Menu UI")]
+    public static void ApplyMainMenuUi()
+    {
+        UiVisualPolish.ApplyGameplayPrefabs();
+        UiVisualPolish.ApplyMainMenuScene();
+        AssetDatabase.SaveAssets();
     }
 
     /// <summary>把 Alpha 场景加进 Build Settings（主菜单“开始游戏”按名字加载需要它）。</summary>
@@ -121,19 +175,36 @@ public static class AlphaFlockExpansionSceneSetup
 
         ClearManagedObjects(scene);
 
+        EnsureSceneAudio(scene);
         CreateWorld(scene);
         WorldSeed worldSeed = CreateWorldSeed(scene);
         BorderFenceRing borderRing = CreateBorderFence(scene, fencePrefab, borderFenceDefinition);
         TutorialPen tutorialPen = CreateTutorialPen(scene, fencePrefab, penFenceDefinition, recruitablePrefab);
         WorldDebrisSpawner debris = CreateDebrisSpawner(scene, worldSeed);
 
-        GameObject flockObject = CreateFlock(scene, memberPrefab, out FlockController flock, out FlockMovementController movement);
+        GameObject flockObject = CreateFlock(
+            scene,
+            memberPrefab,
+            out FlockController flock,
+            out FlockMovementController movement,
+            out FlockActionController actions);
         CameraFollow2D cameraFollow = ConfigureCamera(scene, flockObject.transform, out Camera gameplayCamera);
         ConfigureLighting(scene);
-        ProgressiveSheepSpawner sheepSpawner = CreateSheepSpawner(scene, flock, recruitablePrefab, namePool, gameplayCamera, worldSeed);
+        ProgressiveSheepSpawner sheepSpawner = CreateSheepSpawner(scene, flock, namePool, gameplayCamera, worldSeed);
         CreateWolfSystem(scene, flock, wolfPrefab.GetComponent<Wolf>(), out WolfSpawner wolfSpawner, out WolfEventDirector director);
         LevelUi ui = CreateLevelUi(scene, director);
-        CreateGameController(scene, flock, movement, sheepSpawner, cameraFollow, wolfSpawner, director, borderRing, tutorialPen, ui);
+        CreateGameController(
+            scene,
+            flock,
+            movement,
+            actions,
+            sheepSpawner,
+            cameraFollow,
+            wolfSpawner,
+            director,
+            borderRing,
+            tutorialPen,
+            ui);
 
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene);
@@ -141,7 +212,7 @@ public static class AlphaFlockExpansionSceneSetup
         Debug.Log(
             $"Alpha 羊群扩张场景已生成：{ScenePath}。" +
             $"地图 {WorldRect.width}x{WorldRect.height}，出生羊圈 5 只教程羊，狼在 {WolfUnlockFlockSize} 只后出现，" +
-            $"历史最高 {ExitUnlockFlockSize} 只后可撞开外围围栏冲出草原。");
+            $"历史最高 {ExitUnlockFlockSize} 只后解锁出口，冲刺时当前羊数达标才能撞开外围围栏。");
     }
 
     // ------------------------------------------------------------------ scene
@@ -380,7 +451,7 @@ public static class AlphaFlockExpansionSceneSetup
         signs.transform.SetParent(parent, false);
 
         Sprite keycapSprite = AssetDatabase.LoadAllAssetsAtPath(WarningRectAssetPath).OfType<Sprite>().FirstOrDefault();
-        Color chalk = new Color(0.96f, 0.94f, 0.85f, 0.85f);
+        Color chalk = new Color(0.22f, 0.20f, 0.12f, 0.90f);
 
         // 1. 移动（放在左下，避开左上角的调试 HUD）
         Vector2 moveOrigin = new Vector2(-5.5f, -1.6f);
@@ -395,7 +466,12 @@ public static class AlphaFlockExpansionSceneSetup
         CreateWorldText(signs.transform, "Recruit_Title", "碰到羊 → 加入羊群", recruitOrigin + new Vector2(0f, 1.6f), 0.9f, chalk);
         CreateWorldText(signs.transform, "Recruit_Hint", "把它们都收进来", recruitOrigin + new Vector2(0f, 0.7f), 0.6f, chalk);
 
-        // 3. 撞栅栏
+        // 3. Q 收拢：放在招募提示下方，与 E 冲刺教学分开。
+        Vector2 gatherOrigin = new Vector2(1.2f, -1.25f);
+        CreateKeycap(signs.transform, keycapSprite, "Q", gatherOrigin + new Vector2(-1.25f, 0f), chalk);
+        CreateWorldText(signs.transform, "Gather_Hint", "按住收拢", gatherOrigin + new Vector2(0.75f, 0f), 0.66f, chalk);
+
+        // 4. E 整群后退蓄势后撞栅栏
         Vector2 fenceOrigin = new Vector2(5.2f, -3.2f);
         CreateWorldText(signs.transform, "Fence_Title", "羊够 6 只 → 撞开栅栏", fenceOrigin + new Vector2(-1.2f, 1.2f), 0.85f, chalk);
         CreateKeycap(signs.transform, keycapSprite, "E", fenceOrigin + new Vector2(0.4f, 0f), chalk);
@@ -416,9 +492,10 @@ public static class AlphaFlockExpansionSceneSetup
         label.fontSize = 4f;
         label.alignment = TextAlignmentOptions.Center;
         label.color = color;
+        label.fontStyle = FontStyles.Bold;
         label.sortingOrder = -50;
         label.rectTransform.sizeDelta = new Vector2(12f, 2f);
-        // 中文字形靠 MvpTmpUiFont 在运行时注册的全局 fallback，这里不直接指定运行时字体（不可序列化）。
+        // 中文字形由 TMP Settings 中随仓库提交的 Noto Sans SC fallback 提供，Edit/Play 模式保持一致。
     }
 
     private static void CreateKeycap(Transform parent, Sprite sprite, string letter, Vector2 position, Color color)
@@ -435,7 +512,7 @@ public static class AlphaFlockExpansionSceneSetup
             frame.transform.localScale = new Vector3(0.9f, 0.9f, 1f);
             SpriteRenderer renderer = frame.AddComponent<SpriteRenderer>();
             renderer.sprite = sprite;
-            renderer.color = new Color(color.r, color.g, color.b, 0.35f);
+            renderer.color = new Color(0.96f, 0.92f, 0.76f, 0.82f);
             renderer.sortingOrder = -60;
         }
 
@@ -450,32 +527,16 @@ public static class AlphaFlockExpansionSceneSetup
         SceneManager.MoveGameObjectToScene(spawnerObject, scene);
         WorldDebrisSpawner spawner = spawnerObject.AddComponent<WorldDebrisSpawner>();
 
-        GameObject flower = AssetDatabase.LoadAssetAtPath<GameObject>(WorldObstaclePrefabBuilder.FlowerPrefabPath);
-        GameObject rock = AssetDatabase.LoadAssetAtPath<GameObject>(WorldObstaclePrefabBuilder.RockPrefabPath);
-        GameObject barrel = AssetDatabase.LoadAssetAtPath<GameObject>(WorldObstaclePrefabBuilder.BarrelPrefabPath);
-
         SerializedObject serialized = new SerializedObject(spawner);
         serialized.FindProperty("worldSeed").objectReferenceValue = worldSeed;
-        SerializedProperty entries = serialized.FindProperty("entries");
-        entries.arraySize = 3;
-        SetDebrisEntry(entries.GetArrayElementAtIndex(0), flower, 5f, 1.0f);
-        SetDebrisEntry(entries.GetArrayElementAtIndex(1), rock, 2f, 1.5f);
-        SetDebrisEntry(entries.GetArrayElementAtIndex(2), barrel, 1.5f, 1.5f);
+        // 散布物种类、权重、间距、密度统一由 WorldObstaclePrefabBuilder.DebrisSpecs 决定。
+        WorldObstaclePrefabBuilder.ApplyDebrisEntries(serialized);
         serialized.FindProperty("area").rectValue = WorldRect;
-        serialized.FindProperty("densityPer100SquareUnits").floatValue = 1.5f;
-        serialized.FindProperty("maximumCount").intValue = 520;
         SerializedProperty zones = serialized.FindProperty("exclusionZones");
         zones.arraySize = 1;
         zones.GetArrayElementAtIndex(0).rectValue = Expand(PenRect, 4f);
         serialized.ApplyModifiedPropertiesWithoutUndo();
         return spawner;
-    }
-
-    private static void SetDebrisEntry(SerializedProperty entry, GameObject prefab, float weight, float clearance)
-    {
-        entry.FindPropertyRelative("prefab").objectReferenceValue = prefab;
-        entry.FindPropertyRelative("weight").floatValue = weight;
-        entry.FindPropertyRelative("clearance").floatValue = clearance;
     }
 
     // ------------------------------------------------------------------ flock & spawners
@@ -484,7 +545,8 @@ public static class AlphaFlockExpansionSceneSetup
         Scene scene,
         GameObject sheepPrefab,
         out FlockController flock,
-        out FlockMovementController movement)
+        out FlockMovementController movement,
+        out FlockActionController actions)
     {
         GameObject flockObject = new GameObject("SheepFlock");
         SceneManager.MoveGameObjectToScene(flockObject, scene);
@@ -502,6 +564,10 @@ public static class AlphaFlockExpansionSceneSetup
 
         movement = flockObject.AddComponent<FlockMovementController>();
         flock = flockObject.AddComponent<FlockController>();
+        actions = flockObject.AddComponent<FlockActionController>();
+        actions.Configure(flock, movement);
+
+        ConfigureFootstepAudio(movement);
 
         GameObject initialSheep = (GameObject)PrefabUtility.InstantiatePrefab(sheepPrefab, scene);
         initialSheep.name = "Sheep_Initial";
@@ -520,7 +586,6 @@ public static class AlphaFlockExpansionSceneSetup
     private static ProgressiveSheepSpawner CreateSheepSpawner(
         Scene scene,
         FlockController flock,
-        GameObject recruitablePrefab,
         SheepNamePool namePool,
         Camera gameplayCamera,
         WorldSeed worldSeed)
@@ -529,45 +594,15 @@ public static class AlphaFlockExpansionSceneSetup
         SceneManager.MoveGameObjectToScene(spawnerObject, scene);
         ProgressiveSheepSpawner spawner = spawnerObject.AddComponent<ProgressiveSheepSpawner>();
 
-        RecruitableSheep common = recruitablePrefab.GetComponent<RecruitableSheep>();
         SerializedObject serialized = new SerializedObject(spawner);
         serialized.FindProperty("flock").objectReferenceValue = flock;
-        serialized.FindProperty("sheepPrefab").objectReferenceValue = common;
         serialized.FindProperty("namePool").objectReferenceValue = namePool;
         serialized.FindProperty("gameplayCamera").objectReferenceValue = gameplayCamera;
         serialized.FindProperty("worldSeed").objectReferenceValue = worldSeed;
+        serialized.FindProperty("specialSheepCatalog").objectReferenceValue =
+            SpecialSheepCatalogEditorUtility.LoadOrCreateAndSynchronize();
         serialized.FindProperty("spawnAreaCenter").vector2Value = WorldRect.center;
         serialized.FindProperty("spawnAreaSize").vector2Value = WorldRect.size;
-
-        // 普通 90%，四种特殊羊各 2.5%。
-        (string file, string typeId, string displayName, float weight)[] table =
-        {
-            ("RecruitableSheep", MvpSheepCatalog.DefaultTypeId, "普通羊", 90f),
-            ("SpecialSheep_Black", "sheep.special.black", "黑羊", 2.5f),
-            ("SpecialSheep_Horned", "sheep.special.horned", "角羊", 2.5f),
-            ("SpecialSheep_TopHat", "sheep.special.tophat", "礼帽羊", 2.5f),
-            ("SpecialSheep_RedBow", "sheep.special.redbow", "红蝴蝶结羊", 2.5f)
-        };
-
-        SerializedProperty types = serialized.FindProperty("sheepTypes");
-        types.arraySize = 0;
-        foreach ((string file, string typeId, string displayName, float weight) in table)
-        {
-            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>($"{SpecialSheepFolder}/{file}.prefab");
-            RecruitableSheep recruitable = prefab != null ? prefab.GetComponent<RecruitableSheep>() : null;
-            if (recruitable == null)
-            {
-                Debug.LogWarning($"Sheep prefab {file} not found or has no RecruitableSheep; skipped.");
-                continue;
-            }
-
-            types.arraySize++;
-            SerializedProperty entry = types.GetArrayElementAtIndex(types.arraySize - 1);
-            entry.FindPropertyRelative("prefab").objectReferenceValue = recruitable;
-            entry.FindPropertyRelative("typeId").stringValue = typeId;
-            entry.FindPropertyRelative("displayName").stringValue = displayName;
-            entry.FindPropertyRelative("weight").floatValue = weight;
-        }
 
         SerializedProperty zones = serialized.FindProperty("exclusionZones");
         zones.arraySize = 1;
@@ -601,6 +636,53 @@ public static class AlphaFlockExpansionSceneSetup
         // 由关卡控制器在羊圈打开后再启动节奏。
         directorSerialized.FindProperty("runOnStart").boolValue = false;
         directorSerialized.ApplyModifiedPropertiesWithoutUndo();
+
+        ConfigureWolfAudio(director);
+    }
+
+    private static void EnsureSceneAudio(Scene scene)
+    {
+        GameObject audioObject = scene.GetRootGameObjects().FirstOrDefault(root => root.name == "SceneAudio");
+        if (audioObject == null)
+        {
+            audioObject = new GameObject("SceneAudio");
+            SceneManager.MoveGameObjectToScene(audioObject, scene);
+        }
+
+        SceneBGM sceneBgm = audioObject.GetComponent<SceneBGM>();
+        if (sceneBgm == null)
+            sceneBgm = audioObject.AddComponent<SceneBGM>();
+        sceneBgm.Configure(LoadRequired<AudioClip>(GameplayBgmPath));
+    }
+
+    private static void ConfigureFootstepAudio(FlockMovementController movement)
+    {
+        FlockFootstepAudio footstepAudio = movement.GetComponent<FlockFootstepAudio>();
+        if (footstepAudio == null)
+            footstepAudio = movement.gameObject.AddComponent<FlockFootstepAudio>();
+
+        footstepAudio.Configure(
+            LoadAudioClips(GrassFootstepPaths),
+            LoadAudioClips(SandFootstepPaths),
+            0.7f,
+            0.35f);
+    }
+
+    private static void ConfigureWolfAudio(WolfEventDirector director)
+    {
+        WolfEventAudio wolfAudio = director.GetComponent<WolfEventAudio>();
+        if (wolfAudio == null)
+            wolfAudio = director.gameObject.AddComponent<WolfEventAudio>();
+
+        wolfAudio.Configure(
+            LoadRequired<AudioClip>(WolfSpawnClipPath),
+            new[]
+            {
+                LoadRequired<AudioClip>(WolfAttack1ClipPath),
+                LoadRequired<AudioClip>(WolfAttack2ClipPath),
+                LoadRequired<AudioClip>(WolfAttack3ClipPath)
+            },
+            LoadRequired<AudioClip>(WolfCaptureClipPath));
     }
 
     // ------------------------------------------------------------------ UI
@@ -615,38 +697,223 @@ public static class AlphaFlockExpansionSceneSetup
         public ResultPanelView ResultPanelPrefab;
     }
 
+    [MenuItem("Game Jam/Alpha Flock Expansion/Configure UI Prefabs")]
+    public static void ConfigureUiPrefabs()
+    {
+        UiVisualPolish.ApplyGameplayPrefabs();
+        GameObject pauseRoot = PrefabUtility.LoadPrefabContents(PauseSystemPrefabPath);
+        try
+        {
+            GameObject pausePanel = FindNamedObject(pauseRoot, "PausePanel");
+            GameObject pauseWindow = FindNamedObject(pauseRoot, "PauseWindow");
+            GameObject settingPanel = FindNamedObject(pauseRoot, "SettingPanel");
+            GameObject collectionPanel = FindNamedObject(pauseRoot, "CollectionPanel");
+
+            if (collectionPanel == null && pausePanel != null)
+            {
+                GameObject collectionPrefab =
+                    AssetDatabase.LoadAssetAtPath<GameObject>(CollectionPanelPrefabPath);
+                if (collectionPrefab != null)
+                {
+                    collectionPanel = (GameObject)PrefabUtility.InstantiatePrefab(
+                        collectionPrefab,
+                        pausePanel.transform);
+                    collectionPanel.name = "CollectionPanel";
+                }
+            }
+
+            if (pausePanel == null || pauseWindow == null || settingPanel == null ||
+                collectionPanel == null)
+            {
+                Debug.LogError("PauseSystem Prefab 缺少必要的 UI 层级。");
+                return;
+            }
+
+            CollectionPanelController misplacedController =
+                pausePanel.GetComponent<CollectionPanelController>();
+            if (misplacedController != null)
+                Object.DestroyImmediate(misplacedController, true);
+
+            Button continueButton = FindNamedComponent<Button>(pauseRoot, "Btn_Continue");
+            Button mainMenuButton = FindNamedComponent<Button>(pauseRoot, "Btn_MainMenu");
+            Button settingsButton = FindNamedComponent<Button>(pauseRoot, "Btn_Settings");
+            Button collectionButton = FindNamedComponent<Button>(pauseRoot, "Btn_Sheep");
+            Button restartButton = FindNamedComponent<Button>(pauseRoot, "Btn_Restart", "Btn_Reasult");
+            Button exitButton = FindNamedComponent<Button>(pauseRoot, "Btn_Exit");
+            Button settingsBackButton = FindNamedComponent<Button>(settingPanel, "Btn_Back");
+            Button collectionBackButton = FindNamedComponent<Button>(collectionPanel, "Btn_Back");
+
+            if (restartButton != null)
+                restartButton.gameObject.name = "Btn_Restart";
+
+            Button[] runtimeBoundButtons =
+            {
+                continueButton,
+                mainMenuButton,
+                settingsButton,
+                collectionButton,
+                restartButton,
+                exitButton,
+                settingsBackButton,
+                collectionBackButton
+            };
+            foreach (Button button in runtimeBoundButtons)
+                ClearPersistentListeners(button);
+
+            PauseManager manager = pauseRoot.GetComponent<PauseManager>();
+            if (manager == null)
+                manager = pauseRoot.AddComponent<PauseManager>();
+
+            SerializedObject serialized = new SerializedObject(manager);
+            serialized.FindProperty("pausePanel").objectReferenceValue = pausePanel;
+            serialized.FindProperty("pauseWindow").objectReferenceValue = pauseWindow;
+            serialized.FindProperty("settingPanel").objectReferenceValue = settingPanel;
+            serialized.FindProperty("collectionPanel").objectReferenceValue = collectionPanel;
+            serialized.FindProperty("continueButton").objectReferenceValue = continueButton;
+            serialized.FindProperty("mainMenuButton").objectReferenceValue = mainMenuButton;
+            serialized.FindProperty("settingsButton").objectReferenceValue = settingsButton;
+            serialized.FindProperty("collectionButton").objectReferenceValue = collectionButton;
+            serialized.FindProperty("restartButton").objectReferenceValue = restartButton;
+            serialized.FindProperty("exitButton").objectReferenceValue = exitButton;
+            serialized.FindProperty("settingsBackButton").objectReferenceValue = settingsBackButton;
+            serialized.FindProperty("collectionBackButton").objectReferenceValue = collectionBackButton;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+
+            pauseRoot.SetActive(true);
+            pausePanel.SetActive(false);
+            pauseWindow.SetActive(true);
+            settingPanel.SetActive(false);
+            collectionPanel.SetActive(false);
+
+            EditorUtility.SetDirty(pauseRoot);
+            PrefabUtility.SaveAsPrefabAsset(pauseRoot, PauseSystemPrefabPath);
+        }
+        finally
+        {
+            PrefabUtility.UnloadPrefabContents(pauseRoot);
+        }
+
+        ConfigureTaskSystemPrefab();
+    }
+
+    private static void ConfigureTaskSystemPrefab()
+    {
+        GameObject taskRoot = PrefabUtility.LoadPrefabContents(TaskSystemPrefabPath);
+        try
+        {
+            SetText(taskRoot, "Txt_Task", "任务");
+            SetText(taskRoot, "Txt_Task_01", "撞开出生羊圈");
+            SetText(taskRoot, "Txt_Task_02", "壮大羊群并解锁出口");
+            SetText(taskRoot, "Txt_Task_03", "撞开外围围栏并逃离");
+            SetText(taskRoot, "Txt_Task_04", "招募一只特殊羊");
+
+            GameObject taskPanel = FindNamedObject(taskRoot, "TaskPanel");
+            GameObject taskButton = FindNamedObject(taskRoot, "Btn_TaskIcon");
+            if (taskPanel != null)
+                taskPanel.SetActive(false);
+            if (taskButton != null)
+                taskButton.SetActive(true);
+
+            EditorUtility.SetDirty(taskRoot);
+            PrefabUtility.SaveAsPrefabAsset(taskRoot, TaskSystemPrefabPath);
+        }
+        finally
+        {
+            PrefabUtility.UnloadPrefabContents(taskRoot);
+        }
+    }
+
+    private static void SetText(GameObject root, string objectName, string value)
+    {
+        TMP_Text text = FindNamedComponent<TMP_Text>(root, objectName);
+        if (text != null)
+            text.text = value;
+    }
+
+    private static GameObject FindNamedObject(GameObject root, params string[] names)
+    {
+        Transform match = root.GetComponentsInChildren<Transform>(true)
+            .FirstOrDefault(item => names.Any(name => item.name.Trim() == name));
+        return match != null ? match.gameObject : null;
+    }
+
+    private static T FindNamedComponent<T>(GameObject root, params string[] names)
+        where T : Component
+    {
+        return root.GetComponentsInChildren<T>(true)
+            .FirstOrDefault(item => names.Any(name => item.gameObject.name.Trim() == name));
+    }
+
+    private static void ClearPersistentListeners(Button button)
+    {
+        if (button == null)
+            return;
+
+        for (int index = button.onClick.GetPersistentEventCount() - 1; index >= 0; index--)
+            UnityEventTools.RemovePersistentListener(button.onClick, index);
+    }
+
     /// <summary>
-    /// 复用仓库里的关卡 UI：把 Level_01 的 GameCanvas（任务列表 / 族群数 / 入队提示 / 暂停 + 设置）、
-    /// PauseManager、EventSystem 整体复制过来，再挂上狼群 HUD、BannerSystem 横幅，结算用 ResultPanel 预制体。
-    /// Level_01 只是被临时加载读取，不会被保存。
+    /// 使用正式 UI Prefab 构建 Alpha 界面，不再从归档 Level_01 复制层级。
     /// </summary>
     private static LevelUi CreateLevelUi(Scene scene, WolfEventDirector director)
     {
         LevelUi ui = new LevelUi();
 
-        GameObject canvasObject = CopyLevel01Ui(scene, out ui.PauseManager);
-        if (canvasObject == null)
-        {
-            canvasObject = CreateFallbackCanvas(scene);
-        }
+        GameObject canvasObject = CreateFallbackCanvas(scene);
 
         ui.Canvas = canvasObject.GetComponent<Canvas>();
-        ui.Hud = canvasObject.GetComponentInChildren<MvpHudView>(true);
 
-        // 草地是浅色的，给任务列表垫一块半透明深色底，不然纸色文字看不清。
-        if (ui.Hud != null && ui.Hud.transform.Find("HudBackdrop") == null)
+        GameObject taskPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(TaskSystemPrefabPath);
+        TaskPanelToggle taskPanelToggle = null;
+        TaskChecklistView taskChecklistView = null;
+        if (taskPrefab != null)
         {
-            Image backdrop = MvpUiFactory.CreateImage("HudBackdrop", ui.Hud.transform, new Color(0.08f, 0.12f, 0.06f, 0.55f));
-            backdrop.raycastTarget = false;
-            backdrop.transform.SetAsFirstSibling();
-            MvpUiFactory.Anchor(
-                backdrop.rectTransform,
-                new Vector2(0f, 1f),
-                new Vector2(0f, 1f),
-                new Vector2(25f, -50f),
-                new Vector2(480f, 290f));
+            GameObject taskObject = (GameObject)PrefabUtility.InstantiatePrefab(taskPrefab, canvasObject.transform);
+            taskObject.name = "TaskSystem";
+            taskPanelToggle = taskObject.GetComponent<TaskPanelToggle>();
+            taskChecklistView = taskObject.GetComponentInChildren<TaskChecklistView>(true);
         }
-        ui.JoinToast = canvasObject.GetComponentInChildren<JoinToastView>(true);
+
+        RectTransform sheepHudRect = MvpUiFactory.CreateRect("SheepHUD", canvasObject.transform);
+        MvpUiFactory.Stretch(sheepHudRect);
+        ui.Hud = sheepHudRect.gameObject.AddComponent<MvpHudView>();
+        SerializedObject hudData = new SerializedObject(ui.Hud);
+        hudData.FindProperty("taskChecklistView").objectReferenceValue = taskChecklistView;
+        hudData.ApplyModifiedPropertiesWithoutUndo();
+
+        RectTransform toastRect = MvpUiFactory.CreateRect("JoinToast", canvasObject.transform);
+        MvpUiFactory.Anchor(
+            toastRect,
+            new Vector2(0.5f, 1f),
+            new Vector2(0.5f, 1f),
+            new Vector2(0f, -190f),
+            new Vector2(720f, 64f));
+        TMP_Text toastText = MvpUiFactory.CreateText(
+            "Message",
+            toastRect,
+            string.Empty,
+            28f,
+            TextAlignmentOptions.Center);
+        MvpUiFactory.Stretch(toastText.rectTransform);
+        ui.JoinToast = toastRect.gameObject.AddComponent<JoinToastView>();
+        SerializedObject toastSerialized = new SerializedObject(ui.JoinToast);
+        toastSerialized.FindProperty("messageText").objectReferenceValue = toastText;
+        toastSerialized.ApplyModifiedPropertiesWithoutUndo();
+
+        GameObject pausePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(PauseSystemPrefabPath);
+        if (pausePrefab != null)
+        {
+            GameObject pauseObject = (GameObject)PrefabUtility.InstantiatePrefab(pausePrefab, canvasObject.transform);
+            pauseObject.name = "PauseSystem";
+            ui.PauseManager = pauseObject.GetComponent<PauseManager>();
+            if (ui.PauseManager != null)
+            {
+                SerializedObject pauseSerialized = new SerializedObject(ui.PauseManager);
+                pauseSerialized.FindProperty("taskPanelToggle").objectReferenceValue = taskPanelToggle;
+                pauseSerialized.ApplyModifiedPropertiesWithoutUndo();
+            }
+        }
 
         // 狼群节奏 HUD：复制过来的可能已经带了一个（Level_01 集成过），没有就新建；都重新指向本场景的 Director。
         WolfEventHudView hud = canvasObject.GetComponentInChildren<WolfEventHudView>(true);
@@ -691,8 +958,19 @@ public static class AlphaFlockExpansionSceneSetup
             ui.Banner = bannerRect.gameObject.AddComponent<AlphaBannerView>();
         }
 
+        if (ui.PauseManager != null)
+        {
+            SerializedObject pauseSerialized = new SerializedObject(ui.PauseManager);
+            pauseSerialized.FindProperty("bannerView").objectReferenceValue = ui.Banner;
+            pauseSerialized.ApplyModifiedPropertiesWithoutUndo();
+        }
+
         GameObject resultPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ResultPanelPrefabPath);
         ui.ResultPanelPrefab = resultPrefab != null ? resultPrefab.GetComponent<ResultPanelView>() : null;
+
+        // 暂停遮罩必须盖住任务、横幅和狼事件 HUD。
+        if (ui.PauseManager != null)
+            ui.PauseManager.transform.SetAsLastSibling();
 
         if (Object.FindAnyObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
         {
@@ -703,64 +981,6 @@ public static class AlphaFlockExpansionSceneSetup
         }
 
         return ui;
-    }
-
-    /// <summary>临时加载 Level_01，把 GameCanvas + PauseManager + EventSystem 打包克隆到当前场景，然后不保存地关闭它。</summary>
-    private static GameObject CopyLevel01Ui(Scene targetScene, out PauseManager pauseManager)
-    {
-        pauseManager = null;
-        if (AssetDatabase.LoadAssetAtPath<SceneAsset>(Level01ScenePath) == null)
-        {
-            Debug.LogWarning($"找不到 {Level01ScenePath}，改用简易 Canvas。");
-            return null;
-        }
-
-        Scene level = EditorSceneManager.OpenScene(Level01ScenePath, OpenSceneMode.Additive);
-        GameObject canvasClone = null;
-        try
-        {
-            GameObject bundle = new GameObject("__UiBundle");
-            SceneManager.MoveGameObjectToScene(bundle, level);
-            string[] wanted = { "GameCanvas", "PauseManager", "EventSystem" };
-            foreach (GameObject root in level.GetRootGameObjects())
-            {
-                if (System.Array.IndexOf(wanted, root.name) >= 0)
-                    root.transform.SetParent(bundle.transform, true);
-            }
-
-            if (bundle.transform.childCount == 0)
-            {
-                Debug.LogWarning("Level_01 里没有找到 GameCanvas，改用简易 Canvas。");
-                return null;
-            }
-
-            // 整包克隆：包内的引用（PauseManager → PausePanel 等）会一起重定向到克隆体。
-            GameObject clone = Object.Instantiate(bundle);
-            clone.name = "__UiBundleClone";
-            SceneManager.MoveGameObjectToScene(clone, targetScene);
-
-            List<Transform> children = new List<Transform>();
-            foreach (Transform child in clone.transform)
-                children.Add(child);
-            foreach (Transform child in children)
-            {
-                child.SetParent(null, true);
-                child.name = child.name.Replace("(Clone)", "");
-                if (child.name == "GameCanvas")
-                    canvasClone = child.gameObject;
-                PauseManager pm = child.GetComponent<PauseManager>();
-                if (pm != null)
-                    pauseManager = pm;
-            }
-            Object.DestroyImmediate(clone);
-        }
-        finally
-        {
-            // 关闭时丢弃对 Level_01 的临时改动（重新父子化）。
-            EditorSceneManager.CloseScene(level, true);
-        }
-
-        return canvasClone;
     }
 
     private static GameObject CreateFallbackCanvas(Scene scene)
@@ -782,6 +1002,7 @@ public static class AlphaFlockExpansionSceneSetup
         Scene scene,
         FlockController flock,
         FlockMovementController movement,
+        FlockActionController actions,
         ProgressiveSheepSpawner sheepSpawner,
         CameraFollow2D cameraFollow,
         WolfSpawner wolfSpawner,
@@ -797,6 +1018,7 @@ public static class AlphaFlockExpansionSceneSetup
         SerializedObject serialized = new SerializedObject(controller);
         serialized.FindProperty("flock").objectReferenceValue = flock;
         serialized.FindProperty("flockMovement").objectReferenceValue = movement;
+        serialized.FindProperty("flockActions").objectReferenceValue = actions;
         serialized.FindProperty("sheepSpawner").objectReferenceValue = sheepSpawner;
         serialized.FindProperty("cameraFollow").objectReferenceValue = cameraFollow;
         serialized.FindProperty("wolfDirector").objectReferenceValue = director;
@@ -878,5 +1100,25 @@ public static class AlphaFlockExpansionSceneSetup
         if (asset == null)
             throw new System.InvalidOperationException($"Missing required asset at {path}.");
         return asset;
+    }
+
+    private static AudioClip[] LoadAudioClips(string[] paths)
+    {
+        AudioClip[] clips = new AudioClip[paths.Length];
+        for (int index = 0; index < paths.Length; index++)
+            clips[index] = LoadRequired<AudioClip>(paths[index]);
+        return clips;
+    }
+
+    private static T FindComponentInScene<T>(Scene scene) where T : Component
+    {
+        foreach (GameObject root in scene.GetRootGameObjects())
+        {
+            T component = root.GetComponentInChildren<T>(true);
+            if (component != null)
+                return component;
+        }
+
+        return null;
     }
 }

@@ -37,10 +37,8 @@ public sealed class MvpGameController : MonoBehaviour
     [SerializeField, Min(0f)] private float groupOfTwoWeight = 30f;
     [SerializeField, Min(0f)] private float groupOfThreeWeight = 10f;
 
-    [Header("Special Sheep")]
-    [SerializeField, Range(0, 50)] private int specialSheepCount = 1;
+    [Header("Sheep Quality")]
     [SerializeField] private SpecialSheepPool specialSheepPool;
-    [SerializeField] private RecruitableSheep fallbackSpecialSheepPrefab;
     [SerializeField] private SpecialSheepSpawnPoint[] fixedSpecialSpawnPoints;
 
     [Header("UI")]
@@ -75,10 +73,8 @@ public sealed class MvpGameController : MonoBehaviour
         IReadOnlyList<RecruitableSheep> spawned = MvpSheepSpawnDistributor.PrepareAndDistribute(
             recruitableSheepPrefab,
             specialSheepPool,
-            fallbackSpecialSheepPrefab,
             fixedSpecialSpawnPoints,
             recruitableSheepCount,
-            specialSheepCount,
             groupOfOneWeight,
             groupOfTwoWeight,
             groupOfThreeWeight,
@@ -117,7 +113,6 @@ public sealed class MvpGameController : MonoBehaviour
     private void OnValidate()
     {
         recruitableSheepCount = Mathf.Max(1, recruitableSheepCount);
-        specialSheepCount = Mathf.Clamp(specialSheepCount, 0, recruitableSheepCount);
         obstacleEncounterCount = Mathf.Max(0, obstacleEncounterCount);
 
         if (groupOfOneWeight + groupOfTwoWeight + groupOfThreeWeight <= 0f)

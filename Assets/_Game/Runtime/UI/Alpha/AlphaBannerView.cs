@@ -18,22 +18,35 @@ public sealed class AlphaBannerView : MonoBehaviour
     [SerializeField, Min(0.1f)] private float holdDuration = 2.2f;
     [SerializeField, Min(0.05f)] private float fadeDuration = 0.35f;
 
-    private readonly Queue<string> pending = new Queue<string>();
+    private readonly struct BannerMessage
+    {
+        public readonly string Text;
+        public readonly Sprite Icon;
+
+        public BannerMessage(string text, Sprite icon)
+        {
+            Text = text;
+            Icon = icon;
+        }
+    }
+
+    private readonly Queue<BannerMessage> pending = new Queue<BannerMessage>();
     private CanvasGroup group;
     private float timer;
     private int state; // 0 idle, 1 fade in, 2 hold, 3 fade out
+    private float requestedAlpha;
+    private bool suppressed;
 
     private void Awake()
     {
         group = GetComponent<CanvasGroup>();
         if (group == null)
             group = gameObject.AddComponent<CanvasGroup>();
-        group.alpha = 0f;
+        SetAlpha(0f);
 
         if (bannerView != null)
         {
-            bannerView.SetIcon(null);
-            bannerView.Show();
+            bannerView.Hide();
             return;
         }
 
@@ -55,10 +68,36 @@ public sealed class AlphaBannerView : MonoBehaviour
 
     public void Show(string message)
     {
+        Show(message, null);
+    }
+
+    public void Show(string message, Sprite icon)
+    {
         if (string.IsNullOrWhiteSpace(message))
             return;
 
-        pending.Enqueue(message);
+        pending.Enqueue(new BannerMessage(message, icon));
+    }
+
+    /// <summary>
+    /// 立即显示会被后续状态取代的提示，例如人数进度和阶段。
+    /// 清掉旧状态，避免快速招募时仍按队列播放过期的 4/6、5/6。
+    /// </summary>
+    public void ShowLatest(string message)
+    {
+        ShowLatest(message, null);
+    }
+
+    public void ShowLatest(string message, Sprite icon)
+    {
+        if (string.IsNullOrWhiteSpace(message))
+            return;
+
+        pending.Clear();
+        SetMessage(new BannerMessage(message, icon));
+        SetAlpha(1f);
+        timer = 0f;
+        state = 2;
     }
 
     private void Update()
@@ -70,11 +109,8 @@ public sealed class AlphaBannerView : MonoBehaviour
             case 0:
                 if (pending.Count > 0)
                 {
-                    string message = pending.Dequeue();
-                    if (bannerView != null)
-                        bannerView.SetText(message);
-                    else
-                        label.text = message;
+                    BannerMessage message = pending.Dequeue();
+                    SetMessage(message);
                     timer = 0f;
                     state = 1;
                 }
@@ -82,7 +118,7 @@ public sealed class AlphaBannerView : MonoBehaviour
 
             case 1:
                 timer += deltaTime;
-                group.alpha = Mathf.Clamp01(timer / fadeDuration);
+                SetAlpha(Mathf.Clamp01(timer / fadeDuration));
                 if (timer >= fadeDuration) { timer = 0f; state = 2; }
                 break;
 
@@ -93,9 +129,31 @@ public sealed class AlphaBannerView : MonoBehaviour
 
             case 3:
                 timer += deltaTime;
-                group.alpha = 1f - Mathf.Clamp01(timer / fadeDuration);
-                if (timer >= fadeDuration) { group.alpha = 0f; state = 0; }
+                SetAlpha(1f - Mathf.Clamp01(timer / fadeDuration));
+                if (timer >= fadeDuration) { SetAlpha(0f); state = 0; }
                 break;
         }
+    }
+
+    public void SetSuppressed(bool value)
+    {
+        suppressed = value;
+        if (group != null)
+            group.alpha = suppressed ? 0f : requestedAlpha;
+    }
+
+    private void SetAlpha(float value)
+    {
+        requestedAlpha = value;
+        if (group != null)
+            group.alpha = suppressed ? 0f : requestedAlpha;
+    }
+
+    private void SetMessage(BannerMessage message)
+    {
+        if (bannerView != null)
+            bannerView.Show(message.Text, message.Icon);
+        else if (label != null)
+            label.text = message.Text;
     }
 }

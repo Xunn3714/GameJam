@@ -9,9 +9,9 @@ using Object = UnityEngine.Object;
 /// <summary>Creates a separate long-wolf Dev Scene without rebuilding TestWolf or its shared prefab.</summary>
 public static class LongWolfTestSceneSetup
 {
-    public const string ScenePath = "Assets/_Game/Scenes/Dev/TestLongWolf.unity";
+    public const string ScenePath = "Assets/_Game/Scenes/Old/Tests/TestLongWolf.unity";
     public const string PrefabPath = "Assets/_Game/Content/Perfabs/Wolf/LongWolf.prefab";
-    private const string SourceScene = "Assets/_Game/Scenes/Dev/TestWolf.unity";
+    private const string SourceScene = "Assets/_Game/Scenes/Old/Tests/TestWolf.unity";
     private const string SourcePrefab = "Assets/_Game/Content/Perfabs/Wolf/Wolf.prefab";
 
     [MenuItem("Game Jam/Wolf Test/Create TestLongWolf Scene")]
@@ -56,6 +56,12 @@ public static class LongWolfTestSceneSetup
             return;
         if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+    }
+
+    /// <summary>取现有的 LongWolf prefab，没有就按 Wolf.prefab 生成一份。供多狼编队的测试场景复用。</summary>
+    public static GameObject GetOrCreatePrefab()
+    {
+        return AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath) ?? CreatePrefab();
     }
 
     private static GameObject CreatePrefab()

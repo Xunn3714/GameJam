@@ -13,6 +13,13 @@ public sealed class RecruitableSheep : MonoBehaviour
 
     public bool IsRecruited { get; private set; }
 
+    public void ConfigureSprite(Sprite sprite)
+    {
+        spriteRenderer ??= GetComponent<SpriteRenderer>();
+        if (spriteRenderer != null && sprite != null)
+            spriteRenderer.sprite = sprite;
+    }
+
     private void Awake()
     {
         recruitTrigger = GetComponent<CircleCollider2D>();
@@ -92,7 +99,7 @@ public sealed class RecruitableSheep : MonoBehaviour
         wildWander?.Configure(worldBounds, roamingLimit);
     }
 
-    internal void CompleteRecruitment()
+    internal void CompleteRecruitment(FlockController flock)
     {
         if (IsRecruited)
             return;
@@ -100,6 +107,7 @@ public sealed class RecruitableSheep : MonoBehaviour
         IsRecruited = true;
         wildWander?.SetRecruited(true);
         if (spriteRenderer != null) spriteRenderer.color = recruitedColor;
+        GetComponent<SpecialSheepMarker>()?.NotifyRecruited(flock);
         Debug.Log($"{name} joined the flock.", this);
     }
 
