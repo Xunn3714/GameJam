@@ -80,6 +80,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     private AlphaProgression progression;
     private AlphaRunStats stats;
     private AlphaResultView resultView;
+    private SheepDiscoveryToastView discoveryToastView;
     private bool wolvesUnlocked;
     private bool wolvesAnnounced;
     private bool initialized;
@@ -168,6 +169,16 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
             Debug.LogError("Alpha 羊群扩张场景缺少必要引用或阶段配置。", this);
             enabled = false;
             return;
+        }
+
+        if (joinToastView != null)
+        {
+            UnityEngine.UI.Image bannerBackground = bannerView != null
+                ? bannerView.GetComponent<UnityEngine.UI.Image>() : null;
+            Sprite notificationSprite = bannerBackground != null ? bannerBackground.sprite : null;
+            joinToastView.ConfigureStack(notificationSprite);
+            discoveryToastView = SheepDiscoveryToastView.Create(joinToastView.transform.parent, notificationSprite);
+            discoveryToastView.transform.SetSiblingIndex(joinToastView.transform.GetSiblingIndex() + 1);
         }
 
         runStartTime = Time.time;
@@ -283,16 +294,21 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         if (joinToastView != null && !string.IsNullOrEmpty(sheepName))
             joinToastView.Show(sheepName);
 
+        // FlockController records EncounterSheep after SheepRecruited returns, so this
+        // reads the existing cross-run unlock state before this recruitment unlocks it.
+        SheepCollectionManager collection = SheepCollectionManager.Instance;
+        if (discoveryToastView != null && collection != null && !collection.IsUnlocked(typeId))
+        {
+            SheepCollectionEntry entry = collection.GetSheepData(typeId);
+            SpecialSheepMarker marker = sheep.GetComponent<SpecialSheepMarker>();
+            if (entry != null)
+                discoveryToastView.Show(typeId, entry.displayName,
+                    marker != null ? marker.Quality : SheepQuality.Common);
+        }
+
         if (!string.Equals(typeId, MvpSheepCatalog.DefaultTypeId, System.StringComparison.Ordinal))
         {
             specialRecruits++;
-            SpriteRenderer spriteRenderer = sheep.GetComponent<SpriteRenderer>();
-            if (spriteRenderer == null)
-                spriteRenderer = sheep.GetComponentInChildren<SpriteRenderer>(true);
-
-            string message =
-                $"特殊羊加入：{sheepSpawner.GetTypeDisplayName(typeId)} {sheepName}".TrimEnd();
-            ShowBanner(message, spriteRenderer != null ? spriteRenderer.sprite : null);
             RefreshObjectives();
         }
 
