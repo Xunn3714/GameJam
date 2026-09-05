@@ -1,29 +1,29 @@
 # GameJam Unity Starter
 
-面向 Game Jam 的 Unity 2D 协作工程。工程基线、主菜单、暂停、设置、音频和 Ending 已存在；俯视角羊群 MVP 原型已经集成到 `Level_01`。
+面向 Game Jam 的 Unity 2D 协作工程。当前可玩主流程为 `MainMenu → AlphaFlockExpansion`；早期 MVP、Ending 和测试场景统一归档在 `Assets/_Game/Scenes/Old`。
 
-> 项目另有一个不修改 `Level_01` 的暴力扩张实验场景：
-> `Assets/_Game/Scenes/Dev/AlphaFlockExpansion.unity`。实验规则见
+> 当前主玩法场景：
+> `Assets/_Game/Scenes/AlphaFlockExpansion.unity`。玩法规则见
 > [`羊群暴力扩张 Alpha`](docs/design/羊群暴力扩张Alpha.md)。
 
 ## 当前基线
 
 - Unity：`6000.5.9f1`
 - 渲染：Universal Render Pipeline / 2D Renderer
-- 输入：Unity Input System；WASD 控制羊群，Space 使用拉屎技能
+- 输入：Unity Input System；WASD 控制羊群，E 冲撞围栏
 - 当前入口：`Assets/_Game/Scenes/MainMenu.unity`
-- 当前关卡：`Assets/_Game/Scenes/Level_01.unity`
+- 当前关卡：`Assets/_Game/Scenes/AlphaFlockExpansion.unity`
 - 首轮目标平台：Windows（WASD + Space）
 
 ## 当前玩法方向
 
-玩家控制一个最初只有 1 名成员的羊群，通过任意成员接触地图中的羊扩充族群。游戏中没有固定头羊；WASD 移动羊群中心，成员围绕中心动态跟随；Space 用于测试“拉屎”主动技能。地图会按配置生成精确数量的羊，每个生成位按品质概率决定普通羊或特殊羊；普通羊以 1～3 只成组分布，特殊羊单独出现。完成必做任务后显示族群规模、成员名单、分数、拉屎次数和游戏用时。
+玩家控制一个最初只有 1 名成员的羊群，通过接触野生羊持续扩充族群。WASD 移动羊群，E 冲撞满足人数要求的围栏，狼群会周期性冲散或叼走成员；最终目标是达到 100 只并撞开外围围栏冲出草原。
 
-`Level_01` 当前原型配置为：`100 × 50` 世界区域、共生成 50 只待招募羊；特殊品质概率为绿色 50%、蓝色 5%、紫色 1%、金色 0.3%、彩蛋 0.1%，未命中或命中空池时生成普通羊。普通羊群组权重为 `60 / 30 / 10`。
+`AlphaFlockExpansion` 使用 `240 × 140` 草原，通过阶段配置维持镜头周边的野生羊密度，并随羊群规模扩大视野、速度和狼群压力。
 
 ## 当前 MVP 原型完成情况
 
-- `MainMenu → Level_01` 开始流程、暂停和设置闭环。
+- `MainMenu → AlphaFlockExpansion` 开始流程、暂停、设置和结算闭环。
 - 随机且单局不重复的中文羊名，以及中文 TMP 字体随项目分发。
 - 可配置的随机羊群生成、玩家安全区、密度与间距约束。
 - 普通羊 1～3 只分组；特殊羊按品质概率单独生成，同一种特殊羊单局只出现一次。
@@ -97,8 +97,11 @@ Assets/
 │  │  ├─ Data/
 │  │  └─ Prefabs/
 │  └─ Scenes/
-│     ├─ Main.unity
-│     └─ Dev/
+│     ├─ MainMenu.unity
+│     ├─ AlphaFlockExpansion.unity
+│     └─ Old/
+│        ├─ Legacy/
+│        └─ Tests/
 ├─ Settings/              # URP、渲染等项目资产
 └─ ThirdParty/            # 必须直接放在 Assets 下的第三方内容
 ```
