@@ -28,19 +28,6 @@ public sealed class CameraFollow2D : MonoBehaviour
 
     private bool keepInsideBounds;
     private Rect cameraBounds;
-    private float shakeAmplitude;
-    private float shakeDuration;
-    private float shakeTimer;
-    private Vector3 basePosition;
-    private bool hasBasePosition;
-
-    /// <summary>触发一次镜头震动（例如撞破围栏）。</summary>
-    public void Shake(float amplitude, float duration)
-    {
-        shakeAmplitude = Mathf.Max(shakeAmplitude, amplitude);
-        shakeDuration = Mathf.Max(0.01f, duration);
-        shakeTimer = shakeDuration;
-    }
 
     private float shakeTimeRemaining;
     private float shakeTotalDuration;
@@ -74,36 +61,6 @@ public sealed class CameraFollow2D : MonoBehaviour
         if (target == null)
             return;
 
-        // 震动是叠加在跟随位置上的偏移，先把上一帧的偏移去掉再算跟随。
-        if (hasBasePosition)
-        {
-            transform.position = basePosition;
-        }
-        FollowTarget();
-        basePosition = transform.position;
-        hasBasePosition = true;
-        ApplyShake();
-    }
-
-    private void ApplyShake()
-    {
-        if (shakeTimer <= 0f)
-            return;
-
-        shakeTimer -= Time.deltaTime;
-        float strength = shakeAmplitude * Mathf.Clamp01(shakeTimer / shakeDuration);
-        Vector2 offset = Random.insideUnitCircle * strength;
-        transform.position = basePosition + new Vector3(offset.x, offset.y, 0f);
-
-        if (shakeTimer <= 0f)
-        {
-            shakeAmplitude = 0f;
-            transform.position = basePosition;
-        }
-    }
-
-    private void FollowTarget()
-    {
         if (flockController == null)
         {
             flockController =
@@ -179,6 +136,55 @@ public sealed class CameraFollow2D : MonoBehaviour
     // Camera Shake
     // =========================================================
 
+    /// <summary>
+    /// 使用默认参数播放一次镜头震动。
+    /// </summary>
+    public void Shake()
+    {
+        Shake(
+            defaultShakeStrength,
+            defaultShakeDuration
+        );
+    }
+
+
+    /// <summary>
+    /// 播放镜头震动。
+    /// 参数顺序保持 main 的接口：
+    /// amplitude = 震动强度
+    /// duration = 持续时间
+    /// </summary>
+    public void Shake(
+        float amplitude,
+        float duration
+    )
+    {
+        if (amplitude <= 0f ||
+            duration <= 0f)
+        {
+            return;
+        }
+
+        shakeTimeRemaining =
+            Mathf.Max(
+                shakeTimeRemaining,
+                duration
+            );
+
+        shakeTotalDuration =
+            Mathf.Max(
+                shakeTotalDuration,
+                duration
+            );
+
+        shakeStrength =
+            Mathf.Max(
+                shakeStrength,
+                amplitude
+            );
+    }
+
+
     private void ApplyCameraShake()
     {
         if (shakeTimeRemaining <= 0f)
@@ -191,8 +197,7 @@ public sealed class CameraFollow2D : MonoBehaviour
             return;
         }
 
-        // 使用 Unscaled 时间，
-        // Hit Slow 时相机抖动仍保持正常速度。
+        // Hit Slow 时仍保持正常的震动速度。
         shakeTimeRemaining -=
             Time.unscaledDeltaTime;
 
@@ -222,47 +227,10 @@ public sealed class CameraFollow2D : MonoBehaviour
     }
 
 
-    public void Shake()
-    {
-        Shake(
-            defaultShakeDuration,
-            defaultShakeStrength
-        );
-    }
-
-
-    public void Shake(
-        float duration,
-        float strength
-    )
-    {
-        if (duration <= 0f ||
-            strength <= 0f)
-        {
-            return;
-        }
-
-        shakeTimeRemaining =
-            Mathf.Max(
-                shakeTimeRemaining,
-                duration
-            );
-
-        shakeTotalDuration =
-            Mathf.Max(
-                shakeTotalDuration,
-                duration
-            );
-
-        shakeStrength =
-            Mathf.Max(
-                shakeStrength,
-                strength
-            );
-    }
-
+    // =========================================================
     // Camera Zoom
-    // main 新增逻辑
+    // =========================================================
+
     public void SetOrthographicSize(
         float size,
         bool immediate = false
@@ -327,7 +295,10 @@ public sealed class CameraFollow2D : MonoBehaviour
     }
 
 
-    // Bounds
+    // =========================================================
+    // Camera Bounds
+    // =========================================================
+
     public void ConfigureBounds(Rect bounds)
     {
         cameraBounds = bounds;
