@@ -16,7 +16,7 @@ public sealed class TutorialPen : MonoBehaviour
     [SerializeField, Min(0f)] private float signFadeDuration = 1.5f;
     [Tooltip("羊群贴着围栏但数量不够时给的提示，{0}=当前，{1}=需要。")]
     [SerializeField] private string notEnoughHint = "羊群还不够（{0}/{1}），再去碰几只羊";
-    [SerializeField] private string readyHint = "羊群够了！按 E 撞开栅栏";
+    [SerializeField] private string readyHint = "羊群够了！贴近后按 F 撞开栅栏";
 
     private bool isOpen;
 

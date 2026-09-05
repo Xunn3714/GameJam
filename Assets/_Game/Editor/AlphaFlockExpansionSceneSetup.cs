@@ -127,13 +127,29 @@ public static class AlphaFlockExpansionSceneSetup
         TutorialPen tutorialPen = CreateTutorialPen(scene, fencePrefab, penFenceDefinition, recruitablePrefab);
         WorldDebrisSpawner debris = CreateDebrisSpawner(scene, worldSeed);
 
-        GameObject flockObject = CreateFlock(scene, memberPrefab, out FlockController flock, out FlockMovementController movement);
+        GameObject flockObject = CreateFlock(
+            scene,
+            memberPrefab,
+            out FlockController flock,
+            out FlockMovementController movement,
+            out FlockActionController actions);
         CameraFollow2D cameraFollow = ConfigureCamera(scene, flockObject.transform, out Camera gameplayCamera);
         ConfigureLighting(scene);
         ProgressiveSheepSpawner sheepSpawner = CreateSheepSpawner(scene, flock, recruitablePrefab, namePool, gameplayCamera, worldSeed);
         CreateWolfSystem(scene, flock, wolfPrefab.GetComponent<Wolf>(), out WolfSpawner wolfSpawner, out WolfEventDirector director);
         LevelUi ui = CreateLevelUi(scene, director);
-        CreateGameController(scene, flock, movement, sheepSpawner, cameraFollow, wolfSpawner, director, borderRing, tutorialPen, ui);
+        CreateGameController(
+            scene,
+            flock,
+            movement,
+            actions,
+            sheepSpawner,
+            cameraFollow,
+            wolfSpawner,
+            director,
+            borderRing,
+            tutorialPen,
+            ui);
 
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene);
@@ -395,10 +411,10 @@ public static class AlphaFlockExpansionSceneSetup
         CreateWorldText(signs.transform, "Recruit_Title", "碰到羊 → 加入羊群", recruitOrigin + new Vector2(0f, 1.6f), 0.9f, chalk);
         CreateWorldText(signs.transform, "Recruit_Hint", "把它们都收进来", recruitOrigin + new Vector2(0f, 0.7f), 0.6f, chalk);
 
-        // 3. 撞栅栏
+        // 3. 贴身撞栅栏（E 已用于冲刺）
         Vector2 fenceOrigin = new Vector2(5.2f, -3.2f);
         CreateWorldText(signs.transform, "Fence_Title", "羊够 6 只 → 撞开栅栏", fenceOrigin + new Vector2(-1.2f, 1.2f), 0.85f, chalk);
-        CreateKeycap(signs.transform, keycapSprite, "E", fenceOrigin + new Vector2(0.4f, 0f), chalk);
+        CreateKeycap(signs.transform, keycapSprite, "F", fenceOrigin + new Vector2(0.4f, 0f), chalk);
         CreateWorldText(signs.transform, "Fence_Arrow", "→", fenceOrigin + new Vector2(2.0f, 0f), 1.4f, chalk);
 
         return signs;
@@ -484,7 +500,8 @@ public static class AlphaFlockExpansionSceneSetup
         Scene scene,
         GameObject sheepPrefab,
         out FlockController flock,
-        out FlockMovementController movement)
+        out FlockMovementController movement,
+        out FlockActionController actions)
     {
         GameObject flockObject = new GameObject("SheepFlock");
         SceneManager.MoveGameObjectToScene(flockObject, scene);
@@ -502,6 +519,8 @@ public static class AlphaFlockExpansionSceneSetup
 
         movement = flockObject.AddComponent<FlockMovementController>();
         flock = flockObject.AddComponent<FlockController>();
+        actions = flockObject.AddComponent<FlockActionController>();
+        actions.Configure(flock, movement);
 
         GameObject initialSheep = (GameObject)PrefabUtility.InstantiatePrefab(sheepPrefab, scene);
         initialSheep.name = "Sheep_Initial";
@@ -782,6 +801,7 @@ public static class AlphaFlockExpansionSceneSetup
         Scene scene,
         FlockController flock,
         FlockMovementController movement,
+        FlockActionController actions,
         ProgressiveSheepSpawner sheepSpawner,
         CameraFollow2D cameraFollow,
         WolfSpawner wolfSpawner,
@@ -797,6 +817,7 @@ public static class AlphaFlockExpansionSceneSetup
         SerializedObject serialized = new SerializedObject(controller);
         serialized.FindProperty("flock").objectReferenceValue = flock;
         serialized.FindProperty("flockMovement").objectReferenceValue = movement;
+        serialized.FindProperty("flockActions").objectReferenceValue = actions;
         serialized.FindProperty("sheepSpawner").objectReferenceValue = sheepSpawner;
         serialized.FindProperty("cameraFollow").objectReferenceValue = cameraFollow;
         serialized.FindProperty("wolfDirector").objectReferenceValue = director;

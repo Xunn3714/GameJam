@@ -57,6 +57,8 @@ public sealed class FlockController : MonoBehaviour
     private bool pendingFacingLeft;
     private bool hasPendingFacing;
     private bool facingCommittedThisHold;
+    private float manualCompactness = 1f;
+    private float actionMemberSpeedMultiplier = 1f;
 
     public int RecruitedCount { get; private set; }
     public int MemberCount => members.Count;
@@ -92,11 +94,16 @@ public sealed class FlockController : MonoBehaviour
     /// <summary>当前紧凑程度：1 = 松散的一大群，越小越抱团。由 SheepFlockAgent 读取来缩放半径。</summary>
     public float Compactness { get; private set; } = 1f;
 
+    /// <summary>Q 收拢提供的紧凑度通道；1 为常态，越小排列越紧。</summary>
+    public float ManualCompactness => manualCompactness;
+
     /// <summary>是否处于抱团状态（目标值；实际半径会平滑过渡）。</summary>
     public bool IsHuddling { get; private set; }
+    public bool IsCompressed => IsHuddling || manualCompactness < 0.999f;
 
     /// <summary>整体速度倍率：中心移动速度和每只羊的最大速度 / 加速度都乘它。</summary>
     public float SpeedMultiplier { get; private set; } = 1f;
+    public float MemberSpeedMultiplier => SpeedMultiplier * actionMemberSpeedMultiplier;
 
     public void SetSpeedMultiplier(float multiplier)
     {
@@ -105,6 +112,17 @@ public sealed class FlockController : MonoBehaviour
         {
             movementController.SetSpeedMultiplier(SpeedMultiplier);
         }
+    }
+
+    public void SetManualCompactness(float compactness)
+    {
+        manualCompactness = Mathf.Clamp(compactness, 0.2f, 1f);
+    }
+
+    /// <summary>冲刺期间临时提高成员追随速度，使整群能跟上中心。</summary>
+    public void SetActionMemberSpeedMultiplier(float multiplier)
+    {
+        actionMemberSpeedMultiplier = Mathf.Max(1f, multiplier);
     }
 
     public event Action<RecruitableSheep, int> SheepRecruited;
@@ -137,7 +155,8 @@ public sealed class FlockController : MonoBehaviour
         UpdateFacingIntent();
         UpdateShapeForward();
 
-        float targetCompactness = IsHuddling ? huddleCompactness : 1f;
+        float huddleTarget = IsHuddling ? huddleCompactness : 1f;
+        float targetCompactness = Mathf.Min(huddleTarget, manualCompactness);
         Compactness = Mathf.MoveTowards(
             Compactness,
             targetCompactness,

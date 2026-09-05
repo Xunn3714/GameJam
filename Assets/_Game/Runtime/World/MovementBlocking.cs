@@ -9,6 +9,7 @@ public static class MovementBlocking
 
     private static readonly List<Collider2D> overlapResults = new List<Collider2D>(8);
     private static readonly RaycastHit2D[] lineHits = new RaycastHit2D[1];
+    private static readonly RaycastHit2D[] sweepHits = new RaycastHit2D[8];
 
     public static LayerMask DefaultMask()
     {
@@ -53,6 +54,60 @@ public static class MovementBlocking
 
         result = new MovementBlockResult(true, true, directBlocker);
         return from;
+    }
+
+    /// <summary>
+    /// 冲刺使用的连续碰撞检查。沿整段位移做圆形扫掠，不尝试贴墙滑动，
+    /// 避免高速移动越过较薄的围栏。
+    /// </summary>
+    public static Vector2 ResolveDashMove(
+        Vector2 from,
+        Vector2 to,
+        float radius,
+        LayerMask blockingMask,
+        out MovementBlockResult result)
+    {
+        result = default;
+        Vector2 displacement = to - from;
+        float distance = displacement.magnitude;
+        if (blockingMask.value == 0 || distance <= 0.000001f)
+            return to;
+
+        ContactFilter2D filter = new ContactFilter2D
+        {
+            useLayerMask = true,
+            layerMask = blockingMask,
+            useTriggers = false,
+        };
+
+        int hitCount = Physics2D.CircleCast(
+            from,
+            Mathf.Max(0f, radius),
+            displacement / distance,
+            filter,
+            sweepHits,
+            distance);
+        if (hitCount <= 0)
+            return to;
+
+        RaycastHit2D nearest = default;
+        float nearestDistance = float.MaxValue;
+        for (int index = 0; index < hitCount; index++)
+        {
+            RaycastHit2D hit = sweepHits[index];
+            if (hit.collider == null || hit.distance >= nearestDistance)
+                continue;
+
+            nearest = hit;
+            nearestDistance = hit.distance;
+        }
+
+        if (nearest.collider == null)
+            return to;
+
+        result = new MovementBlockResult(true, true, nearest.collider);
+        float safeDistance = Mathf.Max(0f, nearestDistance - 0.01f);
+        return from + displacement / distance * safeDistance;
     }
 
     /// <summary>两点之间是否隔着实体阻挡（围栏）；只看非 Trigger 碰撞体。</summary>

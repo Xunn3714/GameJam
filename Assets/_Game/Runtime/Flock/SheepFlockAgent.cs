@@ -178,7 +178,7 @@ public sealed class SheepFlockAgent : MonoBehaviour
 
         Vector2 driveVelocity = flock.GetDelayedDriveVelocity(followDelay);
         bool flockIsMoving = driveVelocity.sqrMagnitude > 0.0001f;
-        float speedScale = flock.SpeedMultiplier;
+        float speedScale = flock.MemberSpeedMultiplier;
         bool controllerMovementChanged = wasControllerMoving != flock.IsMoving;
         bool huddleChanged = wasHuddling != flock.IsHuddling;
         int steeringInterval = flock.GetSteeringUpdateInterval();
@@ -408,7 +408,7 @@ public sealed class SheepFlockAgent : MonoBehaviour
         {
             float outsideDistance = cohesionOffset.magnitude;
             desiredVelocity += cohesionOffset.normalized
-                * Mathf.Min(outsideDistance * cohesionWeight, maximumSpeed * flock.SpeedMultiplier);
+                * Mathf.Min(outsideDistance * cohesionWeight, maximumSpeed * flock.MemberSpeedMultiplier);
         }
 
         if (!flockIsMoving)
@@ -426,8 +426,8 @@ public sealed class SheepFlockAgent : MonoBehaviour
         Vector2 separation = Vector2.zero;
         Vector2 averageNeighborVelocity = Vector2.zero;
         int velocityNeighborCount = 0;
-        // 抱团时允许羊挨得更近一些（最多缩到 70%）。
-        float activeSeparationRadius = separationRadius * Mathf.Lerp(0.7f, 1f, flock.Compactness);
+        // 抱团或手动收拢时允许羊挨得更近，使 Q 的间距变化清晰可见。
+        float activeSeparationRadius = separationRadius * Mathf.Lerp(0.5f, 1f, flock.Compactness);
         float separationRadiusSquared = activeSeparationRadius * activeSeparationRadius;
         float activeAlignmentRadius = Mathf.Max(activeSeparationRadius, alignmentRadius);
         float alignmentRadiusSquared = activeAlignmentRadius * activeAlignmentRadius;
@@ -484,7 +484,7 @@ public sealed class SheepFlockAgent : MonoBehaviour
                 wanderTurnSpeed * deltaTime);
         }
 
-        return Vector2.ClampMagnitude(desiredVelocity, maximumSpeed * flock.SpeedMultiplier);
+        return Vector2.ClampMagnitude(desiredVelocity, maximumSpeed * flock.MemberSpeedMultiplier);
     }
 
     private Vector2 CalculateCohesionOffset(
@@ -551,7 +551,7 @@ public sealed class SheepFlockAgent : MonoBehaviour
     {
         bool allowed = !isLeader
             && !flock.IsMoving
-            && !flock.IsHuddling
+            && !flock.IsCompressed
             && isInsideComfortableShape
             && flock.CanIdlePace(simulationSlot, false);
         if (!allowed)
