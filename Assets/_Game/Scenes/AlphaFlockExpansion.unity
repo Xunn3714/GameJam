@@ -6280,6 +6280,15 @@ MonoBehaviour:
   - {fileID: 993925166}
   huddleCompactness: 0.55
   huddleTransitionSpeed: 1.2
+  shapeDirectionTurnSpeed: 4
+  separationCheckInterval: 0.4
+  mainGroupLinkDistance: 3.5
+  detachDistanceFromMainGroup: 7
+  detachDelay: 1.5
+  detachScatterSpeed: 1.2
+  separationBlockingLayers:
+    serializedVersion: 2
+    m_Bits: 0
 --- !u!114 &493499562
 MonoBehaviour:
   m_ObjectHideFlags: 0

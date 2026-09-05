@@ -20,6 +20,20 @@ public sealed class FlockController : MonoBehaviour
     [Tooltip("羊群长轴转向当前移动方向的速度（弧度/秒）。")]
     [SerializeField, Min(0.1f)] private float shapeDirectionTurnSpeed = 4f;
 
+    [Header("Member Separation")]
+    [Tooltip("检查成员是否与主群断开的时间间隔。")]
+    [SerializeField, Min(0.1f)] private float separationCheckInterval = 0.4f;
+    [Tooltip("两只羊在这个距离内且中间没有阻挡时，视为属于同一群。")]
+    [SerializeField, Min(0.5f)] private float mainGroupLinkDistance = 3.5f;
+    [Tooltip("断开成员与主群最近成员超过这个距离后，才开始计算脱队时间。")]
+    [SerializeField, Min(0.5f)] private float detachDistanceFromMainGroup = 7f;
+    [Tooltip("持续断开且远离主群多久后正式脱队，避免短暂拉开造成误判。")]
+    [SerializeField, Min(0f)] private float detachDelay = 1.5f;
+    [Tooltip("正式脱队时向外散开的初速度。")]
+    [SerializeField, Min(0f)] private float detachScatterSpeed = 1.2f;
+    [Tooltip("阻断羊群连通性的实体层；留空时运行期使用 Blocking 层。")]
+    [SerializeField] private LayerMask separationBlockingLayers;
+
     [Header("Turning")]
     [Tooltip("水平输入持续多久后才让整个羊群翻面；过滤轻点造成的全群转向波。")]
     [SerializeField, Min(0f)] private float facingIntentCommitDelay = 0.1f;
@@ -55,6 +69,14 @@ public sealed class FlockController : MonoBehaviour
     private Vector2 groupActionDirection = Vector2.right;
     private Collider2D pendingGroupActionBlocker;
     private bool hasPendingGroupActionBlock;
+    private SheepMember mainGroupAnchor;
+    private float nextSeparationCheckTime;
+    private readonly List<Vector2> separationPositions = new List<Vector2>();
+    private readonly HashSet<int> connectedMemberIndices = new HashSet<int>();
+    private readonly Queue<int> connectivityTraversal = new Queue<int>();
+    private readonly Dictionary<SheepMember, float> disconnectedSince =
+        new Dictionary<SheepMember, float>();
+    private readonly List<SheepMember> detachingMembers = new List<SheepMember>();
 
     public int RecruitedCount { get; private set; }
     public int MemberCount => members.Count;
@@ -81,6 +103,7 @@ public sealed class FlockController : MonoBehaviour
     public bool IsGroupActionActive { get; private set; }
     public bool IsGroupActionHolding { get; private set; }
     public Vector2 GroupActionDirection => groupActionDirection;
+    public SheepMember MainGroupAnchor => mainGroupAnchor;
 
     /// <summary>羊群椭圆长轴方向；停止移动后保留最后方向，避免外形突然转回水平。</summary>
     public Vector2 ShapeForward => shapeForward;
@@ -171,6 +194,7 @@ public sealed class FlockController : MonoBehaviour
 
     public event Action<RecruitableSheep, int> SheepRecruited;
     public event Action<int> MemberCountChanged;
+    public event Action<int> MembersSeparated;
     public event Action<bool> FenceChargeImpact;
 
 
@@ -178,6 +202,9 @@ public sealed class FlockController : MonoBehaviour
     {
         movementController ??=
             GetComponent<FlockMovementController>();
+
+        if (separationBlockingLayers.value == 0)
+            separationBlockingLayers = MovementBlocking.DefaultMask();
 
         if (startingMembers == null)
             return;
@@ -203,6 +230,7 @@ public sealed class FlockController : MonoBehaviour
             huddleTransitionSpeed * Time.fixedDeltaTime);
 
         RebuildMemberGrid();
+        UpdateMemberSeparation();
     }
 
     private void UpdateFacingIntent()
@@ -418,6 +446,9 @@ public sealed class FlockController : MonoBehaviour
                 sheep.gameObject.AddComponent<SheepMember>();
         }
 
+        ScatteredSheep scattered = sheep.GetComponent<ScatteredSheep>();
+        bool isReturningMember = scattered != null && scattered.IsScattered;
+
         // 招募是一次完整状态提交：成员与招募计数都更新后，再统一通知 UI。
         // 否则订阅者会短暂读到“成员已增加、招募数还没增加”的半成品状态。
         deferMemberCountChanged = true;
@@ -437,7 +468,8 @@ public sealed class FlockController : MonoBehaviour
         // 原有招募完成逻辑
         sheep.CompleteRecruitment(this);
 
-        RecruitedCount++;
+        if (!isReturningMember)
+            RecruitedCount++;
 
         MemberCountChanged?.Invoke(MemberCount);
 
@@ -468,7 +500,7 @@ public sealed class FlockController : MonoBehaviour
         // 累计收集的羊
         // =========================
 
-        if (GameStatsManager.Instance != null)
+        if (!isReturningMember && GameStatsManager.Instance != null)
         {
             // RegisterStat 可以重复调用。
             // 如果已经注册，只会更新显示信息，
@@ -513,10 +545,14 @@ public sealed class FlockController : MonoBehaviour
         member.Leave(this);
 
         members.RemoveAt(index);
+        disconnectedSince.Remove(member);
+        if (mainGroupAnchor == member)
+            mainGroupAnchor = FindReplacementMainGroupAnchor();
         memberGridDirty = true;
         RefreshSimulationSlots(index);
 
-        MemberCountChanged?.Invoke(MemberCount);
+        if (!deferMemberCountChanged)
+            MemberCountChanged?.Invoke(MemberCount);
 
         return true;
     }
@@ -564,6 +600,8 @@ public sealed class FlockController : MonoBehaviour
         }
 
         members.Add(member);
+        if (mainGroupAnchor == null)
+            mainGroupAnchor = member;
         memberGridDirty = true;
 
         member.SetAgent(agent);
@@ -595,12 +633,185 @@ public sealed class FlockController : MonoBehaviour
     }
 
 
+    private void UpdateMemberSeparation()
+    {
+        if (Time.time < nextSeparationCheckTime)
+            return;
+
+        nextSeparationCheckTime = Time.time + Mathf.Max(0.1f, separationCheckInterval);
+        EvaluateMemberSeparation(Time.time);
+    }
+
+
+    private void EvaluateMemberSeparation(float currentTime)
+    {
+        if (members.Count <= 1 || IsGroupActionActive)
+        {
+            disconnectedSince.Clear();
+            return;
+        }
+
+        if (mainGroupAnchor == null || mainGroupAnchor.Flock != this)
+            mainGroupAnchor = FindReplacementMainGroupAnchor();
+        if (mainGroupAnchor == null)
+            return;
+
+        separationPositions.Clear();
+        int anchorIndex = -1;
+        for (int index = 0; index < members.Count; index++)
+        {
+            SheepMember member = members[index];
+            separationPositions.Add(member != null ? (Vector2)member.transform.position : Vector2.positiveInfinity);
+            if (member == mainGroupAnchor)
+                anchorIndex = index;
+        }
+
+        if (anchorIndex < 0)
+            return;
+
+        FlockConnectivity.CollectConnectedIndices(
+            separationPositions,
+            anchorIndex,
+            mainGroupLinkDistance,
+            CanConnectForMainGroup,
+            connectedMemberIndices,
+            connectivityTraversal);
+
+        float detachDistanceSquared = detachDistanceFromMainGroup * detachDistanceFromMainGroup;
+        detachingMembers.Clear();
+        for (int index = 0; index < members.Count; index++)
+        {
+            SheepMember member = members[index];
+            if (member == null || connectedMemberIndices.Contains(index))
+            {
+                if (member != null)
+                    disconnectedSince.Remove(member);
+                continue;
+            }
+
+            if (DistanceSquaredToMainGroup(index) <= detachDistanceSquared)
+            {
+                disconnectedSince.Remove(member);
+                continue;
+            }
+
+            if (!disconnectedSince.TryGetValue(member, out float separatedAt))
+            {
+                disconnectedSince.Add(member, currentTime);
+                separatedAt = currentTime;
+            }
+
+            if (currentTime - separatedAt >= Mathf.Max(0f, detachDelay))
+                detachingMembers.Add(member);
+        }
+
+        DetachSeparatedMembers();
+    }
+
+
+    private bool CanConnectForMainGroup(int firstIndex, int secondIndex)
+    {
+        return !MovementBlocking.IsLineBlocked(
+            separationPositions[firstIndex],
+            separationPositions[secondIndex],
+            separationBlockingLayers);
+    }
+
+
+    private float DistanceSquaredToMainGroup(int memberIndex)
+    {
+        float closest = float.PositiveInfinity;
+        foreach (int connectedIndex in connectedMemberIndices)
+        {
+            float distance = (separationPositions[memberIndex] - separationPositions[connectedIndex]).sqrMagnitude;
+            if (distance < closest)
+                closest = distance;
+        }
+
+        return closest;
+    }
+
+
+    private void DetachSeparatedMembers()
+    {
+        if (detachingMembers.Count == 0)
+            return;
+
+        int detachedCount = 0;
+        bool wasDeferring = deferMemberCountChanged;
+        deferMemberCountChanged = true;
+        try
+        {
+            for (int index = 0; index < detachingMembers.Count; index++)
+            {
+                SheepMember member = detachingMembers[index];
+                if (member == null || member == mainGroupAnchor || member.Flock != this)
+                    continue;
+
+                Vector2 awayFromMainGroup = (Vector2)member.transform.position - (Vector2)mainGroupAnchor.transform.position;
+                Vector2 direction = awayFromMainGroup.sqrMagnitude > 0.0001f
+                    ? awayFromMainGroup.normalized
+                    : UnityEngine.Random.insideUnitCircle.normalized;
+                direction = (direction + UnityEngine.Random.insideUnitCircle * 0.45f).normalized;
+                if (direction.sqrMagnitude <= 0.0001f)
+                    direction = Vector2.right;
+
+                ScatteredSheep.Scatter(
+                    member,
+                    direction * detachScatterSpeed * UnityEngine.Random.Range(0.8f, 1.2f));
+                detachedCount++;
+            }
+        }
+        finally
+        {
+            deferMemberCountChanged = wasDeferring;
+        }
+
+        detachingMembers.Clear();
+        if (detachedCount <= 0)
+            return;
+
+        memberGridDirty = true;
+        if (!wasDeferring)
+            MemberCountChanged?.Invoke(MemberCount);
+        MembersSeparated?.Invoke(detachedCount);
+    }
+
+
+    private SheepMember FindReplacementMainGroupAnchor()
+    {
+        SheepMember closest = null;
+        float closestDistance = float.PositiveInfinity;
+        Vector2 center = Center;
+        for (int index = 0; index < members.Count; index++)
+        {
+            SheepMember candidate = members[index];
+            if (candidate == null)
+                continue;
+
+            float distance = ((Vector2)candidate.transform.position - center).sqrMagnitude;
+            if (distance < closestDistance)
+            {
+                closest = candidate;
+                closestDistance = distance;
+            }
+        }
+
+        return closest;
+    }
+
+
     private void OnValidate()
     {
         largeFlockThreshold = Mathf.Max(mediumFlockThreshold + 1, largeFlockThreshold);
         mediumSteeringInterval = Mathf.Max(1, mediumSteeringInterval);
         largeSteeringInterval = Mathf.Max(1, largeSteeringInterval);
         maximumIdlePacingMembers = Mathf.Max(0, maximumIdlePacingMembers);
+        separationCheckInterval = Mathf.Max(0.1f, separationCheckInterval);
+        mainGroupLinkDistance = Mathf.Max(0.5f, mainGroupLinkDistance);
+        detachDistanceFromMainGroup = Mathf.Max(mainGroupLinkDistance, detachDistanceFromMainGroup);
+        detachDelay = Mathf.Max(0f, detachDelay);
+        detachScatterSpeed = Mathf.Max(0f, detachScatterSpeed);
         memberGridDirty = true;
     }
 }

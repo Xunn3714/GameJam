@@ -117,6 +117,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         {
             flock.MemberCountChanged += HandleMemberCountChanged;
             flock.SheepRecruited += HandleSheepRecruited;
+            flock.MembersSeparated += HandleMembersSeparated;
             flock.FenceChargeImpact += HandleFenceChargeImpact;
         }
 
@@ -142,6 +143,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         {
             flock.MemberCountChanged -= HandleMemberCountChanged;
             flock.SheepRecruited -= HandleSheepRecruited;
+            flock.MembersSeparated -= HandleMembersSeparated;
             flock.FenceChargeImpact -= HandleFenceChargeImpact;
         }
 
@@ -292,6 +294,14 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
 
         if (sheepSpawner.MarkRecruited(sheep))
             MaintainNearbyPopulation();
+    }
+
+    private void HandleMembersSeparated(int count)
+    {
+        if (!initialized || ended || count <= 0)
+            return;
+
+        ShowLatestBanner(count == 1 ? "一只羊脱队了！" : $"有 {count} 只羊脱队了！");
     }
 
     private void HandleFenceChargeImpact(bool hardImpact)
