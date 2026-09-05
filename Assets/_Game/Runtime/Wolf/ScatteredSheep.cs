@@ -1,8 +1,8 @@
 using UnityEngine;
 
 /// <summary>
-/// 被狼撞开、脱离羊群的羊：先被击退一段距离，然后停在原地等待玩家重新接触捡回。
-/// 由 <see cref="Wolf"/> 在结算时通过 <see cref="Scatter"/> 挂载/激活。
+/// 脱离羊群的羊：先被击退一段距离，然后交给野生羊徘徊逻辑并等待重新招募。
+/// 狼撞散与远离主群脱队共用 <see cref="Scatter"/> 进入这一状态。
 /// </summary>
 [DisallowMultipleComponent]
 [RequireComponent(typeof(SheepMember), typeof(Rigidbody2D))]
@@ -21,9 +21,20 @@ public sealed class ScatteredSheep : MonoBehaviour
     private Rigidbody2D body;
     private SpriteRenderer spriteRenderer;
     private Vector2 velocity;
+    private bool knockbackActive;
 
     /// <summary>当前是否仍散落在地上（尚未被重新捡回）。</summary>
     public bool IsScattered { get; private set; }
+    public bool IsKnockbackActive => IsScattered && knockbackActive;
+
+    public static ScatteredSheep Ensure(SheepMember target)
+    {
+        if (target == null)
+            return null;
+
+        ScatteredSheep scattered = target.GetComponent<ScatteredSheep>();
+        return scattered != null ? scattered : target.gameObject.AddComponent<ScatteredSheep>();
+    }
 
     /// <summary>
     /// 把一只羊从羊群中撞开：移出羊群、施加击退速度，并允许之后被重新招募。
@@ -39,12 +50,7 @@ public sealed class ScatteredSheep : MonoBehaviour
             flock.Remove(target);
         }
 
-        ScatteredSheep scattered = target.GetComponent<ScatteredSheep>();
-        if (scattered == null)
-        {
-            scattered = target.gameObject.AddComponent<ScatteredSheep>();
-        }
-
+        ScatteredSheep scattered = Ensure(target);
         scattered.BeginKnockback(knockbackVelocity);
         return scattered;
     }
@@ -54,12 +60,14 @@ public sealed class ScatteredSheep : MonoBehaviour
         member = GetComponent<SheepMember>();
         body = GetComponent<Rigidbody2D>();
         spriteRenderer = GetComponent<SpriteRenderer>();
+        enabled = false;
     }
 
     private void BeginKnockback(Vector2 knockbackVelocity)
     {
         velocity = knockbackVelocity;
         IsScattered = true;
+        knockbackActive = knockbackVelocity.sqrMagnitude > stopSpeed * stopSpeed;
         enabled = true;
 
         Color colorBeforeScatter = spriteRenderer != null
@@ -88,16 +96,19 @@ public sealed class ScatteredSheep : MonoBehaviour
         if (member.Flock != null)
         {
             IsScattered = false;
+            knockbackActive = false;
             velocity = Vector2.zero;
             enabled = false;
             return;
         }
 
+        if (!knockbackActive)
+            return;
+
         if (velocity.sqrMagnitude <= stopSpeed * stopSpeed)
         {
             velocity = Vector2.zero;
-            IsScattered = false;
-            enabled = false;
+            knockbackActive = false;
             return;
         }
 
