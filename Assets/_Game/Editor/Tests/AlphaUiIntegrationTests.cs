@@ -129,6 +129,18 @@ public sealed class AlphaUiIntegrationTests
                 Has.Length.EqualTo(1));
             Assert.That(objects.SelectMany(item => item.GetComponents<FlockActionController>()).ToArray(),
                 Has.Length.EqualTo(1));
+            Assert.That(objects.SelectMany(item => item.GetComponents<AlphaFlockExpansionController>()).ToArray(),
+                Has.Length.EqualTo(1));
+            Assert.That(objects.SelectMany(item => item.GetComponents<WorldDebrisSpawner>()).ToArray(),
+                Has.Length.EqualTo(1));
+            Assert.That(objects.SelectMany(item => item.GetComponents<WorldSeed>()).ToArray(),
+                Has.Length.EqualTo(1));
+            Assert.That(objects.SelectMany(item => item.GetComponents<ProgressiveSheepSpawner>()).ToArray(),
+                Has.Length.EqualTo(1));
+            Assert.That(objects.SelectMany(item => item.GetComponents<BorderFenceRing>()).ToArray(),
+                Has.Length.EqualTo(1));
+            Assert.That(objects.SelectMany(item => item.GetComponents<TutorialPen>()).ToArray(),
+                Has.Length.EqualTo(1));
             Assert.That(objects.SelectMany(item => item.GetComponents<TaskPanelToggle>()).ToArray(),
                 Has.Length.EqualTo(1));
 
