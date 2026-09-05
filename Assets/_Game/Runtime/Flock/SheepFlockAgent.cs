@@ -40,6 +40,10 @@ public sealed class SheepFlockAgent : MonoBehaviour
     [SerializeField, Min(0f)] private float idleCorrectionMargin = 0.18f;
     [SerializeField, Min(0f)] private float stopSpeed = 0.025f;
 
+    [Header("Blocking")]
+    [SerializeField] private LayerMask blockingLayers;
+    [SerializeField, Min(0f)] private float blockingRadius = 0f;
+
     private Rigidbody2D body;
     private FlockController flock;
     private Vector2 velocity;
@@ -57,6 +61,13 @@ public sealed class SheepFlockAgent : MonoBehaviour
     {
         body = GetComponent<Rigidbody2D>();
         ResetWander();
+        if (blockingLayers.value == 0)
+            blockingLayers = MovementBlocking.DefaultMask();
+        if (blockingRadius <= 0f)
+        {
+            CircleCollider2D circle = GetComponent<CircleCollider2D>();
+            blockingRadius = circle != null ? circle.radius : 0.3f;
+        }
     }
 
     public void SetFlock(FlockController owner)
@@ -96,7 +107,21 @@ public sealed class SheepFlockAgent : MonoBehaviour
             return;
         }
 
-        body.MovePosition(body.position + velocity * deltaTime);
+        Vector2 from = body.position;
+        Vector2 target = MovementBlocking.ResolveMove(
+            from,
+            from + velocity * deltaTime,
+            blockingRadius,
+            blockingLayers);
+
+        // 把实际走出去的位移反算回速度，避免贴墙的羊把"想走但没走成"的速度
+        // 通过 alignment 传染给邻居，导致整群往墙里挤。
+        velocity = (target - from) / deltaTime;
+
+        if (target == from)
+            return;
+
+        body.MovePosition(target);
     }
 
     private Vector2 CalculateSteeringVelocity(
