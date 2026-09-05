@@ -12,6 +12,7 @@ public sealed class JoinToastView : MonoBehaviour
 
     private void Awake()
     {
+        MvpTmpUiFont.Apply(messageText);
         HideImmediate();
     }
 
@@ -25,7 +26,7 @@ public sealed class JoinToastView : MonoBehaviour
             StopCoroutine(hideCoroutine);
         }
 
-        messageText.text = $"{sheepName} joined the group!";
+        messageText.text = $"“{sheepName}”加入了族群！";
         messageText.gameObject.SetActive(true);
 
         hideCoroutine = StartCoroutine(HideAfterDelay());
