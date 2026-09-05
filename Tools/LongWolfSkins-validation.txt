@@ -1,0 +1,1 @@
+PASS: Unity compilation, transparent textures, bordered sprites and LongWolf prefab references.

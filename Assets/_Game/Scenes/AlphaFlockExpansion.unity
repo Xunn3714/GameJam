@@ -908,7 +908,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 3860804408
   m_fontColor: {r: 0.22, g: 0.2, b: 0.12, a: 0.9}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -921,7 +921,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -3574,7 +3574,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 3860804408
   m_fontColor: {r: 0.22, g: 0.2, b: 0.12, a: 0.9}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -3587,7 +3587,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -4841,7 +4841,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 3860804408
   m_fontColor: {r: 0.22, g: 0.2, b: 0.12, a: 0.9}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -4854,7 +4854,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -6962,7 +6962,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 3860804408
   m_fontColor: {r: 0.22, g: 0.2, b: 0.12, a: 0.9}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -6975,7 +6975,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -10533,6 +10533,63 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 80279d6d249debe4db98a4870d742b06, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FenceObstacle
+--- !u!1001 &855286882
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 2145544618540628748, guid: 3ff0f359bbae928459fc38b3d6630650, type: 3}
+      propertyPath: m_Name
+      value: SheepCollectionManager
+      objectReference: {fileID: 0}
+    - target: {fileID: 6186598744322022961, guid: 3ff0f359bbae928459fc38b3d6630650, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 281.6296
+      objectReference: {fileID: 0}
+    - target: {fileID: 6186598744322022961, guid: 3ff0f359bbae928459fc38b3d6630650, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 256.61856
+      objectReference: {fileID: 0}
+    - target: {fileID: 6186598744322022961, guid: 3ff0f359bbae928459fc38b3d6630650, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6186598744322022961, guid: 3ff0f359bbae928459fc38b3d6630650, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6186598744322022961, guid: 3ff0f359bbae928459fc38b3d6630650, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6186598744322022961, guid: 3ff0f359bbae928459fc38b3d6630650, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6186598744322022961, guid: 3ff0f359bbae928459fc38b3d6630650, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6186598744322022961, guid: 3ff0f359bbae928459fc38b3d6630650, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6186598744322022961, guid: 3ff0f359bbae928459fc38b3d6630650, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6186598744322022961, guid: 3ff0f359bbae928459fc38b3d6630650, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 3ff0f359bbae928459fc38b3d6630650, type: 3}
 --- !u!1 &864242450
 GameObject:
   m_ObjectHideFlags: 0
@@ -11556,6 +11613,7 @@ MonoBehaviour:
     cameraSize: 18
   speedScaleExponent: 0.75
   wolfUnlockFlockSize: 6
+  wolfPackWarningFlockSize: 80
   failedSpawnRetryDelay: 1.5
   impactShakeAmplitude: 0.16
   impactShakeDuration: 0.2
@@ -11941,7 +11999,7 @@ Canvas:
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
   m_UseReflectionProbes: 0
-  m_AdditionalShaderChannelsFlag: 0
+  m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
   m_SortingOrder: 10
@@ -13654,7 +13712,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 3860804408
   m_fontColor: {r: 0.22, g: 0.2, b: 0.12, a: 0.9}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -13667,7 +13725,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -13920,7 +13978,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 3860804408
   m_fontColor: {r: 0.22, g: 0.2, b: 0.12, a: 0.9}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -13933,7 +13991,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -15433,7 +15491,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 3860804408
   m_fontColor: {r: 0.22, g: 0.2, b: 0.12, a: 0.9}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -15446,7 +15504,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -16253,7 +16311,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 3860804408
   m_fontColor: {r: 0.22, g: 0.2, b: 0.12, a: 0.9}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -16266,7 +16324,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -17770,7 +17828,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 3654938869
   m_fontColor: {r: 0.96, g: 0.94, b: 0.85, a: 0.85}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -17783,7 +17841,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -17964,7 +18022,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -19468,7 +19526,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 3860804408
   m_fontColor: {r: 0.22, g: 0.2, b: 0.12, a: 0.9}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -19481,7 +19539,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -21932,7 +21990,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 3860804408
   m_fontColor: {r: 0.22, g: 0.2, b: 0.12, a: 0.9}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -21945,7 +22003,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -22492,7 +22550,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 3654938869
   m_fontColor: {r: 0.96, g: 0.94, b: 0.85, a: 0.85}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -22505,7 +22563,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -23435,6 +23493,14 @@ PrefabInstance:
     - target: {fileID: 1190182452049134595, guid: 55b0603c305b500469dac0835036ae46, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2736790044803158881, guid: 55b0603c305b500469dac0835036ae46, type: 3}
+      propertyPath: m_overflowMode
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 2736790044803158881, guid: 55b0603c305b500469dac0835036ae46, type: 3}
+      propertyPath: m_fontColor32.rgba
+      value: 4280760641
       objectReference: {fileID: 0}
     - target: {fileID: 7821663572842543197, guid: 55b0603c305b500469dac0835036ae46, type: 3}
       propertyPath: m_Name
@@ -25817,7 +25883,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 3860804408
   m_fontColor: {r: 0.22, g: 0.2, b: 0.12, a: 0.9}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -25830,7 +25896,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -26411,7 +26477,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 3860804408
   m_fontColor: {r: 0.22, g: 0.2, b: 0.12, a: 0.9}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -26424,7 +26490,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -28517,6 +28583,7 @@ GameObject:
   - component: {fileID: 2103598739}
   - component: {fileID: 2103598737}
   - component: {fileID: 2103598738}
+  - component: {fileID: 2103598740}
   m_Layer: 0
   m_Name: WolfSystem
   m_TagString: Untagged
@@ -28568,12 +28635,31 @@ MonoBehaviour:
   calmDurationMax: 20
   howlDuration: 3
   retreatDuration: 1.5
-  attackTimeout: 25
+  attackTimeout: 30
   firstCalmDurationOverride: 0
   howlClip: {fileID: 0}
   fallbackAudioSource: {fileID: 0}
-  formationRunner: {fileID: 0}
+  formationRunner: {fileID: 2103598740}
   formations: []
+  schedule: {fileID: 11400000, guid: 1b4e478a6f16ce343bff1794351a08ee, type: 2}
+  formationTemplate:
+    displayName: 
+    type: 0
+    wolfPrefab: {fileID: 6246638143151926226, guid: 078cbc44bf98c3f459915d12bc0b1398, type: 3}
+    longWolfPrefab: {fileID: 207988252112000246, guid: 12b7d5256cfcf0049bf45c7c8264bc2c, type: 3}
+    count: 3
+    laneSpacing: 2.6
+    sequentialDelay: 0.7
+    escortDelay: 0.8
+    escortLongWolfWarningDuration: 2.4
+    escortSameSideChance: 0.7
+    escortFanSpread: 35
+    pentagramRadius: 16
+    pentagramUsesLongWolves: 1
+    pentagramWarningDuration: 1.5
+    pentagramStagger: 0.3
+    pentagramChargeSpeed: 9
+    chainHandoffDistance: 14
   runOnStart: 0
 --- !u!4 &2103598739
 Transform:
@@ -28590,6 +28676,19 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2103598740
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2103598736}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 837e82d0018fcbd478f1e33e29759cb8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WolfFormationRunner
+  spawner: {fileID: 2103598737}
 --- !u!1001 &2111189230
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -28891,3 +28990,4 @@ SceneRoots:
   - {fileID: 987911382}
   - {fileID: 1408143813}
   - {fileID: 936743428}
+  - {fileID: 855286882}

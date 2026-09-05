@@ -59,10 +59,6 @@ public sealed class SheepFlockAgent : MonoBehaviour
     [Header("Blocking")]
     [SerializeField] private LayerMask blockingLayers;
     [SerializeField, Min(0f)] private float blockingRadius = 0f;
-    [Tooltip("被围栏挡住且离羊群中心较远时，多少秒后直接“翻过去”回到羊群旁。")]
-    [SerializeField, Min(0.2f)] private float stuckTimeout = 1.2f;
-    [Tooltip("离中心超过舒适半径的这个倍数才算“掉队被卡住”。")]
-    [SerializeField, Min(1f)] private float stuckDistanceFactor = 1.5f;
 
     private Rigidbody2D body;
     private SheepMember member;
@@ -75,7 +71,6 @@ public sealed class SheepFlockAgent : MonoBehaviour
     private Vector2 targetWanderDirection;
     private Vector2 fallbackSeparationDirection;
     private float wanderTimer;
-    private float stuckTimer;
     private float nextImpactFeedbackTime;
     private Vector2 idleAnchor;
     private Vector2 idleTarget;
@@ -264,8 +259,6 @@ public sealed class SheepFlockAgent : MonoBehaviour
             target = TrySlideAroundObstacle(from, desiredStep);
         }
 
-        UpdateStuckState(from, desiredStep, target, deltaTime);
-
         // 把实际走出去的位移反算回速度，避免贴墙的羊把"想走但没走成"的速度
         // 通过 alignment 传染给邻居，导致整群往墙里挤。
         velocity = (target - from) / deltaTime;
@@ -281,7 +274,6 @@ public sealed class SheepFlockAgent : MonoBehaviour
         velocity = Vector2.zero;
         cachedSteeringVelocity = Vector2.zero;
         hasCachedSteering = false;
-        stuckTimer = 0f;
     }
 
     private void UpdateFacingIntent(float deltaTime)
@@ -367,62 +359,6 @@ public sealed class SheepFlockAgent : MonoBehaviour
             return candidate;
 
         return from;
-    }
-
-    /// <summary>
-    /// 被围栏卡住又离羊群太远（例如羊群穿过缺口后它留在另一边）时，
-    /// 等一小会儿直接把它挪到羊群中心附近的空位——当作它自己翻过了栏杆。
-    /// </summary>
-    private void UpdateStuckState(Vector2 from, Vector2 desiredStep, Vector2 target, float deltaTime)
-    {
-        float wanted = desiredStep.magnitude;
-        float achieved = (target - from).magnitude;
-        bool blocked = wanted > 0.01f && achieved < wanted * 0.15f;
-        float farDistance = GetComfortableRadius() * stuckDistanceFactor + blockingRadius;
-        bool farFromFlock = (flock.Center - from).sqrMagnitude > farDistance * farDistance;
-        // 离得不远但中间隔着围栏（例如卡在角落、羊群在栏杆另一侧）也算掉队。
-        bool separatedByWall = !farFromFlock
-            && MovementBlocking.IsLineBlocked(from, flock.Center, blockingLayers);
-
-        if (!blocked || !(farFromFlock || separatedByWall))
-        {
-            stuckTimer = 0f;
-            return;
-        }
-
-        stuckTimer += deltaTime;
-        if (stuckTimer < stuckTimeout)
-            return;
-
-        stuckTimer = 0f;
-        if (TryFindFreeSpotNearCenter(out Vector2 spot))
-        {
-            body.position = spot;
-            velocity = Vector2.zero;
-        }
-    }
-
-    private bool TryFindFreeSpotNearCenter(out Vector2 spot)
-    {
-        Vector2 center = flock.Center;
-        float radius = Mathf.Max(blockingRadius * 2f, GetComfortableRadius() * 0.6f);
-        for (int ring = 0; ring < 3; ring++)
-        {
-            float ringRadius = radius * (0.5f + ring * 0.5f);
-            for (int index = 0; index < 8; index++)
-            {
-                float angle = index * Mathf.PI * 0.25f + ring * 0.3f;
-                Vector2 candidate = center + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * ringRadius;
-                if (MovementBlocking.IsFree(candidate, blockingRadius, blockingLayers))
-                {
-                    spot = candidate;
-                    return true;
-                }
-            }
-        }
-
-        spot = center;
-        return MovementBlocking.IsFree(center, blockingRadius, blockingLayers);
     }
 
     private Vector2 CalculateSteeringVelocity(

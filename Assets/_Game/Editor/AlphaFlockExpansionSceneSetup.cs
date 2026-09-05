@@ -590,6 +590,9 @@ public static class AlphaFlockExpansionSceneSetup
         // 由关卡控制器在羊圈打开后再启动节奏。
         directorSerialized.FindProperty("runOnStart").boolValue = false;
         directorSerialized.ApplyModifiedPropertiesWithoutUndo();
+
+        // 正式节奏表：按羊群规模抽取一只狼 / 多只狼 / 本场损失最多的攻击。
+        WolfAttackScheduleSetup.ApplyToDirector(director);
     }
 
     // ------------------------------------------------------------------ UI

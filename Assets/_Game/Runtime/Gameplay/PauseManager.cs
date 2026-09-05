@@ -33,21 +33,27 @@ public class PauseManager : MonoBehaviour
 
     public bool IsPaused => isPaused;
 
+
     private void Awake()
     {
         BindButtons();
 
         if (pausePanel != null)
             pausePanel.SetActive(false);
+
         if (pauseWindow != null)
             pauseWindow.SetActive(true);
+
         if (settingPanel != null)
             settingPanel.SetActive(false);
+
         if (collectionPanel != null)
             collectionPanel.SetActive(false);
 
         Time.timeScale = 1f;
+
         isPaused = false;
+        resultLocked = false;
     }
 
 
@@ -56,39 +62,57 @@ public class PauseManager : MonoBehaviour
         if (resultLocked)
             return;
 
-        if (Keyboard.current != null &&
-            Keyboard.current.escapeKey.wasPressedThisFrame)
+        if (Keyboard.current == null)
+            return;
+
+        if (!Keyboard.current.escapeKey.wasPressedThisFrame)
+            return;
+
+
+        // Codex 打开时 ESC 返回 Pause
+        if (codexView != null &&
+            codexView.IsOpen)
         {
-            if (codexView != null && codexView.IsOpen)
-            {
-                BackFromCodex();
-                return;
-            }
-
-            if (settingPanel != null && settingPanel.activeSelf)
-            {
-                BackToPause();
-                return;
-            }
-
-            if (collectionPanel != null && collectionPanel.activeSelf)
-            {
-                BackFromCollection();
-                return;
-            }
-
-            if (taskPanelToggle != null && taskPanelToggle.IsOpen)
-            {
-                taskPanelToggle.CloseTaskPanel();
-                return;
-            }
-
-            TogglePause();
+            BackFromCodex();
+            return;
         }
+
+
+        // Settings 打开时 ESC 返回 Pause
+        if (settingPanel != null &&
+            settingPanel.activeSelf)
+        {
+            BackToPause();
+            return;
+        }
+
+
+        // Collection 打开时 ESC 返回 Pause
+        if (collectionPanel != null &&
+            collectionPanel.activeSelf)
+        {
+            BackFromCollection();
+            return;
+        }
+
+
+        // TaskPanel 打开时先关闭 TaskPanel
+        if (taskPanelToggle != null &&
+            taskPanelToggle.IsOpen)
+        {
+            taskPanelToggle.CloseTaskPanel();
+            return;
+        }
+
+
+        TogglePause();
     }
 
 
-    // ESC 切换暂停状态
+    // ============================================================
+    // PAUSE
+    // ============================================================
+
     public void TogglePause()
     {
         if (resultLocked)
@@ -105,32 +129,63 @@ public class PauseManager : MonoBehaviour
     }
 
 
-    // 打开暂停菜单
     public void OpenPause()
     {
         if (resultLocked)
             return;
 
-        if (taskPanelToggle != null && taskPanelToggle.IsOpen)
+
+        if (taskPanelToggle != null &&
+            taskPanelToggle.IsOpen)
+        {
             taskPanelToggle.CloseTaskPanel();
+        }
+
+
+        // 暂停时隐藏 TaskSystem
         if (taskPanelToggle != null)
+        {
             taskPanelToggle.gameObject.SetActive(false);
+        }
+
+
+        // 暂停期间不让 AlphaBanner 跳出来
         if (bannerView != null)
+        {
             bannerView.SetSuppressed(true);
+        }
+
 
         isPaused = true;
 
+
         if (pausePanel != null)
+        {
             pausePanel.SetActive(true);
+        }
+
+
         if (pauseWindow != null)
+        {
             pauseWindow.SetActive(true);
+        }
+
+
         if (settingPanel != null)
+        {
             settingPanel.SetActive(false);
+        }
+
+
         if (collectionPanel != null)
+        {
             collectionPanel.SetActive(false);
+        }
+
 
         Time.timeScale = 0f;
     }
+
 
     public void PauseGame()
     {
@@ -138,210 +193,520 @@ public class PauseManager : MonoBehaviour
     }
 
 
-    // 打开 Settings
-    public void ShowSettings()
-    {
-        if (!isPaused)
-            return;
+    // ============================================================
+    // CONTINUE
+    // ============================================================
 
-        if (pauseWindow != null)
-            pauseWindow.SetActive(false);
-        if (settingPanel != null)
-            settingPanel.SetActive(true);
-    }
-
-
-    // Settings 返回暂停主页
-    public void BackToPause()
-    {
-        if (!isPaused)
-            return;
-
-        if (settingPanel != null)
-            settingPanel.SetActive(false);
-        if (collectionPanel != null)
-            collectionPanel.SetActive(false);
-        if (taskPanelToggle != null)
-            taskPanelToggle.gameObject.SetActive(false);
-        if (pauseWindow != null)
-            pauseWindow.SetActive(true);
-    }
-
-
-    // 继续游戏
     public void ResumeGame()
     {
         isPaused = false;
 
+
         if (pausePanel != null)
+        {
             pausePanel.SetActive(false);
+        }
+
+
+        if (pauseWindow != null)
+        {
+            pauseWindow.SetActive(true);
+        }
+
+
         if (settingPanel != null)
+        {
             settingPanel.SetActive(false);
+        }
+
+
         if (collectionPanel != null)
+        {
             collectionPanel.SetActive(false);
+        }
+
+
         if (codexView != null)
+        {
             codexView.Hide();
+        }
+
+
+        // 恢复 TaskSystem
         if (taskPanelToggle != null)
+        {
             taskPanelToggle.gameObject.SetActive(true);
+        }
+
+
+        // 恢复 AlphaBanner
         if (bannerView != null)
+        {
             bannerView.SetSuppressed(false);
+        }
+
 
         Time.timeScale = 1f;
     }
+
 
     public void ContinueGame()
     {
         ResumeGame();
     }
 
-    public void ShowCollection()
+
+    // ============================================================
+    // SETTINGS
+    // ============================================================
+
+    public void ShowSettings()
     {
-        if (!isPaused || collectionPanel == null)
+        if (!isPaused)
             return;
 
+
         if (pauseWindow != null)
+        {
             pauseWindow.SetActive(false);
+        }
+
+
+        if (collectionPanel != null)
+        {
+            collectionPanel.SetActive(false);
+        }
+
+
         if (settingPanel != null)
+        {
+            settingPanel.SetActive(true);
+        }
+    }
+
+
+    public void BackToPause()
+    {
+        if (!isPaused)
+            return;
+
+
+        if (settingPanel != null)
+        {
             settingPanel.SetActive(false);
+        }
+
+
+        if (collectionPanel != null)
+        {
+            collectionPanel.SetActive(false);
+        }
+
+
+        // 暂停状态下继续隐藏 TaskSystem
         if (taskPanelToggle != null)
+        {
             taskPanelToggle.gameObject.SetActive(false);
+        }
+
+
+        if (pauseWindow != null)
+        {
+            pauseWindow.SetActive(true);
+        }
+    }
+
+
+    // ============================================================
+    // COLLECTION
+    // ============================================================
+
+    public void ShowCollection()
+    {
+        if (!isPaused ||
+            collectionPanel == null)
+        {
+            return;
+        }
+
+
+        if (pauseWindow != null)
+        {
+            pauseWindow.SetActive(false);
+        }
+
+
+        if (settingPanel != null)
+        {
+            settingPanel.SetActive(false);
+        }
+
+
+        if (taskPanelToggle != null)
+        {
+            taskPanelToggle.gameObject.SetActive(false);
+        }
+
 
         collectionPanel.SetActive(true);
     }
+
 
     public void BackFromCollection()
     {
         if (!isPaused)
             return;
 
+
         if (collectionPanel != null)
+        {
             collectionPanel.SetActive(false);
+        }
+
+
+        // 仍处于 Pause，因此 TaskSystem 保持隐藏
+        if (taskPanelToggle != null)
+        {
+            taskPanelToggle.gameObject.SetActive(false);
+        }
+
+
         if (pauseWindow != null)
+        {
             pauseWindow.SetActive(true);
+        }
     }
 
 
-    // 返回 MainMenu
+    // ============================================================
+    // MAIN MENU
+    // ============================================================
+
     public void ReturnToMainMenu()
     {
-        Time.timeScale = 1f;
-        isPaused = false;
+        // --------------------------------------------------------
+        // 方案 1：
+        // 场景里有项目自己的 SceneLoader，就优先使用。
+        // --------------------------------------------------------
 
         if (SceneLoader.Instance != null)
         {
+            Time.timeScale = 1f;
+            isPaused = false;
+
             SceneLoader.Instance.LoadMainMenu();
+
+            return;
         }
-        else
+
+
+        // --------------------------------------------------------
+        // 方案 2：
+        // Alpha 场景里没有 SceneLoader 时，
+        // 直接使用 Unity SceneManager。
+        // --------------------------------------------------------
+
+        const string mainMenuSceneName =
+            "MainMenu";
+
+
+        if (Application.CanStreamedLevelBeLoaded(
+            mainMenuSceneName))
         {
-            Debug.LogError("SceneLoader Instance not found.");
+            Time.timeScale = 1f;
+            isPaused = false;
+
+            SceneManager.LoadScene(
+                mainMenuSceneName
+            );
+
+            return;
+        }
+
+
+        // --------------------------------------------------------
+        // 两种方式都无法加载时：
+        // 不解除暂停。
+        //
+        // 避免出现：
+        // 点 Main Menu
+        // → 游戏恢复
+        // → Pause UI 还在
+        // → Settings / Collection 全部失效
+        // --------------------------------------------------------
+
+        Debug.LogError(
+            "PauseManager: 无法加载 MainMenu。请检查 MainMenu 是否已加入 Build Settings / Build Profile。",
+            this
+        );
+
+
+        // 保持正确暂停状态
+        isPaused = true;
+        Time.timeScale = 0f;
+
+
+        if (pausePanel != null)
+        {
+            pausePanel.SetActive(true);
+        }
+
+
+        if (pauseWindow != null)
+        {
+            pauseWindow.SetActive(true);
         }
     }
 
-    public void ConfigureCodex(MvpCodexView view)
+
+    // ============================================================
+    // CODEX COMPATIBILITY
+    // ============================================================
+
+    public void ConfigureCodex(
+        MvpCodexView view)
     {
         codexView = view;
 
-        // 新暂停菜单已经有图鉴按钮时，不再动态生成旧按钮。
+
+        // 新 Pause 菜单已经有 Sheep 按钮，
+        // 就不再动态创建旧 Codex 按钮。
         if (collectionButton != null)
             return;
 
-        if (pauseWindow == null || pauseWindow.transform.Find("MvpCodexButton") != null)
+
+        if (pauseWindow == null)
             return;
 
-        UnityEngine.UI.Button codexButton = MvpUiFactory.CreateButton(
-            "MvpCodexButton",
-            pauseWindow.transform,
-            "同伴名册 / 图鉴",
-            ShowCodex,
-            new Vector2(260f, 64f));
-        MvpUiFactory.Anchor(
-            codexButton.GetComponent<RectTransform>(),
-            new Vector2(0.5f, 0f),
-            new Vector2(0.5f, 0f),
-            new Vector2(-145f, 72f),
-            new Vector2(260f, 64f));
 
-        if (pauseWindow.transform.Find("MvpRestartButton") == null)
+        if (pauseWindow.transform.Find(
+            "MvpCodexButton") != null)
         {
-            UnityEngine.UI.Button restartButton = MvpUiFactory.CreateButton(
-                "MvpRestartButton",
+            return;
+        }
+
+
+        Button codexButton =
+            MvpUiFactory.CreateButton(
+                "MvpCodexButton",
                 pauseWindow.transform,
-                "重新开始",
-                RestartGame,
-                new Vector2(260f, 64f));
+                "同伴名册 / 图鉴",
+                ShowCodex,
+                new Vector2(
+                    260f,
+                    64f
+                )
+            );
+
+
+        MvpUiFactory.Anchor(
+            codexButton
+                .GetComponent<RectTransform>(),
+            new Vector2(
+                0.5f,
+                0f
+            ),
+            new Vector2(
+                0.5f,
+                0f
+            ),
+            new Vector2(
+                -145f,
+                72f
+            ),
+            new Vector2(
+                260f,
+                64f
+            )
+        );
+
+
+        // 老系统兼容：
+        // 只有当前 PauseWindow 没 Restart 时
+        // 才动态生成。
+        if (pauseWindow.transform.Find(
+            "MvpRestartButton") == null &&
+            restartButton == null)
+        {
+            Button runtimeRestartButton =
+                MvpUiFactory.CreateButton(
+                    "MvpRestartButton",
+                    pauseWindow.transform,
+                    "重新开始",
+                    RestartGame,
+                    new Vector2(
+                        260f,
+                        64f
+                    )
+                );
+
+
             MvpUiFactory.Anchor(
-                restartButton.GetComponent<RectTransform>(),
-                new Vector2(0.5f, 0f),
-                new Vector2(0.5f, 0f),
-                new Vector2(145f, 72f),
-                new Vector2(260f, 64f));
+                runtimeRestartButton
+                    .GetComponent<RectTransform>(),
+                new Vector2(
+                    0.5f,
+                    0f
+                ),
+                new Vector2(
+                    0.5f,
+                    0f
+                ),
+                new Vector2(
+                    145f,
+                    72f
+                ),
+                new Vector2(
+                    260f,
+                    64f
+                )
+            );
         }
     }
 
+
     public void ShowCodex()
     {
-        if (!isPaused || codexView == null)
+        if (!isPaused ||
+            codexView == null)
+        {
             return;
+        }
 
-        pauseWindow.SetActive(false);
+
+        if (pauseWindow != null)
+        {
+            pauseWindow.SetActive(false);
+        }
+
+
         if (settingPanel != null)
+        {
             settingPanel.SetActive(false);
-        codexView.Show(BackFromCodex);
+        }
+
+
+        codexView.Show(
+            BackFromCodex
+        );
     }
+
 
     public void BackFromCodex()
     {
         if (codexView != null)
+        {
             codexView.Hide();
+        }
 
-        if (isPaused && pauseWindow != null)
+
+        if (isPaused &&
+            pauseWindow != null)
+        {
             pauseWindow.SetActive(true);
+        }
     }
 
-    public void SetResultLocked(bool value)
+
+    // ============================================================
+    // RESULT LOCK
+    // ============================================================
+
+    public void SetResultLocked(
+        bool value)
     {
         resultLocked = value;
+
+
         if (!value)
         {
             if (taskPanelToggle != null)
+            {
                 taskPanelToggle.gameObject.SetActive(true);
+            }
+
             return;
         }
 
+
         isPaused = false;
+
         Time.timeScale = 1f;
+
+
         if (pausePanel != null)
+        {
             pausePanel.SetActive(false);
+        }
+
+
         if (settingPanel != null)
+        {
             settingPanel.SetActive(false);
+        }
+
+
         if (collectionPanel != null)
+        {
             collectionPanel.SetActive(false);
+        }
+
+
         if (codexView != null)
+        {
             codexView.Hide();
+        }
+
+
         if (taskPanelToggle != null)
         {
             taskPanelToggle.CloseTaskPanel();
             taskPanelToggle.gameObject.SetActive(false);
         }
+
+
+        if (bannerView != null)
+        {
+            bannerView.SetSuppressed(false);
+        }
     }
+
+
+    // ============================================================
+    // RESTART
+    // ============================================================
 
     public void RestartGame()
     {
         Time.timeScale = 1f;
         isPaused = false;
 
+
         if (SceneLoader.Instance != null)
-            SceneLoader.Instance.ReloadCurrentScene();
-        else
         {
-            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+            SceneLoader.Instance.ReloadCurrentScene();
+
+            return;
         }
+
+
+        SceneManager.LoadScene(
+            SceneManager
+                .GetActiveScene()
+                .name
+        );
     }
+
+
+    // ============================================================
+    // EXIT
+    // ============================================================
 
     public void ExitGame()
     {
         Time.timeScale = 1f;
         isPaused = false;
+
 
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.isPlaying = false;
@@ -350,43 +715,145 @@ public class PauseManager : MonoBehaviour
 #endif
     }
 
+
+    // ============================================================
+    // BUTTON BINDING
+    // ============================================================
+
     private void BindButtons()
     {
         if (continueButton != null)
-            continueButton.onClick.AddListener(ContinueGame);
+        {
+            continueButton.onClick.AddListener(
+                ContinueGame
+            );
+        }
+
+
         if (mainMenuButton != null)
-            mainMenuButton.onClick.AddListener(ReturnToMainMenu);
+        {
+            mainMenuButton.onClick.AddListener(
+                ReturnToMainMenu
+            );
+        }
+
+
         if (settingsButton != null)
-            settingsButton.onClick.AddListener(ShowSettings);
+        {
+            settingsButton.onClick.AddListener(
+                ShowSettings
+            );
+        }
+
+
         if (collectionButton != null)
-            collectionButton.onClick.AddListener(ShowCollection);
+        {
+            collectionButton.onClick.AddListener(
+                ShowCollection
+            );
+        }
+
+
         if (restartButton != null)
-            restartButton.onClick.AddListener(RestartGame);
+        {
+            restartButton.onClick.AddListener(
+                RestartGame
+            );
+        }
+
+
         if (exitButton != null)
-            exitButton.onClick.AddListener(ExitGame);
+        {
+            exitButton.onClick.AddListener(
+                ExitGame
+            );
+        }
+
+
         if (settingsBackButton != null)
-            settingsBackButton.onClick.AddListener(BackToPause);
+        {
+            settingsBackButton.onClick.AddListener(
+                BackToPause
+            );
+        }
+
+
         if (collectionBackButton != null)
-            collectionBackButton.onClick.AddListener(BackFromCollection);
+        {
+            collectionBackButton.onClick.AddListener(
+                BackFromCollection
+            );
+        }
     }
+
+
+    // ============================================================
+    // CLEANUP
+    // ============================================================
 
     private void OnDestroy()
     {
         if (continueButton != null)
-            continueButton.onClick.RemoveListener(ContinueGame);
+        {
+            continueButton.onClick.RemoveListener(
+                ContinueGame
+            );
+        }
+
+
         if (mainMenuButton != null)
-            mainMenuButton.onClick.RemoveListener(ReturnToMainMenu);
+        {
+            mainMenuButton.onClick.RemoveListener(
+                ReturnToMainMenu
+            );
+        }
+
+
         if (settingsButton != null)
-            settingsButton.onClick.RemoveListener(ShowSettings);
+        {
+            settingsButton.onClick.RemoveListener(
+                ShowSettings
+            );
+        }
+
+
         if (collectionButton != null)
-            collectionButton.onClick.RemoveListener(ShowCollection);
+        {
+            collectionButton.onClick.RemoveListener(
+                ShowCollection
+            );
+        }
+
+
         if (restartButton != null)
-            restartButton.onClick.RemoveListener(RestartGame);
+        {
+            restartButton.onClick.RemoveListener(
+                RestartGame
+            );
+        }
+
+
         if (exitButton != null)
-            exitButton.onClick.RemoveListener(ExitGame);
+        {
+            exitButton.onClick.RemoveListener(
+                ExitGame
+            );
+        }
+
+
         if (settingsBackButton != null)
-            settingsBackButton.onClick.RemoveListener(BackToPause);
+        {
+            settingsBackButton.onClick.RemoveListener(
+                BackToPause
+            );
+        }
+
+
         if (collectionBackButton != null)
-            collectionBackButton.onClick.RemoveListener(BackFromCollection);
+        {
+            collectionBackButton.onClick.RemoveListener(
+                BackFromCollection
+            );
+        }
     }
 }
