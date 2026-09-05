@@ -1147,7 +1147,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f74e97ce4434e64a2d0c58e88a6aa67, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FlockMovementController
-  moveSpeed: 4
+  normalSpeedLimit: 4
+  acceleration: 12
+  deceleration: 16
 --- !u!114 &1800551195
 MonoBehaviour:
   m_ObjectHideFlags: 0

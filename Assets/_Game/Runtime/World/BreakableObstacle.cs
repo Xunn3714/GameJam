@@ -38,10 +38,15 @@ public sealed class BreakableObstacle : MonoBehaviour
         }
     }
 
+    public void Configure(ObstacleDefinition obstacleDefinition, SpriteRenderer renderer)
+    {
+        definition = obstacleDefinition;
+        spriteRenderer = renderer != null ? renderer : GetComponentInChildren<SpriteRenderer>();
+        colliders = GetComponentsInChildren<Collider2D>();
+    }
+
     private void OnTriggerEnter2D(Collider2D other)
     {
-        Debug.Log($"[Breakable] {name} 被 {other.name} 触发, isBroken={isBroken}", this);
-
         if (isBroken)
             return;
 
@@ -49,14 +54,14 @@ public sealed class BreakableObstacle : MonoBehaviour
             ? definition.BreakRule
             : ObstacleBreakRule.OnAnyContact;
 
-        bool flockContact = IsFlockContact(other);
-        Debug.Log($"[Breakable] rule={rule} flockContact={flockContact}", this);
-
         if (rule != ObstacleBreakRule.OnAnyContact)
             return;
 
-        if (flockContact)
+        if (IsFlockContact(other))
         {
+            SheepVisualAnimator visualAnimator = other.GetComponentInParent<SheepVisualAnimator>();
+            Vector2 direction = transform.position - other.transform.position;
+            visualAnimator?.PlayObstacleImpact(false, direction);
             Break();
         }
     }

@@ -23,6 +23,15 @@ public sealed class MvpGameController : MonoBehaviour
     [SerializeField, Min(0.1f)] private float sheepClearance = 0.75f;
     [SerializeField] private int fixedSpawnSeed;
 
+    [Header("Obstacle Encounters")]
+    [SerializeField] private bool generateObstacleEncounters = true;
+    [SerializeField, Range(0, 12)] private int obstacleEncounterCount = 5;
+    [SerializeField] private Sprite fenceSprite;
+    [SerializeField] private ObstacleDefinition fenceDefinition;
+    [SerializeField] private Sprite barrelSprite;
+    [SerializeField] private ObstacleDefinition barrelDefinition;
+    [SerializeField] private Sprite flowerSprite;
+
     [Header("Regular Sheep Group Weights")]
     [SerializeField, Min(0f)] private float groupOfOneWeight = 60f;
     [SerializeField, Min(0f)] private float groupOfTwoWeight = 30f;
@@ -81,6 +90,23 @@ public sealed class MvpGameController : MonoBehaviour
             localDensityRadius,
             sheepClearance,
             fixedSpawnSeed);
+
+        if (generateObstacleEncounters)
+        {
+            MvpObstacleEncounterSpawner.Generate(
+                spawnArea,
+                spawned,
+                obstacleEncounterCount,
+                fenceSprite,
+                fenceDefinition,
+                barrelSprite,
+                barrelDefinition,
+                flowerSprite);
+        }
+
+        for (int index = 0; index < spawned.Count; index++)
+            spawned[index]?.ConfigureWanderBounds(spawnArea);
+
         recruitTarget = spawned.Count > 0 ? spawned.Count : recruitableSheepCount;
 
         taskSystem = CreateTaskSystem(recruitTarget);
@@ -92,6 +118,7 @@ public sealed class MvpGameController : MonoBehaviour
     {
         recruitableSheepCount = Mathf.Max(1, recruitableSheepCount);
         specialSheepCount = Mathf.Clamp(specialSheepCount, 0, recruitableSheepCount);
+        obstacleEncounterCount = Mathf.Max(0, obstacleEncounterCount);
 
         if (groupOfOneWeight + groupOfTwoWeight + groupOfThreeWeight <= 0f)
             groupOfOneWeight = 1f;

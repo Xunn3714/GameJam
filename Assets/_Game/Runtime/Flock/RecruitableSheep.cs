@@ -8,6 +8,7 @@ public sealed class RecruitableSheep : MonoBehaviour
     [SerializeField] private Color recruitedColor = new Color(0.65f, 1f, 0.65f, 1f);
 
     private CircleCollider2D recruitTrigger;
+    private WildSheepWander wildWander;
     private float recruitLockedUntil;
 
     public bool IsRecruited { get; private set; }
@@ -16,6 +17,8 @@ public sealed class RecruitableSheep : MonoBehaviour
     {
         recruitTrigger = GetComponent<CircleCollider2D>();
         spriteRenderer ??= GetComponent<SpriteRenderer>();
+        SheepVisualAnimator.Ensure(gameObject);
+        wildWander = WildSheepWander.Ensure(gameObject);
     }
 
     private void OnTriggerEnter2D(Collider2D other)
@@ -57,6 +60,13 @@ public sealed class RecruitableSheep : MonoBehaviour
     {
         IsRecruited = false;
         recruitLockedUntil = Time.time + Mathf.Max(0f, lockoutSeconds);
+        wildWander?.SetRecruited(false);
+    }
+
+    public void ConfigureWanderBounds(Rect worldBounds, float roamingLimit = -1f)
+    {
+        wildWander ??= WildSheepWander.Ensure(gameObject);
+        wildWander?.Configure(worldBounds, roamingLimit);
     }
 
     internal void CompleteRecruitment()
@@ -65,6 +75,7 @@ public sealed class RecruitableSheep : MonoBehaviour
             return;
 
         IsRecruited = true;
+        wildWander?.SetRecruited(true);
         if (spriteRenderer != null) spriteRenderer.color = recruitedColor;
         Debug.Log($"{name} joined the flock.", this);
     }

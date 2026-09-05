@@ -32,18 +32,21 @@ public sealed class SheepFlockAgent : MonoBehaviour
     [SerializeField, Min(0f)] private float blockingRadius = 0f;
 
     private Rigidbody2D body;
+    private SheepVisualAnimator visualAnimator;
     private FlockController flock;
     private Vector2 velocity;
     private Vector2 wanderDirection;
     private Vector2 targetWanderDirection;
     private Vector2 fallbackSeparationDirection;
     private float wanderTimer;
+    private float nextImpactFeedbackTime;
 
     public Vector2 Velocity => velocity;
 
     private void Awake()
     {
         body = GetComponent<Rigidbody2D>();
+        visualAnimator = SheepVisualAnimator.Ensure(gameObject);
         ResetWander();
         if (blockingLayers.value == 0)
             blockingLayers = MovementBlocking.DefaultMask();
@@ -86,16 +89,45 @@ public sealed class SheepFlockAgent : MonoBehaviour
             from,
             from + velocity * deltaTime,
             blockingRadius,
-            blockingLayers);
+            blockingLayers,
+            out MovementBlockResult blockResult);
+
+        bool recoilFromHardImpact = false;
+        Vector2 impactVelocity = velocity;
+        if (blockResult.WasBlocked && Time.time >= nextImpactFeedbackTime)
+        {
+            bool hardImpact = !CanBreakOnContact(blockResult.Blocker);
+            visualAnimator?.PlayObstacleImpact(hardImpact, velocity);
+            nextImpactFeedbackTime = Time.time + (hardImpact ? 0.48f : 0.2f);
+            recoilFromHardImpact = hardImpact && velocity.sqrMagnitude > 0.001f;
+        }
 
         // 把实际走出去的位移反算回速度，避免贴墙的羊把"想走但没走成"的速度
         // 通过 alignment 传染给邻居，导致整群往墙里挤。
         velocity = (target - from) / deltaTime;
+        if (recoilFromHardImpact)
+            velocity = -impactVelocity.normalized * Mathf.Min(0.85f, maximumSpeed * 0.18f);
 
         if (target == from)
             return;
 
         body.MovePosition(target);
+    }
+
+    private bool CanBreakOnContact(Collider2D blocker)
+    {
+        if (blocker == null)
+            return false;
+
+        BreakableObstacle obstacle = blocker.GetComponentInParent<BreakableObstacle>();
+        if (obstacle == null || obstacle.Definition == null)
+            return false;
+
+        if (obstacle.Definition.BreakRule == ObstacleBreakRule.OnAnyContact)
+            return true;
+
+        return flock != null
+            && flock.MemberCount >= obstacle.Definition.RequiredFlockCount;
     }
 
     private Vector2 CalculateSteeringVelocity(bool flockIsMoving, float deltaTime)

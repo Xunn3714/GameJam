@@ -1591,7 +1591,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f74e97ce4434e64a2d0c58e88a6aa67, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FlockMovementController
-  moveSpeed: 4
+  normalSpeedLimit: 4
+  acceleration: 12
+  deceleration: 16
 --- !u!114 &881671396
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2054,6 +2056,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MvpGameController
   flockController: {fileID: 881671394}
+  generateObstacleEncounters: 1
+  obstacleEncounterCount: 3
+  fenceSprite: {fileID: 21300000, guid: c7692b231e0420645bcde6fe3495f3e6, type: 3}
+  fenceDefinition: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
+  barrelSprite: {fileID: 21300000, guid: 60946351a3fc6be4c8d0964fb13ba160, type: 3}
+  barrelDefinition: {fileID: 11400000, guid: ed14c63af8eab594cbb09831fd5669aa, type: 2}
+  flowerSprite: {fileID: 21300000, guid: e225633dba6c4fb4e9719900fd92f27d, type: 3}
   hudView: {fileID: 1122711760}
   joinToastView: {fileID: 1122711762}
 --- !u!4 &997659671

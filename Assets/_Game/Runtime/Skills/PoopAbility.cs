@@ -22,6 +22,7 @@ public sealed class PoopAbility : MonoBehaviour
 
     private readonly List<GameObject> spawned = new List<GameObject>();
     private InputAction runtimePoopAction;
+    private FlockMovementController movementController;
     private int storedPoops;
     private float nextRechargeAt = float.PositiveInfinity;
     private float readyAt;
@@ -51,6 +52,7 @@ public sealed class PoopAbility : MonoBehaviour
     {
         ValidateSettings();
         storedPoops = maxStoredPoops;
+        movementController = GetComponent<FlockMovementController>();
     }
 
     private void OnEnable()
@@ -81,7 +83,7 @@ public sealed class PoopAbility : MonoBehaviour
         if (!isActiveAndEnabled || !controlEnabled || Time.timeScale == 0f || RemainingCooldown > 0f ||
             poopPrefab == null || spawnPoint == null || storedPoops <= 0 || IsAtCapacity) return false;
 
-        GameObject instance = Instantiate(poopPrefab, spawnPoint.position, Quaternion.identity);
+        GameObject instance = Instantiate(poopPrefab, ResolveSpawnPosition(), Quaternion.identity);
         spawned.Add(instance);
 
         PoopVisual visual = instance.GetComponent<PoopVisual>();
@@ -106,6 +108,16 @@ public sealed class PoopAbility : MonoBehaviour
             nextRechargeAt = Time.time + rechargeSeconds;
 
         StockChanged?.Invoke(storedPoops, maxStoredPoops);
+    }
+
+    private Vector3 ResolveSpawnPosition()
+    {
+        if (movementController == null || spawnPoint.parent == null)
+            return spawnPoint.position;
+
+        Vector3 localPosition = spawnPoint.localPosition;
+        localPosition.x = Mathf.Abs(localPosition.x) * (movementController.FacingLeft ? 1f : -1f);
+        return spawnPoint.parent.TransformPoint(localPosition);
     }
 
     private void RechargeStock()
