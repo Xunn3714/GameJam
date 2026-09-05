@@ -31,6 +31,7 @@ public sealed class WildSheepWander : MonoBehaviour
     [SerializeField, Min(0f)] private float blockingRadius;
 
     private Rigidbody2D body;
+    private ScatteredSheep scatteredSheep;
     private SheepVisualAnimator visualAnimator;
     private WanderState state;
     private Rect worldBounds;
@@ -54,6 +55,7 @@ public sealed class WildSheepWander : MonoBehaviour
     private void Awake()
     {
         body = GetComponent<Rigidbody2D>();
+        scatteredSheep = GetComponent<ScatteredSheep>();
         body.bodyType = RigidbodyType2D.Kinematic;
         body.gravityScale = 0f;
         body.freezeRotation = true;
@@ -88,6 +90,7 @@ public sealed class WildSheepWander : MonoBehaviour
 
         if (!recruited)
         {
+            scatteredSheep = GetComponent<ScatteredSheep>();
             home = transform.position;
             BeginDaydream();
         }
@@ -98,8 +101,7 @@ public sealed class WildSheepWander : MonoBehaviour
         if (isRecruited || body == null || Time.timeScale == 0f)
             return;
 
-        ScatteredSheep scattered = GetComponent<ScatteredSheep>();
-        if (scattered != null && scattered.IsScattered)
+        if (scatteredSheep != null && scatteredSheep.IsScattered)
             return;
 
         float deltaTime = Time.fixedDeltaTime;

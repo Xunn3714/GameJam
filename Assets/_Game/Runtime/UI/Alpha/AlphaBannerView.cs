@@ -61,6 +61,22 @@ public sealed class AlphaBannerView : MonoBehaviour
         pending.Enqueue(message);
     }
 
+    /// <summary>
+    /// 立即显示会被后续状态取代的提示，例如人数进度和阶段。
+    /// 清掉旧状态，避免快速招募时仍按队列播放过期的 4/6、5/6。
+    /// </summary>
+    public void ShowLatest(string message)
+    {
+        if (string.IsNullOrWhiteSpace(message))
+            return;
+
+        pending.Clear();
+        SetMessage(message);
+        group.alpha = 1f;
+        timer = 0f;
+        state = 2;
+    }
+
     private void Update()
     {
         float deltaTime = Time.unscaledDeltaTime;
@@ -71,10 +87,7 @@ public sealed class AlphaBannerView : MonoBehaviour
                 if (pending.Count > 0)
                 {
                     string message = pending.Dequeue();
-                    if (bannerView != null)
-                        bannerView.SetText(message);
-                    else
-                        label.text = message;
+                    SetMessage(message);
                     timer = 0f;
                     state = 1;
                 }
@@ -97,5 +110,13 @@ public sealed class AlphaBannerView : MonoBehaviour
                 if (timer >= fadeDuration) { group.alpha = 0f; state = 0; }
                 break;
         }
+    }
+
+    private void SetMessage(string message)
+    {
+        if (bannerView != null)
+            bannerView.SetText(message);
+        else if (label != null)
+            label.text = message;
     }
 }

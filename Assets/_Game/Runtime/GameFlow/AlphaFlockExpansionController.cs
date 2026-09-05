@@ -47,6 +47,11 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     [SerializeField, Min(1)] private int wolfUnlockFlockSize = 6;
     [SerializeField, Min(0.1f)] private float failedSpawnRetryDelay = 1.5f;
 
+    [Header("Impact Feedback")]
+    [SerializeField, Min(0f)] private float impactShakeAmplitude = 0.1f;
+    [SerializeField, Min(0f)] private float impactShakeDuration = 0.14f;
+    [SerializeField, Min(0.02f)] private float impactFeedbackInterval = 0.12f;
+
     [Header("Exit")]
     [Tooltip("历史最高羊数达到这个值后永久解锁外围围栏。")]
     [SerializeField, Min(1)] private int exitUnlockFlockSize = 100;
@@ -84,6 +89,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     private int specialRecruits;
     private readonly List<MvpObjectiveSnapshot> objectiveScratch = new List<MvpObjectiveSnapshot>();
     private float nextPopulationRefreshTime;
+    private float nextImpactFeedbackTime;
     private float runStartTime;
     private readonly List<string> typeScratch = new List<string>();
 
@@ -106,6 +112,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         {
             flock.MemberCountChanged += HandleMemberCountChanged;
             flock.SheepRecruited += HandleSheepRecruited;
+            flock.FenceChargeImpact += HandleFenceChargeImpact;
         }
 
         if (wolfDirector != null)
@@ -120,7 +127,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         if (tutorialPen != null)
         {
             tutorialPen.Opened += HandleTutorialPenOpened;
-            tutorialPen.HintRequested += ShowBanner;
+            tutorialPen.HintRequested += ShowLatestBanner;
         }
     }
 
@@ -130,6 +137,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         {
             flock.MemberCountChanged -= HandleMemberCountChanged;
             flock.SheepRecruited -= HandleSheepRecruited;
+            flock.FenceChargeImpact -= HandleFenceChargeImpact;
         }
 
         if (wolfDirector != null)
@@ -144,7 +152,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         if (tutorialPen != null)
         {
             tutorialPen.Opened -= HandleTutorialPenOpened;
-            tutorialPen.HintRequested -= ShowBanner;
+            tutorialPen.HintRequested -= ShowLatestBanner;
         }
     }
 
@@ -237,7 +245,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         {
             ApplyStage(false);
             FlockGrowthStage stage = progression.CurrentStage;
-            ShowBanner($"阶段 {progression.StageIndex + 1} · {stage.DisplayName}");
+            ShowLatestBanner($"阶段 {progression.StageIndex + 1} · {stage.DisplayName}");
             Debug.Log($"羊群升级到阶段 {progression.StageIndex + 1}：{stage.DisplayName}。", this);
         }
 
@@ -279,6 +287,16 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
 
         if (sheepSpawner.MarkRecruited(sheep))
             MaintainNearbyPopulation();
+    }
+
+    private void HandleFenceChargeImpact(bool hardImpact)
+    {
+        if (ended || Time.unscaledTime < nextImpactFeedbackTime)
+            return;
+
+        nextImpactFeedbackTime = Time.unscaledTime + impactFeedbackInterval;
+        float amplitude = hardImpact ? impactShakeAmplitude : impactShakeAmplitude * 0.65f;
+        cameraFollow?.Shake(amplitude, impactShakeDuration);
     }
 
     private void RefreshComposition()
@@ -523,6 +541,12 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     {
         if (bannerView != null)
             bannerView.Show(message);
+    }
+
+    private void ShowLatestBanner(string message)
+    {
+        if (bannerView != null)
+            bannerView.ShowLatest(message);
     }
 
     private void MaintainNearbyPopulation()
