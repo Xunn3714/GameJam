@@ -68,22 +68,21 @@ public class AudioManager : MonoBehaviour
 
 
     // 播放普通 SFX
-    public void PlaySFX(AudioClip clip)
+    public void PlaySFX(AudioClip clip, float volumeScale = 1f)
     {
-        if (clip == null)
-            return;
+    if (clip == null)
+        return;
 
-        sfxSource.PlayOneShot(clip);
+    sfxSource.PlayOneShot(clip, Mathf.Clamp01(volumeScale));
     }
 
 
     // 播放 Sheep 音效
-    public void PlaySheepSFX(AudioClip clip)
+    public void PlaySheepSFX(AudioClip clip, float volumeScale = 1f)
     {
-        if (clip == null)
-            return;
+        if (clip == null) return;
 
-        sheepSource.PlayOneShot(clip);
+        sheepSource.PlayOneShot(clip, Mathf.Clamp01(volumeScale));
     }
 
 

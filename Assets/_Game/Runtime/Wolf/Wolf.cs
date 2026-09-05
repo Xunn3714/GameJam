@@ -80,6 +80,9 @@ public sealed class Wolf : MonoBehaviour
     /// <summary>冲锋结算完成时触发。</summary>
     public event Action<Wolf, WolfAttackResult> Attacked;
 
+    /// <summary>狼开始冲锋时触发。</summary>
+    public event Action<Wolf> ChargeStarted;
+
     /// <summary>狼离开并销毁前触发。</summary>
     public event Action<Wolf> Finished;
 
@@ -295,10 +298,13 @@ public sealed class Wolf : MonoBehaviour
     {
         state = State.Charging;
         chargeTravelled = 0f;
+
         if (warningRenderer != null)
         {
             warningRenderer.enabled = false;
         }
+
+        ChargeStarted?.Invoke(this);
     }
 
     private void OnTriggerEnter2D(Collider2D other)

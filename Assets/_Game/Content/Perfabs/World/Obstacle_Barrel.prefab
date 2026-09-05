@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 5176999686488321078}
   - component: {fileID: 7858188445893955985}
   - component: {fileID: 5432558891810948737}
+  - component: {fileID: 627842597729197941}
   m_Layer: 0
   m_Name: Obstacle_Barrel
   m_TagString: Untagged
@@ -174,3 +175,17 @@ MonoBehaviour:
   spriteRenderer: {fileID: 5080909433038491936}
   animator: {fileID: 0}
   breakTriggerName: Break
+--- !u!114 &627842597729197941
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1211418967172175065}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3114ec9ab15781d42b090c98f94a6342, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BreakableObstacleAudio
+  breakClip: {fileID: 8300000, guid: 6401a012d552b1f46bca0eb0aed4328b, type: 3}
+  volumeScale: 0.6
