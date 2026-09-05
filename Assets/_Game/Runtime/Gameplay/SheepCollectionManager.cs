@@ -29,10 +29,16 @@ public class SheepCollectionManager : MonoBehaviour
     [Header("Database")]
     public SheepCollectionDatabase database;
 
+    [Tooltip("当前主玩法的唯一特殊羊目录；存在时图鉴直接从这里生成，不再维护第二份羊列表。")]
+    [SerializeField] private SpecialSheepCatalog specialSheepCatalog;
+
     [Header("Runtime Progress")]
     [SerializeField]
-    private List<SheepCollectionProgress> progressList =
+        private List<SheepCollectionProgress> progressList =
         new List<SheepCollectionProgress>();
+
+    private readonly List<SheepCollectionEntry> catalogEntries =
+        new List<SheepCollectionEntry>();
 
 
     private void Awake()
@@ -47,6 +53,7 @@ public class SheepCollectionManager : MonoBehaviour
 
         DontDestroyOnLoad(gameObject);
 
+        RebuildCatalogEntries();
         LoadProgress();
         EnsureDatabaseEntries();
     }
@@ -93,11 +100,17 @@ public class SheepCollectionManager : MonoBehaviour
     public int GetUnlockedCount()
     {
         int count = 0;
+        HashSet<string> configuredIds = new HashSet<string>(StringComparer.Ordinal);
+        foreach (SheepCollectionEntry entry in GetConfiguredEntries())
+        {
+            if (entry != null && !string.IsNullOrWhiteSpace(entry.sheepId))
+                configuredIds.Add(entry.sheepId);
+        }
 
         foreach (SheepCollectionProgress progress
                  in progressList)
         {
-            if (progress.unlocked)
+            if (progress != null && progress.unlocked && configuredIds.Contains(progress.sheepId))
                 count++;
         }
 
@@ -108,20 +121,14 @@ public class SheepCollectionManager : MonoBehaviour
     // 图鉴总羊数量
     public int GetTotalCount()
     {
-        if (database == null)
-            return 0;
-
-        return database.sheepList.Count;
+        return GetConfiguredEntries().Count;
     }
 
 
     // 获取所有羊资料
     public List<SheepCollectionEntry> GetAllSheep()
     {
-        if (database == null)
-            return new List<SheepCollectionEntry>();
-
-        return database.GetAllSheep();
+        return new List<SheepCollectionEntry>(GetConfiguredEntries());
     }
 
 
@@ -129,10 +136,7 @@ public class SheepCollectionManager : MonoBehaviour
     public SheepCollectionEntry GetSheepData(
         string sheepId)
     {
-        if (database == null)
-            return null;
-
-        return database.GetSheep(sheepId);
+        return GetConfiguredEntries().Find(sheep => sheep.sheepId == sheepId);
     }
 
 
@@ -140,16 +144,16 @@ public class SheepCollectionManager : MonoBehaviour
     // 都有对应进度记录
     private void EnsureDatabaseEntries()
     {
-        if (database == null)
+        List<SheepCollectionEntry> entries = GetConfiguredEntries();
+        if (entries.Count == 0)
         {
             Debug.LogWarning(
-                "SheepCollectionManager: Database is missing.");
+                "SheepCollectionManager: collection catalog is missing or empty.");
 
             return;
         }
 
-        foreach (SheepCollectionEntry sheep
-                 in database.sheepList)
+        foreach (SheepCollectionEntry sheep in entries)
         {
             if (FindProgress(sheep.sheepId) == null)
             {
@@ -175,8 +179,7 @@ public class SheepCollectionManager : MonoBehaviour
         if (progress != null)
             return progress;
 
-        if (database != null &&
-            database.GetSheep(sheepId) == null)
+        if (GetSheepData(sheepId) == null)
         {
             Debug.LogWarning(
                 $"SheepCollectionManager: Sheep '{sheepId}' does not exist in database.");
@@ -203,6 +206,83 @@ public class SheepCollectionManager : MonoBehaviour
         return progressList.Find(
             progress =>
                 progress.sheepId == sheepId);
+    }
+
+
+    private List<SheepCollectionEntry> GetConfiguredEntries()
+    {
+        if (catalogEntries.Count > 0)
+            return catalogEntries;
+
+        return database != null
+            ? database.GetAllSheep()
+            : new List<SheepCollectionEntry>();
+    }
+
+
+    private void RebuildCatalogEntries()
+    {
+        catalogEntries.Clear();
+        if (specialSheepCatalog == null)
+            return;
+
+        Sprite commonSprite = null;
+        if (specialSheepCatalog.BaseSheepPrefab != null)
+        {
+            SpriteRenderer renderer =
+                specialSheepCatalog.BaseSheepPrefab.GetComponentInChildren<SpriteRenderer>();
+            if (renderer != null)
+                commonSprite = renderer.sprite;
+        }
+
+        catalogEntries.Add(new SheepCollectionEntry
+        {
+            sheepId = MvpSheepCatalog.DefaultTypeId,
+            displayName = "普通羊",
+            icon = commonSprite,
+            description = "最常见、也最可靠的羊群伙伴。",
+            abilityName = "群体行动",
+            abilityDescription = "会跟随羊群一起移动、收拢与冲刺。",
+            order = 0
+        });
+
+        HashSet<string> ids = new HashSet<string>(StringComparer.Ordinal)
+        {
+            MvpSheepCatalog.DefaultTypeId
+        };
+        int order = 1;
+        foreach (SpecialSheepCatalog.Tier tier in specialSheepCatalog.Tiers)
+        {
+            if (tier == null)
+                continue;
+
+            foreach (SpecialSheepCatalog.Entry entry in tier.Entries)
+            {
+                if (entry == null || string.IsNullOrWhiteSpace(entry.TypeId) ||
+                    entry.Sprite == null || !ids.Add(entry.TypeId))
+                {
+                    continue;
+                }
+
+                string effect = !string.IsNullOrWhiteSpace(entry.GameplayEffectDescription)
+                    ? entry.GameplayEffectDescription
+                    : entry.VisualEffectDescription;
+                catalogEntries.Add(new SheepCollectionEntry
+                {
+                    sheepId = entry.TypeId,
+                    displayName = entry.DisplayName,
+                    icon = entry.Sprite,
+                    description = string.IsNullOrWhiteSpace(entry.CodexDescription)
+                        ? $"一只独特的{entry.DisplayName}。"
+                        : entry.CodexDescription,
+                    abilityName = string.IsNullOrWhiteSpace(effect) ? "外观特征" : "特殊效果",
+                    abilityDescription = string.IsNullOrWhiteSpace(effect)
+                        ? "暂无额外能力说明。"
+                        : effect,
+                    order = order++
+                });
+            }
+        }
     }
 
     // 保存
