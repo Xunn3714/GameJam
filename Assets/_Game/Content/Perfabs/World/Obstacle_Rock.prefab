@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 3960445719883480385}
   - component: {fileID: 801486193472446297}
   - component: {fileID: 3091849400182835014}
+  - component: {fileID: 5750502680645425570}
   - component: {fileID: 7483105708377024919}
   m_Layer: 3
   m_Name: Obstacle_Rock
@@ -212,6 +213,23 @@ MonoBehaviour:
   spriteRenderer: {fileID: 3115039694755267669}
   animator: {fileID: 0}
   breakTriggerName: Break
+--- !u!114 &5750502680645425570
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8458269541540090481}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d587e570eb2d0a94b80a067f26ca425a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BreakableObstacleVFX
+  breakParticlesPrefab: {fileID: 8882286306400846765, guid: 85d4791578168dd449df7c2c5edbe9cf, type: 3}
+  fragmentPrefab: {fileID: 4741890322465624849, guid: ab02cd63d0743954ba4c432b7d212900, type: 3}
+  fragmentCount: 12
+  spawnOffset: {x: 0, y: 0}
+  fragmentSpawnRadius: 0.5
 --- !u!114 &7483105708377024919
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -222,7 +240,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3114ec9ab15781d42b090c98f94a6342, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BreakableObstacleAudio
   breakClip: {fileID: 8300000, guid: 646df1c2943405043acc66305f750f15, type: 3}
   volumeScale: 1

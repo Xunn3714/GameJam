@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 3454174919102135994}
   - component: {fileID: 2773295146505349861}
   - component: {fileID: 5942414828155557527}
+  - component: {fileID: 3666819801186823201}
   m_Layer: 3
   m_Name: Obstacle_FlowerDaisy
   m_TagString: Untagged
@@ -211,3 +212,20 @@ MonoBehaviour:
   spriteRenderer: {fileID: 9126577506659609220}
   animator: {fileID: 0}
   breakTriggerName: Break
+--- !u!114 &3666819801186823201
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2689274103439182307}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d587e570eb2d0a94b80a067f26ca425a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BreakableObstacleVFX
+  breakParticlesPrefab: {fileID: 8882286306400846765, guid: 85d4791578168dd449df7c2c5edbe9cf, type: 3}
+  fragmentPrefab: {fileID: 4741890322465624849, guid: c273f39e30f131644a291e8c21e28472, type: 3}
+  fragmentCount: 8
+  spawnOffset: {x: 0, y: 0}
+  fragmentSpawnRadius: 0
