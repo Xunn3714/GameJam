@@ -183,7 +183,7 @@ public sealed class FlockController : MonoBehaviour
             return false;
 
         // 原有招募完成逻辑
-        sheep.CompleteRecruitment();
+        sheep.CompleteRecruitment(this);
 
         RecruitedCount++;
 

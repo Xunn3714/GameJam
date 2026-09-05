@@ -12,12 +12,39 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 75aa9a364dd44217aa92e72db90888ac, type: 3}
   m_Name: DefaultSpecialSheepPool
   m_EditorClassIdentifier: Assembly-CSharp::SpecialSheepPool
-  entries:
-  - prefab: {fileID: 2358661416431911602, guid: f23df8856d744c99a0f985672b51f6d8, type: 3}
-    weight: 1
-  - prefab: {fileID: 2358661416431911602, guid: 8ac1d85a0a654ae68de6c47a58b7d9aa, type: 3}
-    weight: 1
-  - prefab: {fileID: 2358661416431911602, guid: 9bd2e96b1b764bf79ef7d58b69c8eabb, type: 3}
-    weight: 1
-  - prefab: {fileID: 2358661416431911602, guid: ace3fa7c2c874c08a018e69c7ad9fbcc, type: 3}
-    weight: 1
+  tiers:
+  - quality: 5
+    probabilityPercent: 0.1
+    entries: []
+  - quality: 4
+    probabilityPercent: 0.3
+    entries: []
+  - quality: 3
+    probabilityPercent: 1
+    entries: []
+  - quality: 2
+    probabilityPercent: 5
+    entries: []
+  - quality: 1
+    probabilityPercent: 50
+    entries:
+    - sheepTypeId: sheep.special.tophat
+      displayName: 礼帽小羊
+      prefab: {fileID: 2358661416431911602, guid: f23df8856d744c99a0f985672b51f6d8, type: 3}
+      visualEffectId:
+      abilityId:
+    - sheepTypeId: sheep.special.redbow
+      displayName: 蝴蝶结小羊
+      prefab: {fileID: 2358661416431911602, guid: 8ac1d85a0a654ae68de6c47a58b7d9aa, type: 3}
+      visualEffectId:
+      abilityId:
+    - sheepTypeId: sheep.special.horned
+      displayName: 山羊
+      prefab: {fileID: 2358661416431911602, guid: 9bd2e96b1b764bf79ef7d58b69c8eabb, type: 3}
+      visualEffectId:
+      abilityId:
+    - sheepTypeId: sheep.special.black
+      displayName: 黑色小羊
+      prefab: {fileID: 2358661416431911602, guid: ace3fa7c2c874c08a018e69c7ad9fbcc, type: 3}
+      visualEffectId:
+      abilityId:
