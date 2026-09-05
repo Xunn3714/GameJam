@@ -1,0 +1,665 @@
+[Licensing::Module] Trying to connect to existing licensing client channel...
+Built from '6000.5/staging' branch; Version is '6000.5.9f1 (b57deb96f08d) revision 11894251'; Using compiler version '194234433'; Build Type 'Release'
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-wcy" at "2026-09-05T22:28:35.0410728Z"
+OS: 'Windows 11  (10.0.26200) Core' Language: 'zh' Physical Memory: 48790 MB
+BatchMode: 1, IsHumanControllingUs: 0, StartBugReporterOnCrash: 0, Is64bit: 1
+System  architecture: x64
+Process architecture: x64
+Date: 2026-09-05T22:28:35Z
+[Licensing::Client] Code 10 while verifying Licensing Client signature (process Id: 65864, path: "C:/Program Files/Unity Hub/UnityLicensingClient_V1/Unity.Licensing.Client.exe")
+[Licensing::Module] LicensingClient has failed validation; ignoring
+[Licensing::Client] Handshaking with LicensingClient:
+  Version:                 1.18.3+d7ffd15
+  Session Id:              f8041281d7ea40b883934371831de076
+  Correlation Id:          d1a703468dbb6acfdd99be3b29b49dfe
+  External correlation Id: 9041994195460654396
+  Machine Id:              tgCP2eKTZGNgdocuEpSW2HM94xY=
+[Licensing::Module] Successfully connected to LicensingClient on channel: "LicenseClient-wcy" (connect: 0.00s, validation: 0.00s, handshake: 0.05s)
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-wcy-notifications" at "2026-09-05T22:28:35.0882304Z"
+[Licensing::Module] Error: Access token is unavailable; failed to update
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] License group:
+  Id: 2475992838170-migpeach-UnityProStuXXXX
+  Product: Unity Student
+  Type: Assigned
+  Expiration: 2027-06-05T04:11:59Z
+[Licensing::Client] Successfully updated license, isAsync: True, time: 0.00
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] Licensing Background thread has ended after 0.05s
+
+COMMAND LINE ARGUMENTS:
+C:\Program Files\Unity\Hub\Editor\6000.5.9f1\Editor\Unity.exe
+-batchmode
+-quit
+-projectPath
+C:\Users\wcy\Desktop\GameJam\GameJam
+-executeMethod
+LongWolfSkinSetup.Apply
+-logFile
+C:\Users\wcy\Desktop\GameJam\GameJam\Tools\LongWolfReapply.txt
+Successfully changed project path to: C:\Users\wcy\Desktop\GameJam\GameJam
+C:/Users/wcy/Desktop/GameJam/GameJam
+[UnityMemory] Configuration Parameters - Can be set up in boot.config
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-nav-mesh-worker=65536"
+    "memorysetup-temp-allocator-size-audio-worker=65536"
+    "memorysetup-temp-allocator-size-cloud-worker=32768"
+    "memorysetup-temp-allocator-size-gfx=262144"
+    "memorysetup-remapper-allocator-initial-capacity=32768"
+    "memorysetup-temp-allocator-size-preload-manager=33554432"
+    "memorysetup-allocator-temp-initial-block-size-main=262144"
+    "memorysetup-allocator-temp-initial-block-size-worker=262144"
+    "memorysetup-temp-allocator-size-job-worker=262144"
+    "memorysetup-temp-allocator-size-background-worker=32768"
+    "memorysetup-bucket-allocator-granularity=16"
+    "memorysetup-bucket-allocator-bucket-count=8"
+    "memorysetup-bucket-allocator-block-size=33554432"
+    "memorysetup-bucket-allocator-block-count=8"
+    "memorysetup-main-allocator-block-size=16777216"
+    "memorysetup-thread-allocator-block-size=16777216"
+    "memorysetup-main-allocator-mimalloc-enabled=0"
+    "memorysetup-gfx-main-allocator-block-size=16777216"
+    "memorysetup-gfx-thread-allocator-block-size=16777216"
+    "memorysetup-cache-allocator-block-size=4194304"
+    "memorysetup-typetree-allocator-block-size=2097152"
+    "memorysetup-profiler-bucket-allocator-granularity=16"
+    "memorysetup-profiler-bucket-allocator-bucket-count=8"
+    "memorysetup-profiler-bucket-allocator-block-size=33554432"
+    "memorysetup-profiler-bucket-allocator-block-count=8"
+    "memorysetup-profiler-allocator-block-size=16777216"
+    "memorysetup-profiler-editor-allocator-block-size=1048576"
+    "memorysetup-temp-allocator-size-main=16777216"
+    "memorysetup-job-temp-allocator-block-size=2097152"
+    "memorysetup-job-temp-allocator-block-size-background=1048576"
+    "memorysetup-job-temp-allocator-reduction-small-platforms=262144"
+Logging is directed to a specific file, skipping project log.Player connection [35592]  Target information:
+
+Player connection [35592]  * "[IP] 26.36.49.71 [Port] 55504 [Flags] 2 [Guid] 3168328868 [EditorId] 3168328868 [Version] 1048832 [Id] WindowsEditor(7,DESKTOP-P8QV7UK) [Debug] 1 [PackageName] WindowsEditor [ProjectName] Editor" 
+
+Player connection [35592]  * "[IP] 130.215.210.81 [Port] 55504 [Flags] 2 [Guid] 3168328868 [EditorId] 3168328868 [Version] 1048832 [Id] WindowsEditor(7,DESKTOP-P8QV7UK) [Debug] 1 [PackageName] WindowsEditor [ProjectName] Editor" 
+
+Player connection [35592] Host joined multi-casting on [225.0.0.222:54997]...
+Player connection [35592] Host joined alternative multi-casting on [225.0.0.222:34997]...
+Input System module state changed to: Initialized.
+[Physics::Module] Initialized fallback backend.
+[Physics::Module] Id: 0xdecafbad
+[Package Manager] Connected to IPC stream "Upm-70216" after 0.2 seconds.
+[Licensing::Client] Successfully resolved entitlement details
+Library Redirect Path: Library/
+[Physics::Module] Selected backend.
+[Physics::Module] Name: PhysX
+[Physics::Module] Id: 0xf2b8ea05
+[Physics::Module] SDK Version: 4.1.2
+[Physics::Module] Integration Version: 1.0.0
+[Physics::Module] Threading Mode: Multi-Threaded
+Initialize engine version: 6000.5.9f1 (b57deb96f08d)
+[Subsystems] Discovering subsystems at path C:/Program Files/Unity/Hub/Editor/6000.5.9f1/Editor/Data/Resources/UnitySubsystems
+[Subsystems] Discovering subsystems at path C:/Users/wcy/Desktop/GameJam/GameJam/Assets
+GfxDevice: creating device client; kGfxThreadingModeNonThreaded
+d3d12: failed to query info queue interface (0x80004002).
+Direct3D:
+    Version:         Direct3D 12 [level 12.2]
+    Renderer:        NVIDIA GeForce RTX 5080 (ID=0x2c02)
+    Vendor:          NVIDIA
+    VRAM:            15979 MB
+    App VRAM Budget: 15211 MB
+    Driver:          32.0.16.1062
+Initialize mono
+Mono path[0] = 'C:/Program Files/Unity/Hub/Editor/6000.5.9f1/Editor/Data/Managed'
+Mono path[1] = 'C:/Program Files/Unity/Hub/Editor/6000.5.9f1/Editor/Data/BCLExtensions/runtime/netstandard2.1'
+Mono path[2] = 'C:/Program Files/Unity/Hub/Editor/6000.5.9f1/Editor/Data/MonoBleedingEdge/lib/mono/unityjit-win32'
+Mono config path = 'C:/Program Files/Unity/Hub/Editor/6000.5.9f1/Editor/Data/MonoBleedingEdge/etc'
+Using monoOptions --debugger-agent=transport=dt_socket,embedding=1,server=y,suspend=n,address=127.0.0.1:56216
+CodeReloadManager initialized
+ImportWorker Server TCP listen port: 0
+AcceleratorClientConnectionCallback - disconnected - :0
+Begin MonoManager ReloadAssembly
+Registering precompiled unity dll's ...
+Register platform support module: C:/Program Files/Unity/Hub/Editor/6000.5.9f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport/UnityEditor.WindowsStandalone.Extensions.dll
+Registered in 0.002183 seconds.
+Native extension for WindowsStandalone target not found
+Package Manager log level set to [2]
+ScheduleIndexationOnStartup MainProcess:False IndexOnStartup:True
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in  0.353 seconds
+Domain Reload Profiling: 721ms
+	BeginReloadAssembly (105ms)
+		CreateAndSetChildDomain (11ms)
+	RebuildCommonClasses (4ms)
+	RebuildNativeTypeToScriptingClass (12ms)
+	initialDomainReloadingComplete (59ms)
+	LoadAllAssembliesAndSetupDomain (188ms)
+		LoadAssemblies (90ms)
+		AnalyzeDomain (136ms)
+			TypeCache.Refresh (135ms)
+				TypeCache.ScanAssembly (124ms)
+	FinalizeReload (354ms)
+		SetupLoadedEditorAssemblies (0ms)
+			InitializePlatformSupportModulesInManaged (30ms)
+			BeforeProcessingInitializeOnLoad (59ms)
+			ProcessInitializeOnLoadAttributes (62ms)
+			ProcessInitializeOnLoadMethodAttributes (151ms)
+[Licensing::Client] Successfully resolved entitlement details
+Application.AssetDatabase Initial Refresh Start
+[Package Manager] Restoring resolved packages state from cache
+[Licensing::Client] Successfully resolved entitlement details
+[Package Manager] Registered 68 packages:
+  Packages from [https://packages.unity.com]:
+    com.unity.2d.animation@15.1.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.2d.animation@6d5a363ae647)
+    com.unity.2d.aseprite@5.0.3 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.2d.aseprite@d13865913efa)
+    com.unity.2d.psdimporter@14.0.3 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.2d.psdimporter@5d82044f9e43)
+    com.unity.2d.spriteshape@15.0.3 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.2d.spriteshape@fcb7ec61a58b)
+    com.unity.2d.tilemap.extras@8.0.3 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.2d.tilemap.extras@a80140457adc)
+    com.unity.2d.tooling@3.0.1 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.2d.tooling@6f06ffb033c0)
+    com.unity.ai.inference@2.6.1 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.ai.inference@9a123aee5df7)
+    com.unity.collab-proxy@2.13.6 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.collab-proxy@4628d2ba6ea4)
+    com.unity.ide.rider@3.0.40 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.ide.rider@e4950c6d131b)
+    com.unity.ide.visualstudio@2.0.28 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.ide.visualstudio@b5edea5f33f4)
+    com.unity.inputsystem@1.20.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.inputsystem@7a4e1a2a8194)
+    com.unity.timeline@1.8.12 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.timeline@8cd8509afae5)
+    com.unity.visualscripting@1.9.12 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.visualscripting@4edfcc09512f)
+    com.unity.burst@1.8.30 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.burst@2f3d916873ea)
+    com.unity.dt.app-ui@2.1.7 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.dt.app-ui@b097002a00c2)
+    com.unity.nuget.newtonsoft-json@3.2.2 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.nuget.newtonsoft-json@4dfd81071c64)
+    com.unity.2d.common@14.0.1 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.2d.common@73badf92ba8b)
+    com.unity.searcher@4.9.5 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.searcher@a463122f2c00)
+    com.unity.nuget.mono-cecil@1.11.6 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.nuget.mono-cecil@ecb9724e46ff)
+    com.unity.test-framework.performance@3.5.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.test-framework.performance@8b56083ec0f0)
+  Built-in packages:
+    com.unity.2d.sprite@1.0.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.2d.sprite@053a968eab56)
+    com.unity.2d.tilemap@1.0.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.2d.tilemap@b959501fd678)
+    com.unity.multiplayer.center@1.0.1 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.multiplayer.center@b860850997d0)
+    com.unity.render-pipelines.universal@17.5.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.render-pipelines.universal@d7774c218bdf)
+    com.unity.test-framework@1.7.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.test-framework@1405238725ab)
+    com.unity.ugui@2.5.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.ugui@1c4864518158)
+    com.unity.modules.accessibility@1.0.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.modules.accessibility)
+    com.unity.modules.adaptiveperformance@1.0.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.modules.adaptiveperformance)
+    com.unity.modules.ai@1.0.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.modules.ai)
+    com.unity.modules.androidjni@1.0.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.modules.androidjni)
+    com.unity.modules.animation@1.0.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.modules.animation)
+    com.unity.modules.assetbundle@1.0.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.modules.assetbundle)
+    com.unity.modules.audio@1.0.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.modules.audio)
+    com.unity.modules.cloth@1.0.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.modules.cloth)
+    com.unity.modules.director@1.0.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.modules.director)
+    com.unity.modules.imageconversion@1.0.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.modules.imageconversion)
+    com.unity.modules.imgui@1.0.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.modules.imgui)
+    com.unity.modules.jsonserialize@1.0.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.modules.jsonserialize)
+    com.unity.modules.particlesystem@1.0.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.modules.particlesystem)
+    com.unity.modules.physics@1.0.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.modules.physics)
+    com.unity.modules.physics2d@1.0.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.modules.physics2d)
+    com.unity.modules.physicscore2d@1.0.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.modules.physicscore2d)
+    com.unity.modules.screencapture@1.0.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.modules.screencapture)
+    com.unity.modules.terrain@1.0.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.modules.terrain)
+    com.unity.modules.terrainphysics@1.0.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.modules.terrainphysics)
+    com.unity.modules.tilemap@1.0.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.modules.tilemap)
+    com.unity.modules.ui@1.0.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.modules.ui)
+    com.unity.modules.uielements@1.0.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.modules.uielements)
+    com.unity.modules.umbra@1.0.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.modules.umbra)
+    com.unity.modules.unityanalytics@1.0.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.modules.unityanalytics)
+    com.unity.modules.unitywebrequest@1.0.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.modules.unitywebrequest)
+    com.unity.modules.unitywebrequestassetbundle@1.0.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.modules.unitywebrequestassetbundle)
+    com.unity.modules.unitywebrequestaudio@1.0.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.modules.unitywebrequestaudio)
+    com.unity.modules.unitywebrequesttexture@1.0.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.modules.unitywebrequesttexture)
+    com.unity.modules.unitywebrequestwww@1.0.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.modules.unitywebrequestwww)
+    com.unity.modules.vectorgraphics@1.0.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.modules.vectorgraphics)
+    com.unity.modules.vehicles@1.0.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.modules.vehicles)
+    com.unity.modules.video@1.0.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.modules.video)
+    com.unity.modules.wind@1.0.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.modules.wind)
+    com.unity.modules.xr@1.0.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.modules.xr)
+    com.unity.modules.subsystems@1.0.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.modules.subsystems)
+    com.unity.modules.hierarchycore@1.0.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.modules.hierarchycore)
+    com.unity.ext.nunit@2.1.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.ext.nunit@44f7d31723bd)
+    com.unity.render-pipelines.core@17.5.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.render-pipelines.core@a4c9a9793789)
+    com.unity.shadergraph@17.5.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.shadergraph@8d7376ec43ee)
+    com.unity.render-pipelines.universal-config@17.5.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.render-pipelines.universal-config@fdda01c80fe3)
+    com.unity.collections@6.5.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.collections@ec2c217e4cb2)
+    com.unity.mathematics@1.4.0 (location: C:\Users\wcy\Desktop\GameJam\GameJam\Library\PackageCache\com.unity.mathematics@981956d94fb6)
+[Subsystems] No new subsystems found in resolved package list.
+[Package Manager] Done registering packages in 0.03 seconds
+[ScriptCompilation] Requested script compilation because: AssetDatabase observed changes in script compilation related files
+Starting: C:\Program Files\Unity\Hub\Editor\6000.5.9f1\Editor\Data\Tools\BuildPipeline\bee_backend.exe --ipc --defer-dag-verification --dagfile="Library/Bee/1900b0aE.dag" --continue-on-failure --profile="Library/Bee/backend1.traceevents" ScriptAssemblies
+WorkingDir: C:/Users/wcy/Desktop/GameJam/GameJam
+DisplayProgressbar: Compiling Scripts
+Starting: C:\Program Files\Unity\Hub\Editor\6000.5.9f1\Editor\Data\netcorerun\netcorerun.exe "C:\Program Files\Unity\Hub\Editor\6000.5.9f1\Editor\Data\Tools\BuildPipeline\ScriptCompilationBuildProgram.exe" "Library/Bee/1900b0aE.dag.json" "Library/Bee/1900b0aE-inputdata.json" "Library\Bee\buildprogram0.traceevents"
+WorkingDir: C:/Users/wcy/Desktop/GameJam/GameJam
+ExitCode: 4 Duration: 0s462ms
+Rebuilding DAG because FileSignature timestamp changed: Library/Bee/1900b0aE-inputdata.json
+[ 894/1319  0s] ILPP-Configuration Library/ilpp-configuration.nevergeneratedoutput
+*** Tundra requires additional run (0.42 seconds), 1 items updated, 889 evaluated
+ExitCode: 0 Duration: 1s45ms
+Starting: C:\Program Files\Unity\Hub\Editor\6000.5.9f1\Editor\Data\Tools\BuildPipeline\bee_backend.exe --ipc --defer-dag-verification --dagfile="Library/Bee/1900b0aE.dag" --continue-on-failure --dagfilejson="Library\Bee\1900b0aE.dag.json" --profile="Library/Bee/backend2.traceevents" ScriptAssemblies
+WorkingDir: C:/Users/wcy/Desktop/GameJam/GameJam
+ExitCode: 0 Duration: 2s151ms
+Finished compiling graph: 1323 nodes, 27188 flattened edges (22402 ToBuild, 214 ToUse), maximum node priority 1481
+[ 694/1319  0s] WriteText Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp-Editor.rsp
+[ 695/1319  0s] WriteText Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp.rsp
+[1013/1319  0s] ILPP-Configuration Library/ilpp-configuration.nevergeneratedoutput
+[1311/1319  1s] Csc Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp.dll (+2 others)
+Assets\_Game\Runtime\Audio\SfxTest.cs(19,25): warning CS0618: 'Object.FindFirstObjectByType<T>()' is obsolete: 'FindFirstObjectByType has been deprecated because it relies on instance ID ordering. Use FindAnyObjectByType instead, which does not depend on ordering.'
+
+Assets\_Game\Runtime\Audio\SfxTest.cs(26,29): warning CS0618: 'Object.FindFirstObjectByType<T>()' is obsolete: 'FindFirstObjectByType has been deprecated because it relies on instance ID ordering. Use FindAnyObjectByType instead, which does not depend on ordering.'
+
+Assets\_Game\Runtime\Wolf\Wolf.cs(50,53): warning CS0414: The field 'Wolf.grazeRadius' is assigned but its value is never used
+
+Assets\_Game\Runtime\Wolf\Wolf.cs(49,53): warning CS0414: The field 'Wolf.centerHitRadius' is assigned but its value is never used
+[1312/1319  0s] Csc Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp-Editor.dll (+2 others)
+Assets\_Game\Editor\LongWolfDevValidation.cs(121,64): warning CS0618: 'FindObjectsSortMode' is obsolete: 'FindObjectsSortMode has been deprecated. Use the FindObjectsByType overloads that do not take a FindObjectsSortMode parameter.'
+
+Assets\_Game\Editor\LongWolfDevValidation.cs(121,23): warning CS0618: 'Object.FindObjectsByType<T>(FindObjectsSortMode)' is obsolete: 'FindObjectsByType with FindObjectsSortMode parameter has been deprecated. Use FindObjectsByType<T>() or FindObjectsByType<T>(FindObjectsInactive) instead. InstanceID will be replaced in the future with EntityId and previous sort order cannot be maintained.'
+
+Assets\_Game\Editor\LongWolfDevValidation.cs(142,54): warning CS0618: 'FindObjectsSortMode' is obsolete: 'FindObjectsSortMode has been deprecated. Use the FindObjectsByType overloads that do not take a FindObjectsSortMode parameter.'
+
+Assets\_Game\Editor\LongWolfDevValidation.cs(142,23): warning CS0618: 'Object.FindObjectsByType<T>(FindObjectsSortMode)' is obsolete: 'FindObjectsByType with FindObjectsSortMode parameter has been deprecated. Use FindObjectsByType<T>() or FindObjectsByType<T>(FindObjectsInactive) instead. InstanceID will be replaced in the future with EntityId and previous sort order cannot be maintained.'
+
+Assets\_Game\Editor\UiVisualPolish.cs(797,9): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+[1313/1319  0s] ILPostProcess Library/Bee/artifacts/1900b0aE.dag/post-processed/Assembly-CSharp.dll (+pdb)
+Processing assembly Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp.dll, with 145 defines and 370 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running zzzUnity.Burst.CodeGen.BurstILPostProcessor
+[1314/1319  0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp.dll
+[1315/1319  0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp.pdb
+[1316/1319  0s] ILPostProcess Library/Bee/artifacts/1900b0aE.dag/post-processed/Assembly-CSharp-Editor.dll (+pdb)
+Processing assembly Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp-Editor.dll, with 143 defines and 392 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running zzzUnity.Burst.CodeGen.BurstILPostProcessor
+[1317/1319  0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp-Editor.pdb
+[1318/1319  0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp-Editor.dll
+*** Tundra build success (2.12 seconds), 11 items updated, 1319 evaluated
+Assets\_Game\Runtime\Audio\SfxTest.cs(19,25): warning CS0618: 'Object.FindFirstObjectByType<T>()' is obsolete: 'FindFirstObjectByType has been deprecated because it relies on instance ID ordering. Use FindAnyObjectByType instead, which does not depend on ordering.'
+Assets\_Game\Runtime\Audio\SfxTest.cs(26,29): warning CS0618: 'Object.FindFirstObjectByType<T>()' is obsolete: 'FindFirstObjectByType has been deprecated because it relies on instance ID ordering. Use FindAnyObjectByType instead, which does not depend on ordering.'
+Assets\_Game\Runtime\Wolf\Wolf.cs(50,53): warning CS0414: The field 'Wolf.grazeRadius' is assigned but its value is never used
+Assets\_Game\Runtime\Wolf\Wolf.cs(49,53): warning CS0414: The field 'Wolf.centerHitRadius' is assigned but its value is never used
+Assets\_Game\Editor\LongWolfDevValidation.cs(121,64): warning CS0618: 'FindObjectsSortMode' is obsolete: 'FindObjectsSortMode has been deprecated. Use the FindObjectsByType overloads that do not take a FindObjectsSortMode parameter.'
+Assets\_Game\Editor\LongWolfDevValidation.cs(121,23): warning CS0618: 'Object.FindObjectsByType<T>(FindObjectsSortMode)' is obsolete: 'FindObjectsByType with FindObjectsSortMode parameter has been deprecated. Use FindObjectsByType<T>() or FindObjectsByType<T>(FindObjectsInactive) instead. InstanceID will be replaced in the future with EntityId and previous sort order cannot be maintained.'
+Assets\_Game\Editor\LongWolfDevValidation.cs(142,54): warning CS0618: 'FindObjectsSortMode' is obsolete: 'FindObjectsSortMode has been deprecated. Use the FindObjectsByType overloads that do not take a FindObjectsSortMode parameter.'
+Assets\_Game\Editor\LongWolfDevValidation.cs(142,23): warning CS0618: 'Object.FindObjectsByType<T>(FindObjectsSortMode)' is obsolete: 'FindObjectsByType with FindObjectsSortMode parameter has been deprecated. Use FindObjectsByType<T>() or FindObjectsByType<T>(FindObjectsInactive) instead. InstanceID will be replaced in the future with EntityId and previous sort order cannot be maintained.'
+Assets\_Game\Editor\UiVisualPolish.cs(797,9): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+AssetDatabase: script compilation time: 4.046834s
+Begin MonoManager ReloadAssembly
+Importing 'GUID: 769682bc5450df448ae8ce3c8f89e756 - Path: Assets/_Game/Content/Data/Wolf' with importer (DefaultImporter)
+Imported 'GUID: 769682bc5450df448ae8ce3c8f89e756' -> (Import Result ID: '3962f532779c39ef72aefdf3b062fc67') in 0.013 seconds [static dependencies only]. Details - ImportResultOutputID=0600e88a2529175a3ad5de03fca412bf DependenciesID=42d95345e9530bd559524f785e51f690 StaticDependenciesID=a1c576e93fd69b220108a6b97ad650f7 
+Importing 'GUID: 1f63b82c3bd1d2a40989dd319465dcc8 - Path: Assets/_Game/Content/Art/LongWolfSkins' with importer (DefaultImporter)
+Imported 'GUID: 1f63b82c3bd1d2a40989dd319465dcc8' -> (Import Result ID: '58cf576fc7b0cec7140214c80c79b58b') in 0.005 seconds [static dependencies only]. Details - ImportResultOutputID=d0ac6c69d28dd234198ee1aa96ff7f95 DependenciesID=4e17c0ac2e8ac509017f37b4b95c3644 StaticDependenciesID=acf2e372abc7bbe98a0f095a63f8be8c 
+Importing 'GUID: 90d8e939f64b80e408812c8c698998de - Path: Assets/_Game/Content/Art/Characters/Wolf' with importer (DefaultImporter)
+Imported 'GUID: 90d8e939f64b80e408812c8c698998de' -> (Import Result ID: 'a210dd860ebf5e1295432107e198eae2') in 0.001 seconds [static dependencies only]. Details - ImportResultOutputID=16e080efefd767d07cb35f3cede526e1 DependenciesID=de719189a7a54d2831315d566b90bebd StaticDependenciesID=9aae169dc71d7eec7ad33c0092f89200 
+Refreshing native plugins compatible for Editor in 6.80 ms, found 6 plugins.
+Native extension for WindowsStandalone target not found
+Refreshing native plugins compatible for Editor in 6.57 ms, found 6 plugins.
+ScheduleIndexationOnStartup MainProcess:True IndexOnStartup:True
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in  3.250 seconds
+Domain Reload Profiling: 4286ms
+	BeginReloadAssembly (306ms)
+		DisableScriptedObjects (34ms)
+		CreateAndSetChildDomain (149ms)
+	RebuildCommonClasses (7ms)
+	RebuildNativeTypeToScriptingClass (11ms)
+	initialDomainReloadingComplete (69ms)
+	LoadAllAssembliesAndSetupDomain (634ms)
+		LoadAssemblies (367ms)
+		AnalyzeDomain (242ms)
+			TypeCache.Refresh (167ms)
+				TypeCache.ScanAssembly (156ms)
+			BuildScriptInfoCaches (68ms)
+			ResolveRequiredComponents (6ms)
+	FinalizeReload (3260ms)
+		SetupLoadedEditorAssemblies (0ms)
+			InitializePlatformSupportModulesInManaged (6ms)
+			BeforeProcessingInitializeOnLoad (83ms)
+			ProcessInitializeOnLoadAttributes (2481ms)
+			ProcessInitializeOnLoadMethodAttributes (394ms)
+			AfterProcessingInitializeOnLoad (11ms)
+		AwakeInstancesAfterBackupRestoration (41ms)
+Importing 'GUID: 2080257d92cc89d4d99ad945accad78f - Path: Assets/_Game/Scenes/AlphaFlockExpansion.unity' with importer (DefaultImporter)
+Imported 'GUID: 2080257d92cc89d4d99ad945accad78f' -> (Import Result ID: '4b90c3c9a6305a69f5eca1f259e54247') in 0.004 seconds [static dependencies only]. Details - ImportResultOutputID=5b9329db25b70d6b517fc2dfb3e3a6e8 DependenciesID=2ab1f08910daa6d0a61f49bbcfbcdabc StaticDependenciesID=90120de122bcfa59103a96be2a4e03a3 
+Importing 'GUID: b590f8478a1c7f84f8dabea3601992da - Path: Assets/_Game/Scenes/MainMenu.unity' with importer (DefaultImporter)
+Imported 'GUID: b590f8478a1c7f84f8dabea3601992da' -> (Import Result ID: '3388c9397b46f70f1f7bbb2f7b68e555') in 0.003 seconds [static dependencies only]. Details - ImportResultOutputID=a48e8a13baef9769c294f14ba3038bd4 DependenciesID=f02d7109ba0ad89550f0f18fd41b60b7 StaticDependenciesID=47c71a1ae5122ccce952aa579efe100b 
+Importing 'GUID: 000e34284b1b0494d941f0c9f544be4a - Path: Assets/SpecialSheep/蓝色羊/纸盒羊.png' with importer (TextureImporter)
+Imported 'GUID: 000e34284b1b0494d941f0c9f544be4a' -> (Import Result ID: '9e13f4851d813f35eabb651795f3b322') in 0.026 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=d5a5f2c9c3e86a05c5dfc98e77797733 DependenciesID=412bd56812f0b23a4f9bb75be9e2c143 StaticDependenciesID=1682655f36e8aa1b3723340a577afa38 
+Importing 'GUID: 01672d488f590de41a6a17e1e6babf13 - Path: Assets/Art/Debris/小花（2）.png' with importer (TextureImporter)
+Imported 'GUID: 01672d488f590de41a6a17e1e6babf13' -> (Import Result ID: '03cff37e645d7e2c59e9c9d67dce1a18') in 0.012 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=23a66431ff28e6fb43a152230b513ddb DependenciesID=f37373fbaa06a055a0015a861f3b3d09 StaticDependenciesID=890ddd44c09c4269a64848d6ee102139 
+Importing 'GUID: 218d202a0e4f66a47a6b37ee8b3b3347 - Path: Assets/SpecialSheep/绿色羊/眼睛羊.png' with importer (TextureImporter)
+Imported 'GUID: 218d202a0e4f66a47a6b37ee8b3b3347' -> (Import Result ID: 'a350d8073ba2b8d7d469545da388630e') in 0.009 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=306de046eb49ba8aecec1fcd28139b68 DependenciesID=e35130388593eaa23ba010c2c1621f4d StaticDependenciesID=da2614a7fa666d1f970799fe6e419409 
+Importing 'GUID: 71139a83a98335143ac875ab25ebf650 - Path: Assets/SpecialSheep/绿色羊/长尾羊.png' with importer (TextureImporter)
+Imported 'GUID: 71139a83a98335143ac875ab25ebf650' -> (Import Result ID: '58330923885e5d3fe785dfa010d03055') in 0.010 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=fdfbdc14cdc3b9f0a786e45273c8dfbc DependenciesID=74bf13af54fcae5abe885e71cb198db7 StaticDependenciesID=c848f1427679e9fffbac68bcefa109cc 
+Importing 'GUID: e14a7e63561e54044a52344ba356125f - Path: Assets/SpecialSheep/绿色羊/铃铛羊.png' with importer (TextureImporter)
+Imported 'GUID: e14a7e63561e54044a52344ba356125f' -> (Import Result ID: 'd3bbff82af1a74f9306d746f103ad2e1') in 0.008 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=c026e7360b20042a1815c2f7d430398e DependenciesID=3d4521880d8dee763060abcb1898dfa9 StaticDependenciesID=f9e07e77e618ceab664da3c9188ab334 
+Importing 'GUID: 0206aeaa29039e2468693f137e9e4e8a - Path: Assets/SpecialSheep/绿色羊/蛋小羊.png' with importer (TextureImporter)
+Imported 'GUID: 0206aeaa29039e2468693f137e9e4e8a' -> (Import Result ID: 'fdee1b2903d39244a399b058d0755435') in 0.008 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=bc312e20f68290e0727a5ab7d34fbc20 DependenciesID=47e0c8e76e7e8305e836bbddcc50c344 StaticDependenciesID=7923a5ae2ecd466d18b6f326f64c5a26 
+Importing 'GUID: 32612a9bf2012be4a9e686ca8d2b467c - Path: Assets/SpecialSheep/绿色羊/胖羊.png' with importer (TextureImporter)
+Imported 'GUID: 32612a9bf2012be4a9e686ca8d2b467c' -> (Import Result ID: '64b8b960ecb05f81c81248b2932056d4') in 0.009 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=7954b35112973da3c11b654ae499c0f3 DependenciesID=98c3916cacc31762642c41cf828f89eb StaticDependenciesID=5c9988c8109f1367ef625218abc38a53 
+Importing 'GUID: 728a837e9f020984684dc1440ef9132f - Path: Assets/SpecialSheep/绿色羊/微博羊.png' with importer (TextureImporter)
+Imported 'GUID: 728a837e9f020984684dc1440ef9132f' -> (Import Result ID: '107aa641a07e2289ef4e2792efa7ce87') in 0.009 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=900dc88fd7557607b591e268ee512ee3 DependenciesID=7bb4a263c88763687287c67ed8e8a550 StaticDependenciesID=9e70dd1d534c40fa5aebd89e9d2bf0a2 
+Importing 'GUID: b2647e3d21b34974fa3775a5e5989de2 - Path: Assets/Art/Debris/小草丛（1）.png' with importer (TextureImporter)
+Imported 'GUID: b2647e3d21b34974fa3775a5e5989de2' -> (Import Result ID: '6bc2a25af5f4d2798357e2710e30219d') in 0.011 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=81e24d5b501ae9f841100a47da7efd4e DependenciesID=5d69b369fb72297591097f233525ca91 StaticDependenciesID=6f4be423ec23e4aa76601db31ecd6217 
+Importing 'GUID: b2c55ca9f38de914bad8b079e820c53f - Path: Assets/SpecialSheep/绿色羊/大眼羊.png' with importer (TextureImporter)
+Imported 'GUID: b2c55ca9f38de914bad8b079e820c53f' -> (Import Result ID: 'a8eb8de6dd96111e35b662c79672c789') in 0.009 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=eb8ffb49518ace78e3e0e3775df7b7e7 DependenciesID=2f7c96e4c0a6beda77c63234ee6f1c49 StaticDependenciesID=d81d47372ee76c8b3f349bdaefb1395e 
+Importing 'GUID: d23a1bf8e0b4185408eaafba29ab4d73 - Path: Assets/SpecialSheep/金色羊/粑粑羊.png' with importer (TextureImporter)
+Imported 'GUID: d23a1bf8e0b4185408eaafba29ab4d73' -> (Import Result ID: '48a27ce2f771da24417daf0eafe391af') in 0.010 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=f7144a8fda82a6e1cfff82c8e57363bb DependenciesID=9500304a8094296ec1d281f41332232b StaticDependenciesID=744408eedfebcc37857206fa81e135b1 
+Importing 'GUID: f2203e57048de9f408944e84a29293fc - Path: Assets/SpecialSheep/紫色羊/羊索.png' with importer (TextureImporter)
+Imported 'GUID: f2203e57048de9f408944e84a29293fc' -> (Import Result ID: 'df1c4d5ccefe859f04fca725d5cf0801') in 0.010 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=b935c4b13ff6570a431eb8e74f3f61a7 DependenciesID=c6b92a493b2dd3cf82c0163c4ec22605 StaticDependenciesID=7d82a70acd09893c4e24579abb85288c 
+Importing 'GUID: 230278cf425ff8c459fa2804469f08ec - Path: Assets/SpecialSheep/绿色羊/棕羊.png' with importer (TextureImporter)
+Imported 'GUID: 230278cf425ff8c459fa2804469f08ec' -> (Import Result ID: '8fbfcdc03947ebba67fe7f402f097230') in 0.009 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=1db1e015bbce5e796aec3decff699c63 DependenciesID=834d73c993fa7dfdf1b337754075d81a StaticDependenciesID=a586e7e13aa4e81d98dc7b5a7c92fa96 
+Importing 'GUID: 830438a50411e5741935125f1780748d - Path: Assets/SpecialSheep/绿色羊/吐舌头羊.png' with importer (TextureImporter)
+Imported 'GUID: 830438a50411e5741935125f1780748d' -> (Import Result ID: '16a0fa9986162ec495a9232b29cbd1f9') in 0.009 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=fd14a0554d2b3bdec048ffc73b872824 DependenciesID=9fdb67d9dcc1d1dbb8cf0bbbac8cbf28 StaticDependenciesID=e028f66c9fe5380727e78aa61f7f48cd 
+Importing 'GUID: a3083f9c46e84c73b02c8bb377fea55f - Path: Assets/Art/SheepSprites/Sheep_Special_TopHat.png' with importer (TextureImporter)
+Imported 'GUID: a3083f9c46e84c73b02c8bb377fea55f' -> (Import Result ID: '976c4610ae0fa83f064dc608c22bebd5') in 0.053 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=99236ac4bf4291253e327c3aec6a431b DependenciesID=7986bedc3140eaa7da8b3e371cd21a9e StaticDependenciesID=8c21c52aec91f70037a58d1ed709b323 
+Importing 'GUID: 148d46c65b8972245b5f7f811af4f0aa - Path: Assets/Art/Debris/稻田.png' with importer (TextureImporter)
+Imported 'GUID: 148d46c65b8972245b5f7f811af4f0aa' -> (Import Result ID: '7bdb0c52ac00745f1f6e47c2f870d2d1') in 0.061 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=cb6acfbdfa082d056e52e17007d068ca DependenciesID=6e9e99ceec311ed3287e49d3cd93919c StaticDependenciesID=e4b8ef2075707d1d8a7e2dc54305909b 
+Importing 'GUID: 54ec1c67a1168ac4fb19590ca8ec10f1 - Path: Assets/SpecialSheep/绿色羊/长角羊.png' with importer (TextureImporter)
+Imported 'GUID: 54ec1c67a1168ac4fb19590ca8ec10f1' -> (Import Result ID: '3340d57c204fa0bb03cef9c87be9ccde') in 0.010 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=012b1d22232caf56ae3d1fef85de9171 DependenciesID=189815568aa186eeb48db837d37425fe StaticDependenciesID=6379bfdc74e51ba7ddf3fe322384056c 
+Importing 'GUID: b476860f485cdb643886656d4e8c0683 - Path: Assets/SpecialSheep/绿色羊/呆呆羊.png' with importer (TextureImporter)
+Imported 'GUID: b476860f485cdb643886656d4e8c0683' -> (Import Result ID: 'd806553064e8ff08fc15a1e665b494ff') in 0.009 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=9010bf67da160417e5402dddd451ea1c DependenciesID=6648d1ee1878a3ba95a4787c5ca3b224 StaticDependenciesID=2f439286ca9a745159fca799c31fb5a6 
+Importing 'GUID: 15a69a627f5318c4e844a51a7f64f0bf - Path: Assets/Art/Debris/干草垛（坏）.png' with importer (TextureImporter)
+Imported 'GUID: 15a69a627f5318c4e844a51a7f64f0bf' -> (Import Result ID: '6e3820056d7577989d85e77656b6c9b8') in 0.013 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=a0ff16068ce5d75353e54c1e35478919 DependenciesID=3b69a8172ee3f5031a9412368103a8b6 StaticDependenciesID=19576a10882ebef9f79800494ebc120a 
+Importing 'GUID: 15cb24c4eb0259a478c6a633e5f93f13 - Path: Assets/SpecialSheep/绿色羊/矮脚羊.png' with importer (TextureImporter)
+Imported 'GUID: 15cb24c4eb0259a478c6a633e5f93f13' -> (Import Result ID: 'b3febb14bd359693e295b6ef584fb1a5') in 0.009 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=68b2ad72d3cca0f822bc840642ee5726 DependenciesID=ed6bbc53852b95277ddaecb6fef4834d StaticDependenciesID=ed8f623f31002d66e38d32971e824edb 
+Importing 'GUID: 655462e028f5997488d0796ba8f01e1a - Path: Assets/SpecialSheep/金色羊/美羊羊.png' with importer (TextureImporter)
+Imported 'GUID: 655462e028f5997488d0796ba8f01e1a' -> (Import Result ID: '832ba44d18c21dc91a4b4b122cf51223') in 0.009 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=7c654a920497bdb05d4a0eecbeff309c DependenciesID=cac684b7b4ed63139da6642a6f870215 StaticDependenciesID=fb1b223035387fd267a81d7bccc0a497 
+Importing 'GUID: 856f35e28888aad4da2c2e1479e3bb43 - Path: Assets/Art/Debris/小草丛（2）.png' with importer (TextureImporter)
+Imported 'GUID: 856f35e28888aad4da2c2e1479e3bb43' -> (Import Result ID: '7d6a4e4adb15da9abf0e69d4d3e38977') in 0.011 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=49cdc29036efad92ae881e59cfc0a5ff DependenciesID=b163da500fffee2e9e2ba1029c9d7820 StaticDependenciesID=3a4fda600911ebdaaa8e1a9872e26833 
+Importing 'GUID: f52118b12fe5ee64ca46050ce37ab064 - Path: Assets/_Game/Content/Art/Characters/Wolf/狼_走2.png' with importer (TextureImporter)
+Imported 'GUID: f52118b12fe5ee64ca46050ce37ab064' -> (Import Result ID: '7f3c4a82fecf8d895be955eabab5421c') in 0.011 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=b821be639b0db1793f919239463a219d DependenciesID=533badd6f011c96ae2a20bf2e7ddb88b StaticDependenciesID=ebd7b23ddd00483751e2210714ab5af3 
+Importing 'GUID: 0624010074019484abe28a158fd713e8 - Path: Assets/Art/Debris/木桶.png' with importer (TextureImporter)
+Imported 'GUID: 0624010074019484abe28a158fd713e8' -> (Import Result ID: 'd76c8e3008bb7253b22a772299792572') in 0.010 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=ac9481e85d81c3051dcd6d070fd63778 DependenciesID=c5cd352d0e4e9aaf3782453e2727ab69 StaticDependenciesID=76659553f77ac8451f781e38d7f89f5b 
+Importing 'GUID: 46a62ab41ef843d42baa2adff5a8deb7 - Path: Assets/Art/Debris/小石头（1）.png' with importer (TextureImporter)
+Imported 'GUID: 46a62ab41ef843d42baa2adff5a8deb7' -> (Import Result ID: '2f5c2144bb240251d69ec1ac148745ff') in 0.011 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=954a853e6b0ce6e4de52b2c2a06ed9db DependenciesID=f0282987c1083a26783223d86e0076fd StaticDependenciesID=adb1772606ae02a2b3e2d7e36d2ec5d6 
+Importing 'GUID: 460de56a11422c44ea4fa8c8696b54a5 - Path: Assets/Art/WorldSprites/Tiles/草原_背景.png' with importer (TextureImporter)
+Imported 'GUID: 460de56a11422c44ea4fa8c8696b54a5' -> (Import Result ID: '9ead2f568006bea68b83e48db89dea2a') in 0.260 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=e4e7e946ba390292d8b301ec6ebec6a3 DependenciesID=a356fa35ad5d439c4c3f6df2d1b0555c StaticDependenciesID=6e9c4813cbd076c4eceb4f3419211ace 
+Importing 'GUID: 9631761430da7f948acd72f5356f7a12 - Path: Assets/SpecialSheep/绿色羊/大头羊.png' with importer (TextureImporter)
+Imported 'GUID: 9631761430da7f948acd72f5356f7a12' -> (Import Result ID: '0acc51775d4073af63a05d3ff5078fa6') in 0.018 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=acf0e9a663d20fb5fad457c9493de8cd DependenciesID=80525d049eaa74d416bac7e6bfbcb95c StaticDependenciesID=09deaf858509af6f68743620ed5651ed 
+Importing 'GUID: 07dea9ba43befc34895bccfeff77e4ef - Path: Assets/Art/Debris/大树（完整）.png' with importer (TextureImporter)
+Imported 'GUID: 07dea9ba43befc34895bccfeff77e4ef' -> (Import Result ID: '947ee46acaf007c7aea76cb03d51e457') in 0.016 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=b7450288a86cc23bdd9e54c1fc1a432d DependenciesID=f2367a67c75c2fca080e0618804f6f9a StaticDependenciesID=c817ea4bf900aaeeaea33a0e3bdd53b0 
+Importing 'GUID: 377007ceb0ca795438a7d1b84361699d - Path: Assets/SpecialSheep/蓝色羊/气球羊.png' with importer (TextureImporter)
+Imported 'GUID: 377007ceb0ca795438a7d1b84361699d' -> (Import Result ID: '7db07ed64fa2448084ad95b717a63868') in 0.015 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=faf1974191d109c44de8184352644fc0 DependenciesID=75190aa9678ca6ab601f12e899ca798a StaticDependenciesID=a74381b6f6ae096a54387666637d2ee8 
+Importing 'GUID: 67cb8f1b072c4eb4f83297ca77215d84 - Path: Assets/_Game/Content/Art/Characters/Wolf/狼_下走.png' with importer (TextureImporter)
+Imported 'GUID: 67cb8f1b072c4eb4f83297ca77215d84' -> (Import Result ID: 'a3b4b4c762b880417ef01e2662c3f9f2') in 0.012 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=5d43e30ef4e32fd74989fe99835884cf DependenciesID=a48105d18435c17bdf3b574afd019fa5 StaticDependenciesID=9c2216f9e43ef7e0c0f1caa6bad60c61 
+Importing 'GUID: c7692b231e0420645bcde6fe3495f3e6 - Path: Assets/Art/Debris/obstacle_fence_256x128.png' with importer (TextureImporter)
+Imported 'GUID: c7692b231e0420645bcde6fe3495f3e6' -> (Import Result ID: '8dc24e6282271fadf88cd7fbbf2e7fb6') in 0.020 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=1fce1bdfc472b9353612bcb48617b3d8 DependenciesID=c87a8d60557f6566b23cea7c8abe50de StaticDependenciesID=1c26e00ad4b56924d5d2a5df2f6a90d0 
+Importing 'GUID: d70c7e5bc1c67e04eab700c08270bd34 - Path: Assets/SpecialSheep/绿色羊/木桶羊.png' with importer (TextureImporter)
+Imported 'GUID: d70c7e5bc1c67e04eab700c08270bd34' -> (Import Result ID: '0020bba9786326f6d9492cadf114d272') in 0.015 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=d95eaa705a522dbe653031d44d201936 DependenciesID=4cd9ef7ad523289e753d5b37f7e834a4 StaticDependenciesID=15ff981bdc442e41c9aac642843a099b 
+Importing 'GUID: f765a4fe8d6e4592a497e2c77d9ea0b8 - Path: Assets/Art/SheepSprites/Sheep_Special_Black.png' with importer (TextureImporter)
+Imported 'GUID: f765a4fe8d6e4592a497e2c77d9ea0b8' -> (Import Result ID: '96a06e27bd1966a53315ae78cfca25d8') in 0.074 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=2657cb77f4428c8dad12953ce36b08c8 DependenciesID=3bdd1deed548f5e39d652f91b0831f8a StaticDependenciesID=33c13b13e8e98f851f3b34f9283adf1c 
+Importing 'GUID: 18f9f97a37d03274ebae52fe46769f75 - Path: Assets/SpecialSheep/绿色羊/羊了个羊.png' with importer (TextureImporter)
+Imported 'GUID: 18f9f97a37d03274ebae52fe46769f75' -> (Import Result ID: 'c6206d1e3dfd559a371cc2723abcdb2e') in 0.024 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=2d7dc40d2ee9f0ddffe970ca0586cb9f DependenciesID=a62bc0bf763603eef76a6a426a56f8ce StaticDependenciesID=6e81cdea750d07036fa77fbe5501a5d5 
+Importing 'GUID: 98327eb238cf7d24f961eaee9a802536 - Path: Assets/SpecialSheep/绿色羊/杀马特羊.png' with importer (TextureImporter)
+Imported 'GUID: 98327eb238cf7d24f961eaee9a802536' -> (Import Result ID: '311d9b1af9321b451def01a982dc4c22') in 0.021 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=e67e9bf0bae6ac0e272f940718c55668 DependenciesID=176b4bdedc8db7daefca4368902aa88a StaticDependenciesID=fab62d6c2ac3e25a51b18afae88bfa2a 
+Importing 'GUID: e8e5bc6e49f64914ba8accf7a74e032d - Path: Assets/SpecialSheep/绿色羊/草羊.png' with importer (TextureImporter)
+Imported 'GUID: e8e5bc6e49f64914ba8accf7a74e032d' -> (Import Result ID: '5c01111e6145f3f90db89e71c0a6ba95') in 0.018 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=283db651f27be949dbf2d77ab215dfe4 DependenciesID=212ba42225f2dc9d5265676072778f8d StaticDependenciesID=f0d0a9a426284de87b67bff38922dfc0 
+Importing 'GUID: e809572861cecd04ba4d4a633128546d - Path: Assets/SpecialSheep/蓝色羊/哭哭羊.png' with importer (TextureImporter)
+Imported 'GUID: e809572861cecd04ba4d4a633128546d' -> (Import Result ID: '9e3c20ce178babc3a1196528f62f0384') in 0.017 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=c17a55d1df5e40f7c7449318876cdc9b DependenciesID=01bf5a348f933065d853a712d80fd898 StaticDependenciesID=bddf6499946b7666e13256688b005e1b 
+Importing 'GUID: f8f394ad0561e4845a4db9c9f3a14971 - Path: Assets/SpecialSheep/绿色羊/斗鸡眼羊.png' with importer (TextureImporter)
+Imported 'GUID: f8f394ad0561e4845a4db9c9f3a14971' -> (Import Result ID: '463bad4af50e6ea9a2120da5e428f056') in 0.012 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=8f3dc22dcd2391fbd9d5472b19a08e7c DependenciesID=45a4807e3401171e3a4a9ce3a03a3f17 StaticDependenciesID=58f2696f38870379354b8d0b249142df 
+Importing 'GUID: 0935fc8ba15224141b77350ee571a4ac - Path: Assets/SpecialSheep/绿色羊/短短羊.png' with importer (TextureImporter)
+Imported 'GUID: 0935fc8ba15224141b77350ee571a4ac' -> (Import Result ID: '362bdc5a3209757384c070da04f58189') in 0.012 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=e58cda544ea6ac9e8556d8125688b35d DependenciesID=ba6966547d98d7c5cd6f94512c57d850 StaticDependenciesID=20a498f09bf60f60fb78f3a02f02eedc 
+Importing 'GUID: b94a4390c15bf88409064d4dac580546 - Path: Assets/SpecialSheep/绿色羊/长毛羊.png' with importer (TextureImporter)
+Imported 'GUID: b94a4390c15bf88409064d4dac580546' -> (Import Result ID: '4991eb12b992327f06ab11bae22f7001') in 0.017 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=110f6ccc725e6e1459a6a77de5b8a4be DependenciesID=5d27dae146e52a577af907473d300ec0 StaticDependenciesID=3af97b7cbdc3cf0befdd51e702fcafa0 
+Importing 'GUID: d92010a5a2d64b34d8097eec80fd535e - Path: Assets/_Game/Content/Art/LongWolfSkins/Classic.png' with importer (TextureImporter)
+Imported 'GUID: d92010a5a2d64b34d8097eec80fd535e' -> (Import Result ID: 'bbd7da879fc26be7935245b0e9742c16') in 0.322 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=f3cf98265a5c07038d1352bdaa24f5f7 DependenciesID=4bf861ed43daf422a661b9dcefe3f816 StaticDependenciesID=1207a1035b508fdbdf9398b31d4c7f96 
+Importing 'GUID: d90a5ed2fd114bd3b679aec50829c5df - Path: Assets/Art/SheepSprites/Sheep_Special_RedBow.png' with importer (TextureImporter)
+Imported 'GUID: d90a5ed2fd114bd3b679aec50829c5df' -> (Import Result ID: '8edcd86cfe33a4a3b733b7bff848356c') in 0.048 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=b560193ee1348131e1cba40bfda97e60 DependenciesID=06f6f64ab5e5717b231b76a9d2d8defb StaticDependenciesID=445ddb0036d206f015623d05cfb40569 
+Importing 'GUID: 5ab39f22f47a6ce4c999c29118f38bb5 - Path: Assets/Art/Debris/小草（2）.png' with importer (TextureImporter)
+Imported 'GUID: 5ab39f22f47a6ce4c999c29118f38bb5' -> (Import Result ID: '885443a4a8d8aabcb1cbb2c3a173fa82') in 0.016 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=cbe97f56959f5990b095d55aec01909d DependenciesID=80aee71a49d108dc9bf1100729ec4126 StaticDependenciesID=e4de8b41cfa878026d353dba55838832 
+Importing 'GUID: 6a24c7bc1b334ce9a89bd0fd6461a1ce - Path: Assets/Art/SheepSprites/Sheep_Special_Horned.png' with importer (TextureImporter)
+Imported 'GUID: 6a24c7bc1b334ce9a89bd0fd6461a1ce' -> (Import Result ID: '8965534a3297360c5bc6b9ae705b8914') in 0.066 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=9fe45f1dda4193d0913bbc2b1308ec64 DependenciesID=fd10600570a723316785396e538584d8 StaticDependenciesID=7b909adbb5fd6c0ff55d4496a9921d2d 
+Importing 'GUID: 6a448262346a0984386d42d6678e096e - Path: Assets/SpecialSheep/绿色羊/山羊.png' with importer (TextureImporter)
+Imported 'GUID: 6a448262346a0984386d42d6678e096e' -> (Import Result ID: '7871c069357f058e9cf4717566587829') in 0.011 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=6685af90cfac323a4d68cf03030fd7d2 DependenciesID=2730e3a56404f3eae631f34d8a6e953a StaticDependenciesID=6d592d00a0351c6f9c6fb76b2f9ea993 
+Importing 'GUID: 9adc43897770605488ae6018f76ec00b - Path: Assets/SpecialSheep/绿色羊/羊可羊乐.png' with importer (TextureImporter)
+Imported 'GUID: 9adc43897770605488ae6018f76ec00b' -> (Import Result ID: '942f0c1bc0ee4d52aee93aa6a7061720') in 0.011 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=c197bbf6f26f12c5cdca3fcdf6ebb7d1 DependenciesID=47a27b0e12a4c0ad73b6add5a5297873 StaticDependenciesID=9f2b67aea9b9265a9ecc414ef8c1c6dc 
+Importing 'GUID: caece8ac01e8a684aab87015c3e864c6 - Path: Assets/SpecialSheep/绿色羊/黑羊.png' with importer (TextureImporter)
+Imported 'GUID: caece8ac01e8a684aab87015c3e864c6' -> (Import Result ID: '9cce2e3f83b7a3c3a6172cab38964cda') in 0.010 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=42282d49977ee50bce98b18c733daa99 DependenciesID=b33808551be3f1b670462e6dc620cbb4 StaticDependenciesID=b04db153afd3e121736b1c4bffd9a747 
+Importing 'GUID: da7f9c6797001d748bdf89b695b1803f - Path: Assets/SpecialSheep/绿色羊/方羊.png' with importer (TextureImporter)
+Imported 'GUID: da7f9c6797001d748bdf89b695b1803f' -> (Import Result ID: 'f18ec6e2d6859440aed1003393d22ea3') in 0.011 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=e056d2c2729671167722fbc6d003bcdb DependenciesID=6968c8aa350fa27729005f266123e5dc StaticDependenciesID=2ac5cf4a9ceecd31d7a904987e175310 
+Importing 'GUID: 4babde597b2706744bf88984fa6ad913 - Path: Assets/SpecialSheep/绿色羊/绅士羊.png' with importer (TextureImporter)
+Imported 'GUID: 4babde597b2706744bf88984fa6ad913' -> (Import Result ID: '15ace817686def2c64812e1751798393') in 0.009 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=9548bae17aeb356f7c483e3e4d5bb751 DependenciesID=0eba79b42ac289a3efbb50fd5eb1deeb StaticDependenciesID=5aac2c62a04e49ad2ebe1b71fbc99d52 
+Importing 'GUID: 4b5dda1c8d528ca4181aa70f32bd3f9e - Path: Assets/Art/Debris/石块2（坏）.png' with importer (TextureImporter)
+Imported 'GUID: 4b5dda1c8d528ca4181aa70f32bd3f9e' -> (Import Result ID: '47afc4b3d57bf6c4eddfe665ac77cdec') in 0.086 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=1f679db79c7d4a00c2afb55da27a0428 DependenciesID=18a2c96a46bb6444b0ae4f1b8de4c8a5 StaticDependenciesID=96e9351832c4712cc70272533336f26b 
+Importing 'GUID: 9b15f676d69a42a469cfccaa1500e452 - Path: Assets/Art/54a4d73eb0f195831cc7e8a614d905d.jpg' with importer (TextureImporter)
+Imported 'GUID: 9b15f676d69a42a469cfccaa1500e452' -> (Import Result ID: '9d7f008c5dec9f3dd831d9351a34486e') in 0.014 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=7706a58928234509a69d14039916d53a DependenciesID=cb163969da66710945d181d396169b09 StaticDependenciesID=5af21b971d3d5c086ebbe419d9a2592f 
+Importing 'GUID: abf041fbead250040bf69e40a09e2935 - Path: Assets/Art/da6524b033640c2d0f50c6fde927cb9.jpg' with importer (TextureImporter)
+Imported 'GUID: abf041fbead250040bf69e40a09e2935' -> (Import Result ID: 'be8a25e44e9932d524b39d23988980bb') in 0.010 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=3aa15369fd18e3171bb428f61222b955 DependenciesID=2cfc6ddec4d9959a795152eec9b4e889 StaticDependenciesID=d2643947f59f38c7d7b3bf3bc87f4858 
+Importing 'GUID: ab4d7c5e3f224bcaa86b10d9525cc82f - Path: Assets/Art/SkillSprites/Poop/shit.png' with importer (TextureImporter)
+Imported 'GUID: ab4d7c5e3f224bcaa86b10d9525cc82f' -> (Import Result ID: 'cdb89827590e8be84068e4ab3f09d9f8') in 0.008 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=2ce707a324ac324e3df8bf30101bc359 DependenciesID=171e1200b3ac134ea2caadbde94e86ae StaticDependenciesID=76f6632865dd67d1d09d1f5d1221aab2 
+Importing 'GUID: cb84fbf1582531943b56d4fda6e4fe9d - Path: Assets/SpecialSheep/蓝色羊/骂骂咧咧羊.png' with importer (TextureImporter)
+Imported 'GUID: cb84fbf1582531943b56d4fda6e4fe9d' -> (Import Result ID: 'edb44f96a32c25dd3bf71a75f9045968') in 0.010 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=f26502ed685c5d6bd8e9f20cb3a00d35 DependenciesID=b9e2a5a5961840a12306098cea3e2cc3 StaticDependenciesID=1b67740e4266961ba389583f47d24838 
+Importing 'GUID: eb9d449a099c10f4a9fdd9aff5db526c - Path: Assets/SpecialSheep/绿色羊/花羊.png' with importer (TextureImporter)
+Imported 'GUID: eb9d449a099c10f4a9fdd9aff5db526c' -> (Import Result ID: 'f47852e34173a7a4487a5cfd26baebc3') in 0.009 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=d41f2bf037b55176c078cb9df4307f1f DependenciesID=adde9c01cec0fdfd6862f68774dc7eaa StaticDependenciesID=328e40b42b801729994e04d33925944b 
+Importing 'GUID: 1c927b529b443e1428ec3c69808f5e74 - Path: Assets/Art/Debris/稻田（坏）.png' with importer (TextureImporter)
+Imported 'GUID: 1c927b529b443e1428ec3c69808f5e74' -> (Import Result ID: '6cd473a89d742dac7db522bac8c1e2a1') in 0.035 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=b5fca9574d53286f982c7e37d86a60b3 DependenciesID=5a02fa43837ec192c3ac2351127b7453 StaticDependenciesID=d0a2551e2495e9710a7561ee213c813a 
+Importing 'GUID: 2c46ba600eac4184db5b537c09d342ee - Path: Assets/Art/normal.jpg' with importer (TextureImporter)
+Imported 'GUID: 2c46ba600eac4184db5b537c09d342ee' -> (Import Result ID: '8dad51d99d2c9d58b1c6d61d440e5729') in 0.034 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=f81f6b878d7ddf69801a06351838ca95 DependenciesID=f065765aad8868748da1b94e60ab528b StaticDependenciesID=4bb688e9a72c85cc2cb5b332b59567c7 
+Importing 'GUID: 2c7c4123218e93345b77ceaa5597caaf - Path: Assets/SpecialSheep/蓝色羊/泡泡羊.png' with importer (TextureImporter)
+Imported 'GUID: 2c7c4123218e93345b77ceaa5597caaf' -> (Import Result ID: 'ef6c000b6b805ae3e122d0747923b080') in 0.019 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=5ec4fa1fc1aae17106d16e0ee280f897 DependenciesID=2148df0d2b614ac5568ea221f6fe0fb8 StaticDependenciesID=9dcb02dc7e21e49bdcb825ff73de7f14 
+Importing 'GUID: 4ccf2e734d50e6f4fa24f4930814ceb7 - Path: Assets/Art/Debris/木桶（坏）.png' with importer (TextureImporter)
+Imported 'GUID: 4ccf2e734d50e6f4fa24f4930814ceb7' -> (Import Result ID: 'acd94e1df651ad54e26007dc01b4781f') in 0.018 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=424e76d15950f19c6b1e3c3a86dd0268 DependenciesID=74c81e3debaf6fe349c6ee08b3680f78 StaticDependenciesID=863eea0d4d085d2d9c19b58a8bcecde5 
+Importing 'GUID: 5c60c3627584b9541819b4f54412f684 - Path: Assets/Art/Debris/石块（2）.png' with importer (TextureImporter)
+Imported 'GUID: 5c60c3627584b9541819b4f54412f684' -> (Import Result ID: '6a9cf393d4a1f6e769e257f6e2f44740') in 0.093 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=cc70c873ba3703f5554d07c8d8254f6b DependenciesID=29f3608e4b4591b36f4e8cf82dc4d67e StaticDependenciesID=bcbd99a46b43f75e4ac52703b3a89846 
+Importing 'GUID: 7c9b427b304e54947ab3c137b11a3b09 - Path: Assets/Art/Debris/大树（断）.png' with importer (TextureImporter)
+Imported 'GUID: 7c9b427b304e54947ab3c137b11a3b09' -> (Import Result ID: '43fefd9b1fa92f23669228ee90067740') in 0.011 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=c25b02785e69cea1c6f7f6d5f67bdac2 DependenciesID=91313276c46a75b9f929210d4542eb19 StaticDependenciesID=359e224516662c9d426b0b8d5b6b33f6 
+Importing 'GUID: ac804a59c7e3e1f478aaff974e0611ba - Path: Assets/Art/838ab840627338823c6fe6f65d7c50b.jpg' with importer (TextureImporter)
+Imported 'GUID: ac804a59c7e3e1f478aaff974e0611ba' -> (Import Result ID: 'd11ae1d30d8b48897ab4cf938c57e7f1') in 0.009 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=0f761481006b9bdfc64bc9e88c1cf69c DependenciesID=ab65834ef6e7a1e0018338d3ce1d8a30 StaticDependenciesID=40bb8ff6bdfc64a73b36add1bca6ccb4 
+Importing 'GUID: 0dd4eb01724710c4490048e6ba4f150d - Path: Assets/Art/Debris/干草垛.png' with importer (TextureImporter)
+Imported 'GUID: 0dd4eb01724710c4490048e6ba4f150d' -> (Import Result ID: 'b8a7559927010a8e74701e42ada291c2') in 0.010 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=4df33ca490a32477cfd32088c233f47a DependenciesID=729d43c80a9774d6fa89623fad39146d StaticDependenciesID=ab848f2f94a463e5ee348b4208a5bd8b 
+Importing 'GUID: 4d087c6f8902460bb43a856d7e4aa13d - Path: Assets/Art/SheepSprites/Sheep_Normal.png' with importer (TextureImporter)
+Imported 'GUID: 4d087c6f8902460bb43a856d7e4aa13d' -> (Import Result ID: '82486b94cb501d9eaa11db7e19005967') in 0.049 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=3da0f99e718b76b3cf1fce874c094363 DependenciesID=c3f94ffc4f5862f44bacea694b2392b7 StaticDependenciesID=b51cf883accb28d9fb30ac87b76df231 
+Importing 'GUID: 5dc20a0e928e9984b86b2106ca8af981 - Path: Assets/SpecialSheep/绿色羊/斑点羊.png' with importer (TextureImporter)
+Imported 'GUID: 5dc20a0e928e9984b86b2106ca8af981' -> (Import Result ID: 'e79370d3eb9d8beb3e57b7394b14e81d') in 0.009 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=83f305a720cc4e2e596fb15a50e9e0a2 DependenciesID=87d85b8eb7ce35e7dff59a1d48e1b52d StaticDependenciesID=0cd91a0b3e5a5605a9a403656ddd5e56 
+Importing 'GUID: 7df1190d6c29acb41a6debd55d1ea153 - Path: Assets/Art/Debris/小草（1）.png' with importer (TextureImporter)
+Imported 'GUID: 7df1190d6c29acb41a6debd55d1ea153' -> (Import Result ID: '22baf696616c44115149b140bcab999b') in 0.009 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=f02a6849c944f2602dfc49525d001e41 DependenciesID=3fdc9594456acd288082d3aaba4ec0fb StaticDependenciesID=a141f7af20037cb1dfea58b704b7f01c 
+Importing 'GUID: 7d92b36c977bb5940a273a53967c0ae6 - Path: Assets/SpecialSheep/彩色羊/里羊.png' with importer (TextureImporter)
+Imported 'GUID: 7d92b36c977bb5940a273a53967c0ae6' -> (Import Result ID: '0165fad8d7ed42d263404c49d1352dba') in 0.009 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=30b1c7f9a87ac76e77cef1dabcb35f93 DependenciesID=1b423cd853bb2c7a4533d3c9fb595cee StaticDependenciesID=f997d8cece06abe3998c9624c2d32fbe 
+Importing 'GUID: 7d290af0cb825c743aa2823af5dbf5a4 - Path: Assets/SpecialSheep/绿色羊/奶牛羊.png' with importer (TextureImporter)
+Imported 'GUID: 7d290af0cb825c743aa2823af5dbf5a4' -> (Import Result ID: 'b1f13a1383d89480d8d6dd5a37bccce6') in 0.011 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=196bf43b72e3b7bf924e1bee704d4454 DependenciesID=25331f746b5ca2e786b1684939787c64 StaticDependenciesID=64490e377bb43144c5f4c53ce8c6438a 
+Importing 'GUID: 9df46522d35b37c4597fb18774f7df5b - Path: Assets/Art/Debris/小草（3）.png' with importer (TextureImporter)
+Imported 'GUID: 9df46522d35b37c4597fb18774f7df5b' -> (Import Result ID: 'c8057fe2fc16ddbb288224747542c96e') in 0.010 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=ce880776d438ee176ea02b7fa148cf8c DependenciesID=615894b072512100955ef10fd066e617 StaticDependenciesID=8db65c8a970f63cb7b3271c4e583d876 
+Importing 'GUID: adffaa56da2adb442923553a07568f70 - Path: Assets/SpecialSheep/绿色羊/拐杖羊.png' with importer (TextureImporter)
+Imported 'GUID: adffaa56da2adb442923553a07568f70' -> (Import Result ID: '9996f5ad73735381c137e400418f68e6') in 0.009 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=c0ebae56ef4c66295c5ed75b91b9ba9c DependenciesID=990225bd8e1bdf6301fc3805be39309d StaticDependenciesID=90dc630bbd9d9bee550b482a00207192 
+Importing 'GUID: bde11405bc7dfba4ab10c8f3409dad72 - Path: Assets/_Game/Content/Art/Characters/Wolf/狼_张嘴.png' with importer (TextureImporter)
+Imported 'GUID: bde11405bc7dfba4ab10c8f3409dad72' -> (Import Result ID: '35bdf2b18eeb81aa1f9eda25f8de6b6b') in 0.011 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=0567f49835469305ea9256d1c4f81cf1 DependenciesID=10272bb3ad35d000402c89afde15b86f StaticDependenciesID=7fed90d68ebebf5e3f386e3eb9940d26 
+Importing 'GUID: bd54d8b0630e015479b46a37bd37a16f - Path: Assets/SpecialSheep/绿色羊/秃羊.png' with importer (TextureImporter)
+Imported 'GUID: bd54d8b0630e015479b46a37bd37a16f' -> (Import Result ID: '16f04030ef4b73ec312fc573356936a4') in 0.009 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=c66e820371910627abb6a86e49a6700c DependenciesID=b894be66d527eb068457a4f107d5a052 StaticDependenciesID=4bcec524e037f9e0fd22af4f22f88dcb 
+Importing 'GUID: fdbdbd81bb5a08042afc3aed44c99fcd - Path: Assets/Art/0950acfbdcacb8ec1acc6bf451c5849.jpg' with importer (TextureImporter)
+Imported 'GUID: fdbdbd81bb5a08042afc3aed44c99fcd' -> (Import Result ID: '4a7db4fb5195ab1ce8aa22181ade15eb') in 0.009 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=62f857ceb8a61169110a2619d978c914 DependenciesID=6415f4bb03123217eb187a3ca4e5c889 StaticDependenciesID=506d041994e152c8a925610462d848be 
+Importing 'GUID: 1e313f1c55e99984ea7b21e2fbbf1349 - Path: Assets/SpecialSheep/绿色羊/礼帽羊.png' with importer (TextureImporter)
+Imported 'GUID: 1e313f1c55e99984ea7b21e2fbbf1349' -> (Import Result ID: '4bf52559a0ef12431adbf1cd330e65c2') in 0.008 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=5997b6ec71c234c2653d4bb940a73e2c DependenciesID=2a6672b6004b3b4d97960cebef48fe23 StaticDependenciesID=8663680e01f75e92273fb380c8167c76 
+Importing 'GUID: 2eb555e5b4cdd0648931fa96fd0fe6de - Path: Assets/SpecialSheep/绿色羊/胡子羊.png' with importer (TextureImporter)
+Imported 'GUID: 2eb555e5b4cdd0648931fa96fd0fe6de' -> (Import Result ID: '5fcfc1dcc8bda6381a48b6ee87888860') in 0.008 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=a4200b74d3606674eef193b9f4c9bf42 DependenciesID=e248a1ea2f83365c15cdd74b6f9abdf9 StaticDependenciesID=c957698c712858cc5f5043c956ee909e 
+Importing 'GUID: 2eb5fe3bfe39a23408edeaa1cbed1b8d - Path: Assets/SpecialSheep/蓝色羊/派对羊.png' with importer (TextureImporter)
+Imported 'GUID: 2eb5fe3bfe39a23408edeaa1cbed1b8d' -> (Import Result ID: '966efa3d9d2d6a8a6575c940abd57ebe') in 0.009 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=a296753880bb1894f63afa0f63ebed5b DependenciesID=946757a4dc709c9914d26e0d915f5902 StaticDependenciesID=d6dab0f57b518398ecdf2161d4ca02ab 
+Importing 'GUID: 4ee2e70656116de4387c3e1aa2bc280e - Path: Assets/SpecialSheep/绿色羊/领结羊.png' with importer (TextureImporter)
+Imported 'GUID: 4ee2e70656116de4387c3e1aa2bc280e' -> (Import Result ID: '5eaaeb6ee1a25873a5c81865f5211ff0') in 0.009 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=b02aa7c8859ba2be505e7d5687dc20e7 DependenciesID=9abd6b86aaec29c66a2b0c6b1d040a10 StaticDependenciesID=55912344fc3f9b02b394cc4474c8a45c 
+Importing 'GUID: 8e24a59250e5faa458c4d268b74777bf - Path: Assets/SpecialSheep/蓝色羊/水母羊.png' with importer (TextureImporter)
+Imported 'GUID: 8e24a59250e5faa458c4d268b74777bf' -> (Import Result ID: '804cda2c0cae2c04586acb38dc6a13d6') in 0.009 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=fc84756cf91f2e6bf1407c8930db8afd DependenciesID=d397081cf580a5cb472e7c2113c97a04 StaticDependenciesID=184bbc9a2dc917bc75e24de8d5940449 
+Importing 'GUID: 8ea48aa8dea43b241a3c2f843ee6cbb1 - Path: Assets/_Game/Content/Art/Characters/Wolf/狼_走1.png' with importer (TextureImporter)
+Imported 'GUID: 8ea48aa8dea43b241a3c2f843ee6cbb1' -> (Import Result ID: 'a16c523d4270a3ce12c9ca6882aee306') in 0.010 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=95337dbd1a7349d6cf8681d4ce13eb5c DependenciesID=ce86531454e2f77a05ade1f4b0a7fd43 StaticDependenciesID=800cfec56223c1233ce0ed9621c7029c 
+Importing 'GUID: 9edef0cafd5dcdd4aaa0a192da22ba73 - Path: Assets/_Game/Content/Art/LongWolfSkins/Centipede.png' with importer (TextureImporter)
+Imported 'GUID: 9edef0cafd5dcdd4aaa0a192da22ba73' -> (Import Result ID: '92966c930380beb639f669f392eb66b1') in 0.116 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=64f320dd46d6282688bd76bb77615e6f DependenciesID=e15560204f2063de095fd9ab9a4e8e7d StaticDependenciesID=72530608da5cf9ed6f6c0a6c0d5b474f 
+Importing 'GUID: ae4640db8643c644bbaa72c63f33bb92 - Path: Assets/Art/Debris/小花（1）.png' with importer (TextureImporter)
+Imported 'GUID: ae4640db8643c644bbaa72c63f33bb92' -> (Import Result ID: '8a473fd1a1c86d29f66a9724b052a206') in 0.015 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=67977fd103e59cff7f442edb3e337efe DependenciesID=e21934a94aac5a982d07c32d9cacf87b StaticDependenciesID=3fb9b63373a9553bde69c89803d3c471 
+Importing 'GUID: ae08ffcaa5f023f449b6f484f2093273 - Path: Assets/SpecialSheep/绿色羊/爆炸羊.png' with importer (TextureImporter)
+Imported 'GUID: ae08ffcaa5f023f449b6f484f2093273' -> (Import Result ID: '3d334be4ac04fd9b6d0ffe58ffefe26b') in 0.009 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=f182b48da21799597ae963d684d675ff DependenciesID=42ba7f18c915f87dc7ed6d1c1b43b758 StaticDependenciesID=f99f0011f8713b78d184c53be9008cfe 
+Importing 'GUID: fe5b59b49b1ac48438e29be794162e65 - Path: Assets/Art/Debris/花丛.png' with importer (TextureImporter)
+Imported 'GUID: fe5b59b49b1ac48438e29be794162e65' -> (Import Result ID: 'f10de0bc8c02328acfd359a7975378e5') in 0.030 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=c1d3ff7e741274420ba161d50d8f444f DependenciesID=39273f95e4a715e1e5820258ffb099af StaticDependenciesID=404cc6b1fd04d1ce835cbcdb1347d103 
+Importing 'GUID: 4f9d89aa3127b6346815e3f9957798d0 - Path: Assets/Art/Debris/obstacle_fence_broken_256x128.png' with importer (TextureImporter)
+Imported 'GUID: 4f9d89aa3127b6346815e3f9957798d0' -> (Import Result ID: 'ccf4d307b7bbcfd03f6113a33719a238') in 0.005 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=e9c03a0c57cd25d178f954979109ceb5 DependenciesID=79166eb8f7bdfa080d3c83e724fa8d5d StaticDependenciesID=1ad924007bcebb080dbd29a3a4f63b46 
+Importing 'GUID: 4f3f56c015aab85449e28b10559b1cd2 - Path: Assets/_Game/Content/Art/Characters/Wolf/狼_正面.png' with importer (TextureImporter)
+Imported 'GUID: 4f3f56c015aab85449e28b10559b1cd2' -> (Import Result ID: '82b64d9cec116b43389adb0922753ce3') in 0.010 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=4aa14dfffdcf0b479129f17f5d82a195 DependenciesID=28686a0367bc16222bcd1ca91ccc5e03 StaticDependenciesID=43222846ab78a306add0630548d83e8e 
+Importing 'GUID: 5f6fb34cd54f8e041abe031718ad1a86 - Path: Assets/SpecialSheep/绿色羊/瘦羊.png' with importer (TextureImporter)
+Imported 'GUID: 5f6fb34cd54f8e041abe031718ad1a86' -> (Import Result ID: 'dda94ddb2893daad9906f697310c3c6c') in 0.008 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=abda1118efe80f8da12b109fa9a5a4bd DependenciesID=c97f5b4e6a713cbcc3588ba653924356 StaticDependenciesID=0ba87bd780f2025bc0dbe4e3b4443473 
+Importing 'GUID: 6f7ae8c1c27d4c1fbe9e4253a9c47f31 - Path: Assets/Art/SkillSprites/Poop/Poop_Cartoon.png' with importer (TextureImporter)
+Imported 'GUID: 6f7ae8c1c27d4c1fbe9e4253a9c47f31' -> (Import Result ID: '8866f2eedde313868bf10e2d762bbd47') in 0.055 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=5e93faefb7ad6857459cc707fcf78b40 DependenciesID=2a43ed7a9ccfccb2504a214840f76377 StaticDependenciesID=5e8a19dd8ecf006ab543cc0731cb96fd 
+Importing 'GUID: 1b4e478a6f16ce343bff1794351a08ee - Path: Assets/_Game/Content/Data/Wolf/WolfAttackSchedule.asset' with importer (NativeFormatImporter)
+Imported 'GUID: 1b4e478a6f16ce343bff1794351a08ee' -> (Import Result ID: 'ae48b2494bd6ef9064e691b6007ce179') in 0.002 seconds [static dependencies only]. Details - ImportResultOutputID=6bf5d6ffcdd749b39a85ef350195b957 DependenciesID=e59fae7f99e6b6834a35475cfc80b8f7 StaticDependenciesID=7475d982e43ff5585b5133329643992d 
+Importing 'GUID: 7d341e2db65d93e4caf7b746400d64d8 - Path: Assets/_Game/Content/Fonts/Resources/NotoSansSC-Regular SDF.asset' with importer (NativeFormatImporter)
+Imported 'GUID: 7d341e2db65d93e4caf7b746400d64d8' -> (Import Result ID: '1ac10cafee21a111f267800e633bf03b') in 0.008 seconds [static dependencies only]. Details - ImportResultOutputID=72a270ef73722fa4acab0f80cc0e6ba5 DependenciesID=07c8b90bc3c3db4db95ea9e54625c109 StaticDependenciesID=b912f8d37c45b75f8f361bcc03733b6e 
+Importing 'GUID: 0a68c203d7e6de348ae0aaf73278d1ef - Path: Assets/_Game/Content/Perfabs/UI/CollectionPanel.prefab' with importer (PrefabImporter)
+Imported 'GUID: 0a68c203d7e6de348ae0aaf73278d1ef' -> (Import Result ID: 'c2b5f17ce6e7502598f15206b898e6bc') in 0.027 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=4431f3421cf6b4525ceb76645c1daac7 DependenciesID=dedd4e4f2b84edb241caeb27f0556e05 StaticDependenciesID=d9f24cfde06b9e32c489504fec1ad3e9 
+Importing 'GUID: 12b7d5256cfcf0049bf45c7c8264bc2c - Path: Assets/_Game/Content/Perfabs/Wolf/LongWolf.prefab' with importer (PrefabImporter)
+Imported 'GUID: 12b7d5256cfcf0049bf45c7c8264bc2c' -> (Import Result ID: '6d46ced440bf5d26759b82c5ac7af330') in 0.013 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=ae51dcf2366cdd6fc79b612c23352c73 DependenciesID=9e3f23752c1ecebcdf5fbbcca74a6bc0 StaticDependenciesID=1d2f67ad94d845a9486b02923ecc0d41 
+Importing 'GUID: 078cbc44bf98c3f459915d12bc0b1398 - Path: Assets/_Game/Content/Perfabs/Wolf/Wolf.prefab' with importer (PrefabImporter)
+Imported 'GUID: 078cbc44bf98c3f459915d12bc0b1398' -> (Import Result ID: '642836499238478989db653ea29d7314') in 0.006 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=c2a25a44ad97765929acc98ff0d019c3 DependenciesID=c0fb9cdbc851c6d48711859c20c44b3a StaticDependenciesID=3c0198bf9c4ec8e7a7e024e48fc13154 
+Importing 'GUID: 4a5b5a45bd5bf2449b4332e4f8c2daec - Path: Assets/_Game/Content/Perfabs/UI/SheepCard.prefab' with importer (PrefabImporter)
+Imported 'GUID: 4a5b5a45bd5bf2449b4332e4f8c2daec' -> (Import Result ID: '834b067f91660f281153f14b5c676315') in 0.004 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=f34cf935690c16ccd90b7996c9a1479d DependenciesID=e3ad06f8eb394bf87b1b31f82d904ace StaticDependenciesID=e065f8d1d9c1da50d9bd5c2ade031542 
+Starting new worker id: 0 with log in C:/Users/wcy/Desktop/GameJam/GameJam/Logs/AssetImportWorkerHW0.log
+Refreshing native plugins compatible for Editor in 6.97 ms, found 6 plugins.
+
+Asset Pipeline Refresh (id=e8a2dbbc87076ca4589c7dc8a48ebdcf): Total: 11.890 seconds - Initiated by InitialRefreshV2(ForceSynchronousImport)
+	(Values over 0.05ms)
+	Summary:
+		Imports: total=99 (actual=98, local cache=1, cache server=0)
+		Asset DB Process Time: managed=261 ms, native=6003 ms
+		Asset DB Callback time: managed=347 ms, native=46 ms
+		Scripting: domain reloads=1, domain reload time=1115 ms, compile time=4050 ms, other=65 ms
+		Project Asset Count: scripts=1912, non-scripts=5550
+		Asset File Changes: new=15, changed=122, moved=0, deleted=3
+		Scan Filter Count: 0
+	InvokePackagesCallback: 30.977ms
+	ApplyChangesToAssetFolders: 0.705ms
+	Scan: 182.850ms
+	Collect global state as custom dependencies: 15.343ms
+	OnSourceAssetsModified: 0.865ms
+	CategorizeScriptCompilationAssets: 49.379ms
+	ProcessAssetsWithTransientArtifactChanges: 81.541ms
+	CategorizeAssets: 72.641ms
+	CompileScripts: 4049.545ms
+	ImportOutOfDateAssets: 5704.772ms (3294.434ms without children)
+		ImportManagerImport: 2342.021ms (6.521ms without children)
+			UpdateCategorizedAssets: 0.813ms
+		UnloadImportedAssets: 0.964ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 0.917ms
+		ImportSchedulerStart: 66.382ms
+	PostProcessAllAssets: 355.083ms
+		XRBuildSystem.XRAssetImported 0.950ms
+		VersionControlSettings.HiddenFilePostprocess 0.872ms
+		ShaderAssetModifiedCallback 0.386ms
+		PostProcessCallbackCreateDeferredMaterials 0.385ms
+		SpriteAtlasDatabase.OnAssetPostprocessCallback 0.287ms
+		LocalizationDatabase.AssetDatabasePostprocessCallback 0.122ms
+		ComputeShaderImportPostprocess 0.082ms
+		RaytracingShaderImportPostprocess 0.081ms
+		AssemblyValidation.PostprocessAllAssets 0.076ms
+		SpeedTreeImporter.PostprocessAllAssets 0.071ms
+		BlockShaderImporter.PostprocessAllAssets 0.064ms
+		MonoPostProcessAllAssets: 345.462ms
+			AssetPostprocessor.OnPostprocessAllAssets 123.377ms
+			SyncVS.PostprocessSyncProject 122.227ms
+			SpriteSlicePostprocessor.OnPostprocessAllAssets 26.980ms
+			SpecialSheepCatalogAssetPostprocessor.OnPostprocessAllAssets 18.091ms
+			StyleCatalogPostProcessor.OnPostprocessAllAssets 13.059ms
+			UniversalRenderPipelineGlobalSettingsPostprocessor.OnPostprocessAllAssets 6.993ms
+			BuilderAssetPostprocessor.OnPostprocessAllAssets 3.770ms
+			ShaderGraphAssetPostProcessor.OnPostprocessAllAssets 3.565ms
+			SpeedTree9Postprocessor.OnPostprocessAllAssets 1.590ms
+			WindowAssetPostprocessingWatcher.OnPostprocessAllAssets 1.516ms
+			TextAssetPostProcessor.OnPostprocessAllAssets 1.353ms
+			AssetChangedListener.OnPostprocessAllAssets 1.178ms
+			RetainedModeAssetPostprocessor.OnPostprocessAllAssets 0.945ms
+			MaterialPostprocessor.OnPostprocessAllAssets 0.825ms
+			EditModeScopePostprocessor.OnPostprocessAllAssets 0.749ms
+			RenderPipelineGlobalSettingsPostprocessor.OnPostprocessAllAssets 0.626ms
+			InputActionAssetPostprocessor.OnPostprocessAllAssets 0.592ms
+			PostProcessor.OnPostprocessAllAssets 0.476ms
+			InputActionJsonNameModifierAssetProcessor.OnPostprocessAllAssets 0.473ms
+			SpriteEditorTexturePostprocessor.OnPostprocessAllAssets 0.401ms
+			ArtifactBrowserPostProcessor.OnPostprocessAllAssets 0.342ms
+			SpriteShapeAssetPostProcessor.OnPostprocessAllAssets 0.342ms
+			UVCSAssetPostprocessor.OnPostprocessAllAssets 0.297ms
+			ModelAssetProcessor.OnPostprocessAllAssets 0.259ms
+			AssetProcessor.OnPostprocessAllAssets 0.245ms
+			SampleDependencyImporterPostProcessor.OnPostprocessAllAssets 0.244ms
+			TMPro_TexturePostProcessor.OnPostprocessAllAssets 0.224ms
+			AudioMixerPostprocessor.OnPostprocessAllAssets 0.217ms
+			ShaderReflectionAssetPostProcessor.OnPostprocessAllAssets 0.215ms
+			ProjectSettingsPostprocessor.OnPostprocessAllAssets 0.214ms
+			ReferencedClipsPostProcessor.OnPostprocessAllAssets 0.206ms
+			AssetEvents.OnPostprocessAllAssets 0.190ms
+			SpriteLibraryAssetPostprocessor.OnPostprocessAllAssets 0.128ms
+			TerrainToolbarOverlayPostProcessor.OnPostprocessAllAssets 0.128ms
+			SamplePostprocessor.OnPostprocessAllAssets 0.117ms
+			SpeedTreePostProcessor.OnPostprocessAllAssets 0.106ms
+			AssetDatabaseCallbacks.OnPostprocessAllAssets 0.092ms
+			PSDImportPostProcessor.OnPostprocessAllAssets 0.091ms
+			ConfigAssetsTracker.OnPostprocessAllAssets 0.091ms
+			AssetReloadNotifier.OnPostprocessAllAssets 0.073ms
+			ScenarioDriftAssetsTracker.OnPostprocessAllAssets 0.071ms
+	PostAssetChangesProfiler: 10.058ms
+	UnloadStreamsBegin: 3.687ms
+	PersistCurrentRevisions: 0.849ms
+	GenerateScriptTypeHashes: 2.641ms
+	GenerateScriptTypeSerializationHashes: 4.408ms
+	Untracked: 1323.298ms
+
+Application.AssetDatabase Initial Refresh End
+Launched and connected shader compiler UnityShaderCompiler.exe after 0.02 seconds
+Scanning for USB devices : 9.955ms
+Initializing Unity extensions:
+[MODES] ModeService[none].Initialize
+[MODES] ModeService[none].LoadModes
+[MODES] Loading mode Default (0) for mode-current-id-GameJam
+Unloading 156 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 9195 unused Assets / (23.2 MB). Loaded Objects now: 10158.
+Memory consumption went from 0.56 GB to 0.54 GB.
+Total: 21.375100 ms (FindLiveObjects: 1.151500 ms CreateObjectMapping: 2.501800 ms MarkObjects: 9.152200 ms  DeleteObjects: 8.566200 ms)
+
+Importing 'GUID: d92010a5a2d64b34d8097eec80fd535e - Path: Assets/_Game/Content/Art/LongWolfSkins/Classic.png' with importer (TextureImporter)
+Imported 'GUID: d92010a5a2d64b34d8097eec80fd535e' -> (Import Result ID: 'bbd7da879fc26be7935245b0e9742c16') in 0.075 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=f3cf98265a5c07038d1352bdaa24f5f7 DependenciesID=4bf861ed43daf422a661b9dcefe3f816 StaticDependenciesID=1207a1035b508fdbdf9398b31d4c7f96 
+Refreshing native plugins compatible for Editor in 5.79 ms, found 6 plugins.
+Asset Pipeline Refresh (id=d81ff7761c0335f45ae4ec14ea568604): Total: 0.249 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Importing 'GUID: d92010a5a2d64b34d8097eec80fd535e - Path: Assets/_Game/Content/Art/LongWolfSkins/Classic.png' with importer (TextureImporter)
+Imported 'GUID: d92010a5a2d64b34d8097eec80fd535e' -> (Import Result ID: '5617a88b3a4ec585fe5d83d5a62d54ba') in 0.023 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=a4070b435769da66d9bb97932575b1af DependenciesID=6d8d5ed629707148d9b77782547eb524 StaticDependenciesID=41579156d36acc76aab36ebf2ed76b25 
+Refreshing native plugins compatible for Editor in 7.90 ms, found 6 plugins.
+Asset Pipeline Refresh (id=822e21049229fa348b9a1aea19573bf1): Total: 0.137 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 7.36 ms, found 6 plugins.
+Asset Pipeline Refresh (id=3e393e26f6514444da42aa02b36c5059): Total: 0.105 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Importing 'GUID: 9edef0cafd5dcdd4aaa0a192da22ba73 - Path: Assets/_Game/Content/Art/LongWolfSkins/Centipede.png' with importer (TextureImporter)
+Imported 'GUID: 9edef0cafd5dcdd4aaa0a192da22ba73' -> (Import Result ID: '92966c930380beb639f669f392eb66b1') in 0.087 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=64f320dd46d6282688bd76bb77615e6f DependenciesID=e15560204f2063de095fd9ab9a4e8e7d StaticDependenciesID=72530608da5cf9ed6f6c0a6c0d5b474f 
+Refreshing native plugins compatible for Editor in 5.43 ms, found 6 plugins.
+Asset Pipeline Refresh (id=1aae331e45900674d99165eddb1e866a): Total: 0.170 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Importing 'GUID: 9edef0cafd5dcdd4aaa0a192da22ba73 - Path: Assets/_Game/Content/Art/LongWolfSkins/Centipede.png' with importer (TextureImporter)
+Imported 'GUID: 9edef0cafd5dcdd4aaa0a192da22ba73' -> (Import Result ID: '58694c5aeb3ef924b6ba166758c70fcb') in 0.023 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=754984c8f98afb1fd10fe7f81a38ce5c DependenciesID=94115e6701cfd7b1d3cf59df00e96fc9 StaticDependenciesID=d7dc8fe58bbee2471d12ae33774fcaab 
+Refreshing native plugins compatible for Editor in 7.50 ms, found 6 plugins.
+Asset Pipeline Refresh (id=c231adaf4d5078b44b879162d8e21e33): Total: 0.135 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 6.04 ms, found 6 plugins.
+Asset Pipeline Refresh (id=a5d6490a0b92f724998c700ba235aa34): Total: 0.096 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Worker ready: AssetImportWorkerHW0 0
+Loaded scene 'Library/Unused/ea1e5afc307be29489097a416a871ad8'
+	Deserialize:            0.892 ms
+	Integration:            3.263 ms
+	Integration of assets:  0.004 ms
+	Thread Wait Time:       18.533 ms
+	Total Operation Time:   22.693 ms
+Importing 'GUID: 12b7d5256cfcf0049bf45c7c8264bc2c - Path: Assets/_Game/Content/Perfabs/Wolf/LongWolf.prefab' with importer (PrefabImporter)
+Imported 'GUID: 12b7d5256cfcf0049bf45c7c8264bc2c' -> (Import Result ID: 'f6e64770d4ac047b7564dbee883549a2') in 0.006 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=bc7c2fb0e39a026ad84f07e14416b32f DependenciesID=0ce9db41e80a6a5f20e0c906c8da2b4f StaticDependenciesID=6a442c581870694f43ef94e248cb2b1b 
+Refreshing native plugins compatible for Editor in 5.76 ms, found 6 plugins.
+Asset Pipeline Refresh (id=f5155e312f2734d438be7e706365243f): Total: 0.106 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+[Licensing::Client] Successfully resolved entitlement details
+Batchmode quit successfully invoked - shutting down!
+Importing 'GUID: 0000000000000000b000000000000000 - Path: ProjectSettings/EditorBuildSettings.asset' with importer (LibraryAssetImporter)
+Imported 'GUID: 0000000000000000b000000000000000' -> (Import Result ID: 'e6ed5b3dde909357d8147a363a423c59') in 0.001 seconds [static dependencies only]. Details - ImportResultOutputID=4647dd083cfc32cebcd7526e8846440c DependenciesID=4273a45219909971b11b6f45a1c75577 StaticDependenciesID=3c9eddf227e0bf814b4302bc46180185 
+Refreshing native plugins compatible for Editor in 5.72 ms, found 6 plugins.
+Asset Pipeline Refresh (id=80a2ed526999ee74ead88b78b9d43315): Total: 0.082 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+[Physics::Module] Cleanup current backend.
+[Physics::Module] Id: 0xf2b8ea05
+Input System module state changed to: ShutdownInProgress.
+Input Polling Thread exited.
+Input System module state changed to: Shutdown.
+[Licensing::IpcConnector] LicenseClient-wcy-notifications channel disconnected successfully.
+[Licensing::IpcConnector] LicenseClient-wcy channel disconnected successfully.
+Lingering sessions upon destruction of worker manager
+AcceleratorClientConnectionCallback - disconnected - :0
+Cleanup mono
+CodeReloadManager destroyed
+Exiting batchmode successfully now!
+Exiting without the bug reporter. Application will terminate with return code 0
