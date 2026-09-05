@@ -24,8 +24,6 @@ public static class AlphaFlockExpansionSceneSetup
     private const string RecruitableSheepPrefabPath = "Assets/_Game/Content/Perfabs/Sheep/RecruitableSheep.prefab";
     private const string WolfPrefabPath = "Assets/_Game/Content/Perfabs/Wolf/Wolf.prefab";
     private const string NamePoolPath = "Assets/_Game/Content/Data/SheepNamePool.asset";
-    private const string MainMenuScenePath = "Assets/_Game/Scenes/MainMenu.unity";
-    private const string StartButtonSpritePath = "Assets/Art/UI/Buttons/530_195开始按钮.png";
     private const string BannerPrefabPath = "Assets/_Game/Content/Perfabs/UI/BannerSystem.prefab";
     private const string CollectionPanelPrefabPath = "Assets/_Game/Content/Perfabs/UI/CollectionPanel.prefab";
     private const string PauseSystemPrefabPath = "Assets/_Game/Content/Perfabs/UI/PauseSystem.prefab";
@@ -80,37 +78,9 @@ public static class AlphaFlockExpansionSceneSetup
     [MenuItem("Game Jam/Alpha Flock Expansion/Apply Main Menu UI")]
     public static void ApplyMainMenuUi()
     {
-        Scene scene = EditorSceneManager.OpenScene(MainMenuScenePath, OpenSceneMode.Single);
-        GameObject startButtonObject = scene.GetRootGameObjects()
-            .SelectMany(root => root.GetComponentsInChildren<Transform>(true))
-            .FirstOrDefault(item => item.name == "Btn_Start")?.gameObject;
-        Sprite startSprite = AssetDatabase.LoadAssetAtPath<Sprite>(StartButtonSpritePath);
-
-        if (startButtonObject == null || startSprite == null)
-        {
-            Debug.LogError("无法找到主菜单开始按钮或开始按钮美术资源。");
-            return;
-        }
-
-        Image image = startButtonObject.GetComponent<Image>();
-        if (image != null)
-        {
-            image.sprite = startSprite;
-            image.type = Image.Type.Simple;
-        }
-
-        LayoutElement layout = startButtonObject.GetComponent<LayoutElement>();
-        if (layout == null)
-            layout = startButtonObject.AddComponent<LayoutElement>();
-        layout.preferredHeight = 85f;
-
-        RectTransform rect = startButtonObject.GetComponent<RectTransform>();
-        if (rect != null)
-            rect.sizeDelta = new Vector2(600f, rect.sizeDelta.y);
-
-        EditorSceneManager.MarkSceneDirty(scene);
-        EditorSceneManager.SaveScene(scene, MainMenuScenePath);
-        Debug.Log("主菜单开始按钮美术已更新。");
+        UiVisualPolish.ApplyGameplayPrefabs();
+        UiVisualPolish.ApplyMainMenuScene();
+        AssetDatabase.SaveAssets();
     }
 
     /// <summary>把 Alpha 场景加进 Build Settings（主菜单“开始游戏”按名字加载需要它）。</summary>
@@ -437,7 +407,7 @@ public static class AlphaFlockExpansionSceneSetup
         signs.transform.SetParent(parent, false);
 
         Sprite keycapSprite = AssetDatabase.LoadAllAssetsAtPath(WarningRectAssetPath).OfType<Sprite>().FirstOrDefault();
-        Color chalk = new Color(0.96f, 0.94f, 0.85f, 0.85f);
+        Color chalk = new Color(0.22f, 0.20f, 0.12f, 0.90f);
 
         // 1. 移动（放在左下，避开左上角的调试 HUD）
         Vector2 moveOrigin = new Vector2(-5.5f, -1.6f);
@@ -452,7 +422,12 @@ public static class AlphaFlockExpansionSceneSetup
         CreateWorldText(signs.transform, "Recruit_Title", "碰到羊 → 加入羊群", recruitOrigin + new Vector2(0f, 1.6f), 0.9f, chalk);
         CreateWorldText(signs.transform, "Recruit_Hint", "把它们都收进来", recruitOrigin + new Vector2(0f, 0.7f), 0.6f, chalk);
 
-        // 3. E 整群后退蓄势后撞栅栏
+        // 3. Q 收拢：放在招募提示下方，与 E 冲刺教学分开。
+        Vector2 gatherOrigin = new Vector2(1.2f, -1.25f);
+        CreateKeycap(signs.transform, keycapSprite, "Q", gatherOrigin + new Vector2(-1.25f, 0f), chalk);
+        CreateWorldText(signs.transform, "Gather_Hint", "按住收拢", gatherOrigin + new Vector2(0.75f, 0f), 0.66f, chalk);
+
+        // 4. E 整群后退蓄势后撞栅栏
         Vector2 fenceOrigin = new Vector2(5.2f, -3.2f);
         CreateWorldText(signs.transform, "Fence_Title", "羊够 6 只 → 撞开栅栏", fenceOrigin + new Vector2(-1.2f, 1.2f), 0.85f, chalk);
         CreateKeycap(signs.transform, keycapSprite, "E", fenceOrigin + new Vector2(0.4f, 0f), chalk);
@@ -473,6 +448,7 @@ public static class AlphaFlockExpansionSceneSetup
         label.fontSize = 4f;
         label.alignment = TextAlignmentOptions.Center;
         label.color = color;
+        label.fontStyle = FontStyles.Bold;
         label.sortingOrder = -50;
         label.rectTransform.sizeDelta = new Vector2(12f, 2f);
         // 中文字形靠 MvpTmpUiFont 在运行时注册的全局 fallback，这里不直接指定运行时字体（不可序列化）。
@@ -492,7 +468,7 @@ public static class AlphaFlockExpansionSceneSetup
             frame.transform.localScale = new Vector3(0.9f, 0.9f, 1f);
             SpriteRenderer renderer = frame.AddComponent<SpriteRenderer>();
             renderer.sprite = sprite;
-            renderer.color = new Color(color.r, color.g, color.b, 0.35f);
+            renderer.color = new Color(0.96f, 0.92f, 0.76f, 0.82f);
             renderer.sortingOrder = -60;
         }
 
@@ -647,6 +623,7 @@ public static class AlphaFlockExpansionSceneSetup
     [MenuItem("Game Jam/Alpha Flock Expansion/Configure UI Prefabs")]
     public static void ConfigureUiPrefabs()
     {
+        UiVisualPolish.ApplyGameplayPrefabs();
         GameObject pauseRoot = PrefabUtility.LoadPrefabContents(PauseSystemPrefabPath);
         try
         {
@@ -904,8 +881,19 @@ public static class AlphaFlockExpansionSceneSetup
             ui.Banner = bannerRect.gameObject.AddComponent<AlphaBannerView>();
         }
 
+        if (ui.PauseManager != null)
+        {
+            SerializedObject pauseSerialized = new SerializedObject(ui.PauseManager);
+            pauseSerialized.FindProperty("bannerView").objectReferenceValue = ui.Banner;
+            pauseSerialized.ApplyModifiedPropertiesWithoutUndo();
+        }
+
         GameObject resultPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ResultPanelPrefabPath);
         ui.ResultPanelPrefab = resultPrefab != null ? resultPrefab.GetComponent<ResultPanelView>() : null;
+
+        // 暂停遮罩必须盖住任务、横幅和狼事件 HUD。
+        if (ui.PauseManager != null)
+            ui.PauseManager.transform.SetAsLastSibling();
 
         if (Object.FindAnyObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
         {

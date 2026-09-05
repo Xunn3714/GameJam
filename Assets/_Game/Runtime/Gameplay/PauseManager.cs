@@ -25,6 +25,7 @@ public class PauseManager : MonoBehaviour
 
     [Header("Related UI")]
     [SerializeField] private TaskPanelToggle taskPanelToggle;
+    [SerializeField] private AlphaBannerView bannerView;
 
     private bool isPaused;
     private bool resultLocked;
@@ -112,6 +113,10 @@ public class PauseManager : MonoBehaviour
 
         if (taskPanelToggle != null && taskPanelToggle.IsOpen)
             taskPanelToggle.CloseTaskPanel();
+        if (taskPanelToggle != null)
+            taskPanelToggle.gameObject.SetActive(false);
+        if (bannerView != null)
+            bannerView.SetSuppressed(true);
 
         isPaused = true;
 
@@ -156,6 +161,8 @@ public class PauseManager : MonoBehaviour
             settingPanel.SetActive(false);
         if (collectionPanel != null)
             collectionPanel.SetActive(false);
+        if (taskPanelToggle != null)
+            taskPanelToggle.gameObject.SetActive(false);
         if (pauseWindow != null)
             pauseWindow.SetActive(true);
     }
@@ -176,6 +183,8 @@ public class PauseManager : MonoBehaviour
             codexView.Hide();
         if (taskPanelToggle != null)
             taskPanelToggle.gameObject.SetActive(true);
+        if (bannerView != null)
+            bannerView.SetSuppressed(false);
 
         Time.timeScale = 1f;
     }
@@ -207,8 +216,6 @@ public class PauseManager : MonoBehaviour
 
         if (collectionPanel != null)
             collectionPanel.SetActive(false);
-        if (taskPanelToggle != null)
-            taskPanelToggle.gameObject.SetActive(true);
         if (pauseWindow != null)
             pauseWindow.SetActive(true);
     }

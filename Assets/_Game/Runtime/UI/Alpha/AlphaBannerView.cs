@@ -34,13 +34,15 @@ public sealed class AlphaBannerView : MonoBehaviour
     private CanvasGroup group;
     private float timer;
     private int state; // 0 idle, 1 fade in, 2 hold, 3 fade out
+    private float requestedAlpha;
+    private bool suppressed;
 
     private void Awake()
     {
         group = GetComponent<CanvasGroup>();
         if (group == null)
             group = gameObject.AddComponent<CanvasGroup>();
-        group.alpha = 0f;
+        SetAlpha(0f);
 
         if (bannerView != null)
         {
@@ -93,7 +95,7 @@ public sealed class AlphaBannerView : MonoBehaviour
 
         pending.Clear();
         SetMessage(new BannerMessage(message, icon));
-        group.alpha = 1f;
+        SetAlpha(1f);
         timer = 0f;
         state = 2;
     }
@@ -116,7 +118,7 @@ public sealed class AlphaBannerView : MonoBehaviour
 
             case 1:
                 timer += deltaTime;
-                group.alpha = Mathf.Clamp01(timer / fadeDuration);
+                SetAlpha(Mathf.Clamp01(timer / fadeDuration));
                 if (timer >= fadeDuration) { timer = 0f; state = 2; }
                 break;
 
@@ -127,10 +129,24 @@ public sealed class AlphaBannerView : MonoBehaviour
 
             case 3:
                 timer += deltaTime;
-                group.alpha = 1f - Mathf.Clamp01(timer / fadeDuration);
-                if (timer >= fadeDuration) { group.alpha = 0f; state = 0; }
+                SetAlpha(1f - Mathf.Clamp01(timer / fadeDuration));
+                if (timer >= fadeDuration) { SetAlpha(0f); state = 0; }
                 break;
         }
+    }
+
+    public void SetSuppressed(bool value)
+    {
+        suppressed = value;
+        if (group != null)
+            group.alpha = suppressed ? 0f : requestedAlpha;
+    }
+
+    private void SetAlpha(float value)
+    {
+        requestedAlpha = value;
+        if (group != null)
+            group.alpha = suppressed ? 0f : requestedAlpha;
     }
 
     private void SetMessage(BannerMessage message)
