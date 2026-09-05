@@ -1,19 +1,34 @@
 # GameJam Unity Starter
 
-面向 Game Jam 的 Unity 2D 协作工程。工程基线、主菜单、暂停、设置、音频和 Ending 已存在；当前玩法方向已经确定为俯视角羊群 MVP。
+面向 Game Jam 的 Unity 2D 协作工程。工程基线、主菜单、暂停、设置、音频和 Ending 已存在；俯视角羊群 MVP 原型已经集成到 `Level_01`。
+
+> 项目另有一个不修改 `Level_01` 的暴力扩张实验场景：
+> `Assets/_Game/Scenes/Dev/AlphaFlockExpansion.unity`。实验规则见
+> [`羊群暴力扩张 Alpha`](docs/design/羊群暴力扩张Alpha.md)。
 
 ## 当前基线
 
 - Unity：`6000.5.9f1`
 - 渲染：Universal Render Pipeline / 2D Renderer
-- 输入：Unity Input System；现有 `Player/Move`，MVP 计划新增 `Player/Poop`
+- 输入：Unity Input System；WASD 控制羊群，Space 使用拉屎技能
 - 当前入口：`Assets/_Game/Scenes/MainMenu.unity`
 - 当前关卡：`Assets/_Game/Scenes/Level_01.unity`
 - 首轮目标平台：Windows（WASD + Space）
 
 ## 当前玩法方向
 
-玩家控制一个最初只有 1 名成员的羊群，通过任意成员接触另外 5 只羊扩充族群。游戏中没有固定头羊；WASD 移动羊群中心，成员围绕中心动态跟随。人数达到 6 后可撞破人数障碍；Space 用于测试“拉屎”主动技能；找齐后显示族群规模、成员名单、拉屎次数和游戏用时。
+玩家控制一个最初只有 1 名成员的羊群，通过任意成员接触地图中的羊扩充族群。游戏中没有固定头羊；WASD 移动羊群中心，成员围绕中心动态跟随；Space 用于测试“拉屎”主动技能。地图会按配置生成精确数量的羊，普通羊以 1～3 只成组分布，特殊羊单独出现并从可扩展池中抽取。完成必做任务后显示族群规模、成员名单、分数、拉屎次数和游戏用时。
+
+`Level_01` 当前原型配置为：`100 × 50` 世界区域、共生成 50 只待招募羊，其中 5 只是特殊羊；普通羊群组权重为 `60 / 30 / 10`。这些均为场景 Inspector 参数，不是写死规则。
+
+## 当前 MVP 原型完成情况
+
+- `MainMenu → Level_01` 开始流程、暂停和设置闭环。
+- 随机且单局不重复的中文羊名，以及中文 TMP 字体随项目分发。
+- 可配置的随机羊群生成、玩家安全区、密度与间距约束。
+- 普通羊 1～3 只分组；单只特殊羊、加权特殊羊池和固定特殊羊点位预留。
+- 任务列表、加入提示、同伴名册、羊图鉴占位界面和本局结算统计。
+- 普通羊、礼帽羊、蝴蝶结羊、角羊和黑羊的透明 Sprite 与 Prefab。
 
 开始实现前依次阅读：
 
