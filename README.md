@@ -2,6 +2,10 @@
 
 面向 Game Jam 的 Unity 2D 协作工程。工程基线、主菜单、暂停、设置、音频和 Ending 已存在；俯视角羊群 MVP 原型已经集成到 `Level_01`。
 
+> 项目另有一个不修改 `Level_01` 的暴力扩张实验场景：
+> `Assets/_Game/Scenes/Dev/AlphaFlockExpansion.unity`。实验规则见
+> [`羊群暴力扩张 Alpha`](docs/design/羊群暴力扩张Alpha.md)。
+
 ## 当前基线
 
 - Unity：`6000.5.9f1`

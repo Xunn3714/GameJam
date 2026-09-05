@@ -6,8 +6,11 @@ public sealed class CameraFollow2D : MonoBehaviour
 
     [SerializeField] private Transform target;
     [SerializeField, Min(0f)] private float smoothTime = 0.15f;
+    [SerializeField, Min(0f)] private float zoomSmoothTime = 0.6f;
 
     private Vector3 velocity;
+    private float zoomVelocity;
+    private float targetOrthographicSize;
     private float cameraZ;
     private FlockController flockController;
     private Camera attachedCamera;
@@ -18,6 +21,9 @@ public sealed class CameraFollow2D : MonoBehaviour
     {
         cameraZ = transform.position.z;
         attachedCamera = GetComponent<Camera>();
+        targetOrthographicSize = attachedCamera != null && attachedCamera.orthographic
+            ? attachedCamera.orthographicSize
+            : 0f;
     }
 
     private void LateUpdate()
@@ -33,6 +39,8 @@ public sealed class CameraFollow2D : MonoBehaviour
         Vector2 focusPosition = flockController != null
             ? flockController.Center
             : (Vector2)target.position;
+
+        UpdateZoom();
 
         Vector3 targetPosition = new Vector3(
             focusPosition.x,
@@ -73,6 +81,41 @@ public sealed class CameraFollow2D : MonoBehaviour
     {
         cameraBounds = bounds;
         keepInsideBounds = bounds.width > 0f && bounds.height > 0f;
+    }
+
+    public void SetOrthographicSize(float size, bool immediate = false)
+    {
+        if (attachedCamera == null)
+            attachedCamera = GetComponent<Camera>();
+
+        if (attachedCamera == null || !attachedCamera.orthographic)
+            return;
+
+        targetOrthographicSize = Mathf.Max(0.01f, size);
+        if (!immediate)
+            return;
+
+        attachedCamera.orthographicSize = targetOrthographicSize;
+        zoomVelocity = 0f;
+    }
+
+    private void UpdateZoom()
+    {
+        if (attachedCamera == null || !attachedCamera.orthographic || targetOrthographicSize <= 0f)
+            return;
+
+        if (Mathf.Abs(attachedCamera.orthographicSize - targetOrthographicSize) <= 0.001f)
+        {
+            attachedCamera.orthographicSize = targetOrthographicSize;
+            zoomVelocity = 0f;
+            return;
+        }
+
+        attachedCamera.orthographicSize = Mathf.SmoothDamp(
+            attachedCamera.orthographicSize,
+            targetOrthographicSize,
+            ref zoomVelocity,
+            zoomSmoothTime);
     }
 
     private static float ClampInside(float value, float minimum, float maximum)
