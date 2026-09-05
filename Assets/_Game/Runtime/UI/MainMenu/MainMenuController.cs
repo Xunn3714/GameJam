@@ -109,7 +109,7 @@ public class MainMenuController : MonoBehaviour
     {
         if (SceneLoader.Instance != null)
         {
-            SceneLoader.Instance.LoadLevel01();
+            SceneLoader.Instance.LoadGameplayScene();
         }
         else
         {

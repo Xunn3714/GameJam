@@ -39,3 +39,49 @@
 `Game Jam → Alpha Flock Expansion → Setup Scene`
 
 该命令可重复执行，只重建 Alpha 场景中由它管理的对象，不修改 `Level_01`、Prefab 或 Project Settings。
+
+## Beta 迭代（2026-09）
+
+在 Alpha 基础上补齐一局的完整体验，仍只改 `AlphaFlockExpansion` 场景，不动 `Level_01`。
+
+### 地图与教程
+
+- 地图 240×140，`草原_背景` 平铺；最外圈是 `obstacle_fence` 围栏（`obstacle.border_fence`，按**本局历史最高羊数**判定，默认 100，`AlphaFlockExpansionController.exitUnlockFlockSize` 可配）。
+- 出生点是一个 18×10 的羊圈（`obstacle.pen_fence`，需要 6 只），里面固定放 5 只教程羊；草地上画教程标识（WASD 移动 / 碰羊入群 / 够 6 只按 E 撞栏）。标识目前是文字 + 键帽占位，美术出图后替换 Sprite。
+- 羊圈打开后教程标识淡出；羊圈内不刷野生羊、不放可破坏物。
+
+### 狼群
+
+- 狼由 `WolfEventDirector` 掌控：羊群达到 6 只后进入节奏（生长空挡 15~20s → 狼嚎 3s → 攻击 → 跑路）。
+- 狼嚎期间羊群自动抱团（`FlockController.SetHuddle`），狼跑路后恢复松散。
+- 狼群 HUD 只在狼嚎 / 攻击 / 跑路期间显示。
+
+### 世界种子与可破坏物
+
+- `WorldSeed`（0 = 每局随机）统一派生随机源；`ProgressiveSheepSpawner`（位置、类型）和 `WorldDebrisSpawner`（花 / 石头 / 木桶）都从它取，同一种子同一张地图。
+- 可破坏物碰到羊群即碎（花消失，石头 / 木桶变碎片背景）。
+
+### 特殊羊与统计
+
+- 刷新按权重：普通 90%，黑羊 / 角羊 / 礼帽羊 / 红蝴蝶结羊各 2.5%（`ProgressiveSheepSpawner.sheepTypes`）。特殊羊只保证外观不同。
+- `AlphaRunStats` 按类型统计：当前构成、累计招募、被狼抓走、峰值构成、生存时间、历史最高。初始羊计入当前 / 峰值，不计入累计招募。Tab 键在游戏内查看。
+
+### 结算
+
+- 冲出地图：历史最高 ≥ 100 后永久解锁，撞开任意一段外围围栏并让羊群中心越过边界即胜利。
+- 全灭：当前羊数为 0 立即失败，不保底。
+- 结算页显示按类型统计，R 键 / 按钮快速重开，或返回标题。
+
+### 验证
+
+- EditMode 测试：`Assets/_Game/Editor/Tests/AlphaProgressionTests.cs`（阶段不降级、100 只解锁出口、门槛可配）、`AlphaRunStatsTests.cs`（统计准确）。
+- 菜单：`Game Jam → Alpha Flock Expansion → Setup Scene`（会先执行 `Game Jam → World → Build Obstacle Prefabs`）。
+
+### 2026-09-05 第二轮调整
+
+- 狼群节奏在**羊圈打开后**才启动（羊圈里不放狼）；狼冲锋途中会朝最近的羊微调方向，碰到羊群一定叼走一只（`Wolf.alwaysCaptureOne`）。
+- 镜头随阶段放大时整体提速：倍率 = (相机尺寸 / 第一阶段相机尺寸)^0.75（`speedScaleExponent`）。
+- 羊被围栏卡住：不能隔着围栏招募；被挡时沿围栏切线滑动；被卡且与羊群隔墙 / 离得远超过 1.2s 会自动"翻过栏杆"回到羊群旁。
+- 可破坏物碎裂时立刻切到 Background 层，不再压在羊上面；散布密度提高到 1.5 / 100 平方单位（上限 520）。
+- Alpha 场景直接复用 Level_01 的 GameCanvas（任务列表 / 族群数 / 入队提示 / 暂停 + 设置）、BannerSystem 横幅和 ResultPanel 结算（R 快速重开），生成脚本会临时加载 Level_01 复制这些对象。
+- 左上角调试信息默认关闭，Tab 切换。

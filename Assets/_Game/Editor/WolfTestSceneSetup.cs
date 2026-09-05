@@ -4,6 +4,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 /// <summary>
 /// 一键生成 TestWolf 开发场景：10 只羊的羊群 + 定时生成的狼 + 调试 HUD。
@@ -29,7 +30,9 @@ public static class WolfTestSceneSetup
     {
         "SheepFlock",
         "WolfSpawner",
+        "WolfEventDirector",
         "WolfTestGameController",
+        "WolfEventCanvas",
         "TestWolf_WorldGrid"
     };
 
@@ -56,7 +59,9 @@ public static class WolfTestSceneSetup
         CreateGrid(scene);
         GameObject flockObject = CreateFlock(scene, sheepPrefab, out FlockController flock, out FlockMovementController movement);
         WolfSpawner spawner = CreateSpawner(scene, flock, wolfPrefab);
-        CreateGameController(scene, flock, movement, spawner);
+        WolfEventDirector director = CreateEventDirector(scene, spawner);
+        CreateGameController(scene, flock, movement, spawner, director);
+        CreateEventHud(scene, director);
         ConfigureCamera(scene, flockObject.transform);
 
         Selection.activeGameObject = flockObject;
@@ -64,8 +69,119 @@ public static class WolfTestSceneSetup
         EditorSceneManager.SaveScene(scene);
         AssetDatabase.SaveAssets();
         Debug.Log(
-            $"TestWolf scene is ready at {ScenePath}: {StartingSheepCount} sheep, wolves spawn every few seconds. " +
+            $"TestWolf scene is ready at {ScenePath}: {StartingSheepCount} sheep, wolves follow the calm → howl → attack rhythm. " +
             "Press Play, move with WASD, press R to restart after Game Over.");
+    }
+
+    private const string Level01ScenePath = "Assets/_Game/Scenes/Level_01.unity";
+    private const string ResultPanelPrefabPath = "Assets/_Game/Content/Perfabs/UI/ResultPanel.prefab";
+    private const string Level01WolfRootName = "WolfSystem";
+    private const string Level01WolfHudName = "WolfEventHud";
+
+    /// <summary>
+    /// 把狼群节奏接进 Level_01：WolfSystem（生成器 + 节奏 + 失败结算）+ GameCanvas 下的节奏 HUD。
+    /// 可重复执行，会先删掉上一次生成的对象。
+    /// </summary>
+    [MenuItem("Game Jam/Wolf Test/Integrate Wolves Into Level_01")]
+    public static void IntegrateIntoLevel01()
+    {
+        Scene scene = SceneManager.GetActiveScene();
+        if (scene.path != Level01ScenePath)
+        {
+            if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
+                return;
+            scene = EditorSceneManager.OpenScene(Level01ScenePath, OpenSceneMode.Single);
+        }
+
+        Sprite circleSprite = SheepMovementPrototypeSetup.GetOrCreateCircleSprite();
+        Sprite warningSprite = GetOrCreateWarningRectSprite();
+        EnsureFolder(WolfPrefabFolder);
+        GameObject wolfPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(WolfPrefabPath);
+        if (wolfPrefab == null)
+        {
+            wolfPrefab = CreateOrUpdateWolfPrefab(circleSprite, warningSprite);
+        }
+
+        GameObject[] roots = scene.GetRootGameObjects();
+        FlockController flock = roots.Select(r => r.GetComponentInChildren<FlockController>(true)).FirstOrDefault(f => f != null);
+        Canvas canvas = roots.Where(r => r.name == "GameCanvas").Select(r => r.GetComponent<Canvas>()).FirstOrDefault(c => c != null)
+            ?? roots.Select(r => r.GetComponentInChildren<Canvas>(true)).FirstOrDefault(c => c != null);
+        PauseManager pauseManager = roots.Select(r => r.GetComponentInChildren<PauseManager>(true)).FirstOrDefault(p => p != null);
+
+        if (flock == null || canvas == null)
+        {
+            throw new System.InvalidOperationException("Level_01 needs a FlockController and a GameCanvas before wolves can be integrated.");
+        }
+
+        // 清理上一次集成的对象。
+        foreach (GameObject root in roots)
+        {
+            if (root.name == Level01WolfRootName)
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+        Transform oldHud = canvas.transform.Find(Level01WolfHudName);
+        if (oldHud != null)
+        {
+            Object.DestroyImmediate(oldHud.gameObject);
+        }
+
+        GameObject wolfRoot = new GameObject(Level01WolfRootName);
+        SceneManager.MoveGameObjectToScene(wolfRoot, scene);
+
+        WolfSpawner spawner = wolfRoot.AddComponent<WolfSpawner>();
+        SerializedObject spawnerSerialized = new SerializedObject(spawner);
+        spawnerSerialized.FindProperty("flock").objectReferenceValue = flock;
+        spawnerSerialized.FindProperty("wolfPrefab").objectReferenceValue = wolfPrefab.GetComponent<Wolf>();
+        spawnerSerialized.FindProperty("spawnDistance").floatValue = 12f;
+        spawnerSerialized.ApplyModifiedPropertiesWithoutUndo();
+
+        WolfEventDirector director = wolfRoot.AddComponent<WolfEventDirector>();
+        SerializedObject directorSerialized = new SerializedObject(director);
+        directorSerialized.FindProperty("spawner").objectReferenceValue = spawner;
+        directorSerialized.FindProperty("flock").objectReferenceValue = flock;
+        directorSerialized.FindProperty("requiredMemberCount").intValue = 6;
+        directorSerialized.ApplyModifiedPropertiesWithoutUndo();
+
+        ResultPanelView resultPanelPrefab = null;
+        GameObject resultPanelAsset = AssetDatabase.LoadAssetAtPath<GameObject>(ResultPanelPrefabPath);
+        if (resultPanelAsset != null)
+        {
+            resultPanelPrefab = resultPanelAsset.GetComponent<ResultPanelView>();
+        }
+
+        WolfDefeatHandler defeat = wolfRoot.AddComponent<WolfDefeatHandler>();
+        SerializedObject defeatSerialized = new SerializedObject(defeat);
+        defeatSerialized.FindProperty("flock").objectReferenceValue = flock;
+        defeatSerialized.FindProperty("flockMovement").objectReferenceValue = flock.GetComponent<FlockMovementController>();
+        defeatSerialized.FindProperty("director").objectReferenceValue = director;
+        defeatSerialized.FindProperty("pauseManager").objectReferenceValue = pauseManager;
+        defeatSerialized.FindProperty("resultPanelPrefab").objectReferenceValue = resultPanelPrefab;
+        defeatSerialized.FindProperty("canvas").objectReferenceValue = canvas;
+        defeatSerialized.ApplyModifiedPropertiesWithoutUndo();
+
+        // 顶部居中的节奏 HUD（左上是任务列表，右上是入队提示，避开它们）。
+        RectTransform hudRect = MvpUiFactory.CreateRect(Level01WolfHudName, canvas.transform);
+        MvpUiFactory.Anchor(
+            hudRect,
+            new Vector2(0.5f, 1f),
+            new Vector2(0.5f, 1f),
+            new Vector2(0f, -16f),
+            new Vector2(520f, 80f));
+        hudRect.pivot = new Vector2(0.5f, 1f);
+        hudRect.anchoredPosition = new Vector2(0f, -16f);
+        WolfEventHudView hud = hudRect.gameObject.AddComponent<WolfEventHudView>();
+        SerializedObject hudSerialized = new SerializedObject(hud);
+        hudSerialized.FindProperty("director").objectReferenceValue = director;
+        hudSerialized.ApplyModifiedPropertiesWithoutUndo();
+
+        Selection.activeGameObject = wolfRoot;
+        EditorSceneManager.MarkSceneDirty(scene);
+        EditorSceneManager.SaveScene(scene);
+        AssetDatabase.SaveAssets();
+        Debug.Log("Wolves integrated into Level_01: WolfSystem (spawner + rhythm director + defeat handler) and WolfEventHud under GameCanvas. " +
+                  "Countdown starts once the flock reaches 6 sheep; the flock huddles during the howl warning.");
     }
 
     [MenuItem("Game Jam/Wolf Test/Open TestWolf Scene")]
@@ -219,11 +335,26 @@ public static class WolfTestSceneSetup
         return spawner;
     }
 
+    private static WolfEventDirector CreateEventDirector(Scene scene, WolfSpawner spawner)
+    {
+        GameObject directorObject = new GameObject("WolfEventDirector");
+        SceneManager.MoveGameObjectToScene(directorObject, scene);
+        WolfEventDirector director = directorObject.AddComponent<WolfEventDirector>();
+
+        SerializedObject serialized = new SerializedObject(director);
+        serialized.FindProperty("spawner").objectReferenceValue = spawner;
+        // 测试场景第一轮空挡缩短到 5 秒，正式节奏仍是 15~20 秒。
+        serialized.FindProperty("firstCalmDurationOverride").floatValue = 5f;
+        serialized.ApplyModifiedPropertiesWithoutUndo();
+        return director;
+    }
+
     private static void CreateGameController(
         Scene scene,
         FlockController flock,
         FlockMovementController movement,
-        WolfSpawner spawner)
+        WolfSpawner spawner,
+        WolfEventDirector director)
     {
         GameObject controllerObject = new GameObject("WolfTestGameController");
         SceneManager.MoveGameObjectToScene(controllerObject, scene);
@@ -233,6 +364,36 @@ public static class WolfTestSceneSetup
         serialized.FindProperty("flock").objectReferenceValue = flock;
         serialized.FindProperty("flockMovement").objectReferenceValue = movement;
         serialized.FindProperty("spawner").objectReferenceValue = spawner;
+        serialized.FindProperty("eventDirector").objectReferenceValue = director;
+        serialized.ApplyModifiedPropertiesWithoutUndo();
+    }
+
+    /// <summary>右上角的狼群节奏 HUD（图标 + 文案 + 倒计时）。</summary>
+    private static void CreateEventHud(Scene scene, WolfEventDirector director)
+    {
+        GameObject canvasObject = new GameObject("WolfEventCanvas", typeof(RectTransform));
+        SceneManager.MoveGameObjectToScene(canvasObject, scene);
+        Canvas canvas = canvasObject.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.sortingOrder = 10;
+        CanvasScaler scaler = canvasObject.AddComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920f, 1080f);
+        scaler.matchWidthOrHeight = 0.5f;
+
+        RectTransform hudRect = MvpUiFactory.CreateRect("WolfEventHud", canvasObject.transform);
+        MvpUiFactory.Anchor(
+            hudRect,
+            new Vector2(1f, 1f),
+            new Vector2(1f, 1f),
+            new Vector2(-260f, -40f),
+            new Vector2(520f, 80f));
+        hudRect.pivot = new Vector2(1f, 1f);
+        hudRect.anchoredPosition = new Vector2(-20f, -20f);
+
+        WolfEventHudView hud = hudRect.gameObject.AddComponent<WolfEventHudView>();
+        SerializedObject serialized = new SerializedObject(hud);
+        serialized.FindProperty("director").objectReferenceValue = director;
         serialized.ApplyModifiedPropertiesWithoutUndo();
     }
 

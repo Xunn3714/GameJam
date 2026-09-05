@@ -13,6 +13,7 @@ public sealed class WolfTestGameController : MonoBehaviour
     [SerializeField] private FlockController flock;
     [SerializeField] private FlockMovementController flockMovement;
     [SerializeField] private WolfSpawner spawner;
+    [SerializeField] private WolfEventDirector eventDirector;
 
     [Header("Debug HUD")]
     [SerializeField] private bool showDebugHud = true;
@@ -117,6 +118,11 @@ public sealed class WolfTestGameController : MonoBehaviour
         if (spawner != null)
         {
             spawner.StopSpawning();
+        }
+
+        if (eventDirector != null)
+        {
+            eventDirector.Stop();
         }
 
         if (flockMovement != null)

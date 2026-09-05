@@ -12,8 +12,17 @@ public enum ObstacleBreakRule
     /// 任意一只羊群成员接触即碎（建筑、木桶、石头、花草）。
     OnAnyContact,
 
-    /// 围栏：羊群数量达到要求且按下交互键才碎
+    /// 围栏：羊群数量达到要求后才允许破坏。具体触发方式由围栏组件决定。
     RequireCountAndInteract,
+}
+
+public enum ObstacleCountSource
+{
+    /// 按羊群当前数量判断。
+    CurrentFlockCount,
+
+    /// 按本局历史最高羊数判断（一旦达到永久解锁，被狼叼走也不回退）。
+    HighestFlockCountThisRun,
 }
 
 public enum ObstacleBrokenBehavior
@@ -38,6 +47,8 @@ public sealed class ObstacleDefinition : ScriptableObject
     [Header("Break Rule")]
     [SerializeField] private ObstacleBreakRule breakRule = ObstacleBreakRule.OnAnyContact;
     [SerializeField, Min(1)] private int requiredFlockCount = 6;
+    [Tooltip("围栏门槛按当前羊数还是本局历史最高羊数判断。")]
+    [SerializeField] private ObstacleCountSource countSource = ObstacleCountSource.CurrentFlockCount;
 
     [Header("Broken State")]
     [SerializeField] private ObstacleBrokenBehavior brokenBehavior = ObstacleBrokenBehavior.BecomeBackground;
@@ -53,6 +64,7 @@ public sealed class ObstacleDefinition : ScriptableObject
     public ObstacleSizeCategory SizeCategory => sizeCategory;
     public ObstacleBreakRule BreakRule => breakRule;
     public int RequiredFlockCount => requiredFlockCount;
+    public ObstacleCountSource CountSource => countSource;
     public ObstacleBrokenBehavior BrokenBehavior => brokenBehavior;
     public float BreakAnimationDuration => breakAnimationDuration;
     public string BrokenSortingLayer => brokenSortingLayer;

@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Serialization;
 
 [DisallowMultipleComponent]
 [DefaultExecutionOrder(-100)]
@@ -8,8 +9,13 @@ public sealed class FlockMovementController : MonoBehaviour
 {
     private const string MoveActionName = "Player/Move";
     private const float CenterColliderRadius = 0.35f;
+    private const float StopSpeed = 0.02f;
 
-    [SerializeField, Min(0f)] private float moveSpeed = 4f;
+    [Header("Movement")]
+    [FormerlySerializedAs("moveSpeed")]
+    [SerializeField, Min(0f)] private float normalSpeedLimit = 4f;
+    [SerializeField, Min(0f)] private float acceleration = 12f;
+    [SerializeField, Min(0f)] private float deceleration = 16f;
 
     [Header("Blocking")]
     [SerializeField] private LayerMask blockingLayers;
@@ -17,16 +23,38 @@ public sealed class FlockMovementController : MonoBehaviour
 
     private InputAction moveAction;
     private Vector2 moveInput;
+    private Vector2 velocity;
     private Rigidbody2D body;
     private Vector2 positionBeforeFixedMove;
     private bool movedThisStep;
     private bool controlEnabled = true;
     private bool restrictToMovementBounds;
     private Rect movementBounds;
+    private float temporarySpeedLimit;
+    private float temporarySpeedLimitExpiresAt;
+    private float speedMultiplier = 1f;
 
-    public Vector2 LastMoveDirection { get; private set; } = Vector2.down;
-    public bool IsMoving => controlEnabled && moveInput.sqrMagnitude > 0.0001f;
-    public Vector2 DesiredVelocity => IsMoving ? moveInput * moveSpeed : Vector2.zero;
+    /// <summary>随羊群规模 / 镜头放大整体提速；速度上限和加速度一起乘。</summary>
+    public void SetSpeedMultiplier(float multiplier)
+    {
+        speedMultiplier = Mathf.Max(0.1f, multiplier);
+    }
+
+    public float SpeedMultiplier => speedMultiplier;
+
+    public Vector2 LastMoveDirection { get; private set; } = Vector2.right;
+    public bool FacingLeft { get; private set; }
+    public bool IsMoving => velocity.sqrMagnitude > StopSpeed * StopSpeed;
+    public Vector2 DesiredVelocity => velocity;
+    public Vector2 Velocity => velocity;
+    public float NormalSpeedLimit => normalSpeedLimit;
+    public float CurrentSpeedLimit => (HasTemporarySpeedLimit
+        ? Mathf.Max(normalSpeedLimit, temporarySpeedLimit)
+        : normalSpeedLimit) * speedMultiplier;
+
+    private bool HasTemporarySpeedLimit =>
+        temporarySpeedLimit > normalSpeedLimit &&
+        Time.time < temporarySpeedLimitExpiresAt;
 
     private void Awake()
     {
@@ -64,18 +92,40 @@ public sealed class FlockMovementController : MonoBehaviour
         if (moveInput.sqrMagnitude > 0.0001f)
         {
             LastMoveDirection = moveInput.normalized;
+            if (Mathf.Abs(moveInput.x) > 0.01f)
+                FacingLeft = moveInput.x < 0f;
         }
     }
 
     private void FixedUpdate()
     {
         movedThisStep = false;
-        if (!controlEnabled || Time.timeScale == 0f || moveInput.sqrMagnitude <= 0.0001f)
+        if (Time.timeScale == 0f)
             return;
 
-        positionBeforeFixedMove = body.position;
-        movedThisStep = true;
-        Vector2 displacement = moveInput * moveSpeed * Time.fixedDeltaTime;
+        if (!HasTemporarySpeedLimit)
+            temporarySpeedLimit = 0f;
+
+        float deltaTime = Time.fixedDeltaTime;
+        float speedLimit = CurrentSpeedLimit;
+        Vector2 targetVelocity = controlEnabled
+            ? moveInput * speedLimit
+            : Vector2.zero;
+        float response = (targetVelocity.sqrMagnitude > 0.0001f
+            ? acceleration
+            : deceleration) * speedMultiplier;
+        velocity = Vector2.MoveTowards(velocity, targetVelocity, response * deltaTime);
+        velocity = Vector2.ClampMagnitude(velocity, speedLimit);
+
+        if (velocity.sqrMagnitude <= StopSpeed * StopSpeed)
+        {
+            velocity = Vector2.zero;
+            return;
+        }
+
+        Vector2 from = body.position;
+        positionBeforeFixedMove = from;
+        Vector2 displacement = velocity * deltaTime;
         Vector2 targetPosition = body.position + displacement;
 
         if (restrictToMovementBounds)
@@ -91,18 +141,45 @@ public sealed class FlockMovementController : MonoBehaviour
         }
 
         targetPosition = MovementBlocking.ResolveMove(
-        body.position,
-        targetPosition,
-        blockingRadius,
-        blockingLayers);
+            body.position,
+            targetPosition,
+            blockingRadius,
+            blockingLayers);
 
-        if (targetPosition == body.position)
+        if (targetPosition == from)
+        {
+            velocity = Vector2.zero;
             return;
+        }
 
-        positionBeforeFixedMove = body.position;
+        velocity = (targetPosition - from) / deltaTime;
         movedThisStep = true;
-
         body.MovePosition(targetPosition);
+    }
+
+    public void SetNormalSpeedLimit(float speedLimit)
+    {
+        normalSpeedLimit = Mathf.Max(0f, speedLimit);
+        velocity = Vector2.ClampMagnitude(velocity, CurrentSpeedLimit);
+    }
+
+    public void ApplyTemporarySpeedLimit(float speedLimit, float durationSeconds)
+    {
+        if (speedLimit <= normalSpeedLimit || durationSeconds <= 0f)
+        {
+            ClearTemporarySpeedLimit();
+            return;
+        }
+
+        temporarySpeedLimit = speedLimit;
+        temporarySpeedLimitExpiresAt = Time.time + durationSeconds;
+    }
+
+    public void ClearTemporarySpeedLimit()
+    {
+        temporarySpeedLimit = 0f;
+        temporarySpeedLimitExpiresAt = 0f;
+        velocity = Vector2.ClampMagnitude(velocity, normalSpeedLimit);
     }
 
     public void ConfigureMovementBounds(Rect bounds)
@@ -118,6 +195,7 @@ public sealed class FlockMovementController : MonoBehaviour
             return;
 
         body.position = positionBeforeFixedMove;
+        velocity = Vector2.zero;
         movedThisStep = false;
     }
 
@@ -127,7 +205,15 @@ public sealed class FlockMovementController : MonoBehaviour
         if (!enabled)
         {
             moveInput = Vector2.zero;
+            velocity = Vector2.zero;
         }
+    }
+
+    private void OnValidate()
+    {
+        normalSpeedLimit = Mathf.Max(0f, normalSpeedLimit);
+        acceleration = Mathf.Max(0f, acceleration);
+        deceleration = Mathf.Max(0f, deceleration);
     }
 
     private static Vector2 ReadKeyboardFallback()

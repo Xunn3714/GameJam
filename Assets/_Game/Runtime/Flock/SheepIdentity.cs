@@ -16,6 +16,13 @@ public sealed class SheepIdentity : MonoBehaviour
     {
         DisplayName = displayName;
     }
+
+    /// <summary>运行时指定羊的类型 id（例如刷新器按权重决定特殊羊时）。</summary>
+    public void AssignType(string typeId)
+    {
+        if (!string.IsNullOrWhiteSpace(typeId))
+            sheepTypeId = typeId.Trim();
+    }
 }
 
 public sealed class MvpSheepCatalogEntry

@@ -17,6 +17,7 @@ public sealed class SheepMember : MonoBehaviour
         body.interpolation = RigidbodyInterpolation2D.Interpolate;
 
         GetComponent<CircleCollider2D>().isTrigger = true;
+        SheepVisualAnimator.Ensure(gameObject);
     }
 
     internal bool Join(FlockController flock)
