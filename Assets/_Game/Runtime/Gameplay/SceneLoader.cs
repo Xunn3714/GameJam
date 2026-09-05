@@ -26,6 +26,27 @@ public class SceneLoader : MonoBehaviour
     }
 
 
+    [Header("Gameplay")]
+    [Tooltip("主菜单“开始游戏”进入的场景名（需要在 Build Settings 里）。")]
+    [SerializeField] private string gameplaySceneName = "AlphaFlockExpansion";
+
+    public string GameplaySceneName => gameplaySceneName;
+
+    // 进入主玩法场景（当前是羊群暴力扩张）
+    public void LoadGameplayScene()
+    {
+        Time.timeScale = 1f;
+        string sceneName = string.IsNullOrWhiteSpace(gameplaySceneName) ? "Level_01" : gameplaySceneName;
+        if (!Application.CanStreamedLevelBeLoaded(sceneName))
+        {
+            Debug.LogWarning($"场景 {sceneName} 不在 Build Settings 里，回退到 Level_01。");
+            sceneName = "Level_01";
+        }
+
+        SceneManager.LoadScene(sceneName);
+    }
+
+
     // 进入第一关
     public void LoadLevel01()
     {

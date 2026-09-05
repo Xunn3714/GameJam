@@ -8,6 +8,7 @@ public sealed class RecruitableSheep : MonoBehaviour
     [SerializeField] private Color recruitedColor = new Color(0.65f, 1f, 0.65f, 1f);
 
     private CircleCollider2D recruitTrigger;
+    private WildSheepWander wildWander;
     private float recruitLockedUntil;
 
     public bool IsRecruited { get; private set; }
@@ -16,6 +17,8 @@ public sealed class RecruitableSheep : MonoBehaviour
     {
         recruitTrigger = GetComponent<CircleCollider2D>();
         spriteRenderer ??= GetComponent<SpriteRenderer>();
+        SheepVisualAnimator.Ensure(gameObject);
+        wildWander = WildSheepWander.Ensure(gameObject);
     }
 
     private void OnTriggerEnter2D(Collider2D other)
@@ -32,13 +35,26 @@ public sealed class RecruitableSheep : MonoBehaviour
         TryRecruitByContact(other);
     }
 
+    private static LayerMask blockingMask;
+    private static bool blockingMaskResolved;
+
     private void TryRecruitByContact(Collider2D other)
     {
         SheepMember member = other.GetComponentInParent<SheepMember>();
-        if (member != null && member.Flock != null)
+        if (member == null || member.Flock == null)
+            return;
+
+        // 隔着围栏不能招募，否则被招进来的羊会卡在栏杆另一边。
+        if (!blockingMaskResolved)
         {
-            TryRecruit(member.Flock);
+            blockingMask = MovementBlocking.DefaultMask();
+            blockingMaskResolved = true;
         }
+
+        if (MovementBlocking.IsLineBlocked(member.transform.position, transform.position, blockingMask))
+            return;
+
+        TryRecruit(member.Flock);
     }
 
     public bool TryRecruit(FlockController flock)
@@ -57,6 +73,13 @@ public sealed class RecruitableSheep : MonoBehaviour
     {
         IsRecruited = false;
         recruitLockedUntil = Time.time + Mathf.Max(0f, lockoutSeconds);
+        wildWander?.SetRecruited(false);
+    }
+
+    public void ConfigureWanderBounds(Rect worldBounds, float roamingLimit = -1f)
+    {
+        wildWander ??= WildSheepWander.Ensure(gameObject);
+        wildWander?.Configure(worldBounds, roamingLimit);
     }
 
     internal void CompleteRecruitment()
@@ -65,6 +88,7 @@ public sealed class RecruitableSheep : MonoBehaviour
             return;
 
         IsRecruited = true;
+        wildWander?.SetRecruited(true);
         if (spriteRenderer != null) spriteRenderer.color = recruitedColor;
         Debug.Log($"{name} joined the flock.", this);
     }

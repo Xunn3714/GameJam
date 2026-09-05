@@ -10,6 +10,8 @@ public sealed class FlockGrowthStage
     [SerializeField, Min(1)] private int maximumBatchSize = 1;
     [SerializeField, Min(0.1f)] private float cameraSize = 5f;
 
+    public FlockGrowthStage() { }
+
     public FlockGrowthStage(
         string displayName,
         int minimumFlockSize,

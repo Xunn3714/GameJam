@@ -70,12 +70,28 @@ public sealed class FlockSizeObstacle : MonoBehaviour
         }
 
         SheepMember member = other.GetComponent<SheepMember>();
-        if (member != null
-            && member.Flock != null
-            && member.Flock.MemberCount >= minimumMembersToBreak)
+        if (member == null || member.Flock == null)
+            return;
+
+        if (member.Flock.MemberCount >= minimumMembersToBreak)
         {
+            PlaySheepImpact(member, false);
             BreakObstacle();
         }
+        else
+        {
+            PlaySheepImpact(member, true);
+            ShowBlockedFeedback();
+        }
+    }
+
+    private void PlaySheepImpact(SheepMember member, bool hardImpact)
+    {
+        if (member == null || Time.unscaledTime < blockedFlashUntil)
+            return;
+
+        Vector2 direction = transform.position - member.transform.position;
+        member.GetComponent<SheepVisualAnimator>()?.PlayObstacleImpact(hardImpact, direction);
     }
 
     private void ShowBlockedFeedback()

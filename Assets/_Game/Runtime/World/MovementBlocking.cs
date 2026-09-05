@@ -8,6 +8,7 @@ public static class MovementBlocking
     public const string BlockingLayerName = "Blocking";
 
     private static readonly List<Collider2D> overlapResults = new List<Collider2D>(8);
+    private static readonly RaycastHit2D[] lineHits = new RaycastHit2D[1];
 
     public static LayerMask DefaultMask()
     {
@@ -23,24 +24,63 @@ public static class MovementBlocking
 
     public static Vector2 ResolveMove(Vector2 from, Vector2 to, float radius, LayerMask blockingMask)
     {
+        return ResolveMove(from, to, radius, blockingMask, out _);
+    }
+
+    public static Vector2 ResolveMove(
+        Vector2 from,
+        Vector2 to,
+        float radius,
+        LayerMask blockingMask,
+        out MovementBlockResult result)
+    {
+        result = default;
         if (blockingMask.value == 0 || from == to)
             return to;
 
-        if (IsFree(to, radius, blockingMask))
+        if (TryFindBlocker(to, radius, blockingMask, out Collider2D directBlocker) == false)
             return to;
 
+        result = new MovementBlockResult(true, false, directBlocker);
+
         Vector2 xOnly = new Vector2(to.x, from.y);
-        if (xOnly != from && IsFree(xOnly, radius, blockingMask))
+        if (xOnly != from && TryFindBlocker(xOnly, radius, blockingMask, out _) == false)
             return xOnly;
 
         Vector2 yOnly = new Vector2(from.x, to.y);
-        if (yOnly != from && IsFree(yOnly, radius, blockingMask))
+        if (yOnly != from && TryFindBlocker(yOnly, radius, blockingMask, out _) == false)
             return yOnly;
 
+        result = new MovementBlockResult(true, true, directBlocker);
         return from;
     }
 
+    /// <summary>两点之间是否隔着实体阻挡（围栏）；只看非 Trigger 碰撞体。</summary>
+    public static bool IsLineBlocked(Vector2 from, Vector2 to, LayerMask blockingMask)
+    {
+        if (blockingMask.value == 0)
+            return false;
+
+        ContactFilter2D filter = new ContactFilter2D
+        {
+            useLayerMask = true,
+            layerMask = blockingMask,
+            useTriggers = false,
+        };
+
+        return Physics2D.Linecast(from, to, filter, lineHits) > 0;
+    }
+
     public static bool IsFree(Vector2 position, float radius, LayerMask blockingMask)
+    {
+        return TryFindBlocker(position, radius, blockingMask, out _) == false;
+    }
+
+    private static bool TryFindBlocker(
+        Vector2 position,
+        float radius,
+        LayerMask blockingMask,
+        out Collider2D blocker)
     {
         ContactFilter2D filter = new ContactFilter2D
         {
@@ -51,6 +91,21 @@ public static class MovementBlocking
 
         overlapResults.Clear();
         int count = Physics2D.OverlapCircle(position, radius, filter, overlapResults);
-        return count == 0;
+        blocker = count > 0 ? overlapResults[0] : null;
+        return count > 0;
     }
+}
+
+public readonly struct MovementBlockResult
+{
+    public MovementBlockResult(bool wasBlocked, bool fullyBlocked, Collider2D blocker)
+    {
+        WasBlocked = wasBlocked;
+        FullyBlocked = fullyBlocked;
+        Blocker = blocker;
+    }
+
+    public bool WasBlocked { get; }
+    public bool FullyBlocked { get; }
+    public Collider2D Blocker { get; }
 }

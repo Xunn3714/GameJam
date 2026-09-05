@@ -1,0 +1,23 @@
+Unity compilation completed. Creating scene.
+PASS: Swept hit between physics endpoints
+PASS: Does not capture sheep ahead of the head
+PASS: Off-path sheep are safe
+PASS: Tail contact works after rotating direction
+PASS: Play starts with 10 sheep and controller
+PASS: Pause prevents movement and capture
+PASS: 100 units/sec sweep captures all 5 on-path sheep once; 5 off-path sheep survive
+PASS: No scattered or rescuable sheep created
+PASS: All captured sheep travel with the wolf
+PASS: Captured members leave flock and physics
+PASS: Captured members leave flock and physics
+PASS: Captured members leave flock and physics
+PASS: Captured members leave flock and physics
+PASS: Captured members leave flock and physics
+PASS: Second sweep captures the remaining 5
+PASS: Zero sheep triggers Game Over
+PASS: R restart handler restores scene to 10 sheep
+PASS: Restart clears old wolves and captured sheep
+PASS: Unmodified scene rhythm spawns a long wolf
+PASS: Natural stationary-play attack captures sheep
+PASS: No runtime errors: 
+PASS: Unity scene generation, references, swept collisions, pause, capture, Game Over, restart and natural rhythm.

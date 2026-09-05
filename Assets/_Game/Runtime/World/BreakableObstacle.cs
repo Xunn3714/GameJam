@@ -38,10 +38,15 @@ public sealed class BreakableObstacle : MonoBehaviour
         }
     }
 
+    public void Configure(ObstacleDefinition obstacleDefinition, SpriteRenderer renderer)
+    {
+        definition = obstacleDefinition;
+        spriteRenderer = renderer != null ? renderer : GetComponentInChildren<SpriteRenderer>();
+        colliders = GetComponentsInChildren<Collider2D>();
+    }
+
     private void OnTriggerEnter2D(Collider2D other)
     {
-        Debug.Log($"[Breakable] {name} 被 {other.name} 触发, isBroken={isBroken}", this);
-
         if (isBroken)
             return;
 
@@ -49,14 +54,14 @@ public sealed class BreakableObstacle : MonoBehaviour
             ? definition.BreakRule
             : ObstacleBreakRule.OnAnyContact;
 
-        bool flockContact = IsFlockContact(other);
-        Debug.Log($"[Breakable] rule={rule} flockContact={flockContact}", this);
-
         if (rule != ObstacleBreakRule.OnAnyContact)
             return;
 
-        if (flockContact)
+        if (IsFlockContact(other))
         {
+            SheepVisualAnimator visualAnimator = other.GetComponentInParent<SheepVisualAnimator>();
+            Vector2 direction = transform.position - other.transform.position;
+            visualAnimator?.PlayObstacleImpact(false, direction);
             Break();
         }
     }
@@ -95,8 +100,33 @@ public sealed class BreakableObstacle : MonoBehaviour
             spriteRenderer.sprite = definition.BrokenSprite;
         }
 
+        // 碎片立刻切到背景层，不然碎裂动画那几帧会压在羊上面。
+        ApplyBrokenSorting();
+
         float duration = definition != null ? definition.BreakAnimationDuration : 0.4f;
         StartCoroutine(FinishBreakAfter(duration));
+    }
+
+    private void ApplyBrokenSorting()
+    {
+        if (definition == null || definition.BrokenBehavior == ObstacleBrokenBehavior.Disappear)
+            return;
+
+        int layerId = SortingLayer.NameToID(definition.BrokenSortingLayer);
+        bool layerValid = SortingLayer.IsValid(layerId);
+        if (!layerValid)
+        {
+            Debug.LogWarning(
+                $"Sorting Layer \"{definition.BrokenSortingLayer}\" 不存在，只降低 Order in Layer。",
+                this);
+        }
+
+        foreach (SpriteRenderer renderer in GetComponentsInChildren<SpriteRenderer>(true))
+        {
+            if (layerValid)
+                renderer.sortingLayerID = layerId;
+            renderer.sortingOrder = definition.BrokenSortingOrder;
+        }
     }
 
     private IEnumerator FinishBreakAfter(float duration)
@@ -117,21 +147,6 @@ public sealed class BreakableObstacle : MonoBehaviour
         }
 
         // BecomeBackground：保留物体，只是换到背景层，让羊能从上面走过去。
-        if (spriteRenderer != null && definition != null)
-        {
-            int layerId = SortingLayer.NameToID(definition.BrokenSortingLayer);
-            if (SortingLayer.IsValid(layerId))
-            {
-                spriteRenderer.sortingLayerID = layerId;
-            }
-            else
-            {
-                Debug.LogWarning(
-                    $"Sorting Layer \"{definition.BrokenSortingLayer}\" 不存在，只降低 Order in Layer。",
-                    this);
-            }
-
-            spriteRenderer.sortingOrder = definition.BrokenSortingOrder;
-        }
+        ApplyBrokenSorting();
     }
 }

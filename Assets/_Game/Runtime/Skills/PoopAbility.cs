@@ -10,18 +10,34 @@ public sealed class PoopAbility : MonoBehaviour
     [SerializeField] private Transform spawnPoint;
     [SerializeField] private GameObject poopPrefab;
     [SerializeField] private AudioClip poopClip;
-    [SerializeField, Min(0f)] private float cooldownSeconds = 2f;
-    [SerializeField, Min(0.01f)] private float lifetimeSeconds = 10f;
-    [SerializeField, Min(1)] private int maxActivePoops = 10;
+
+    [Header("Stock")]
+    [SerializeField, Min(1)] private int maxStoredPoops = 5;
+    [SerializeField, Min(0.01f)] private float rechargeSeconds = 10f;
+    [SerializeField, Min(0f)] private float cooldownSeconds = 0.5f;
+
+    [Header("World")]
+    [SerializeField, Min(0.01f)] private float lifetimeSeconds = 5f;
+    [SerializeField, Min(1)] private int maxActivePoops = 2;
 
     private readonly List<GameObject> spawned = new List<GameObject>();
     private InputAction runtimePoopAction;
+    private FlockMovementController movementController;
+    private int storedPoops;
+    private float nextRechargeAt = float.PositiveInfinity;
     private float readyAt;
     private bool controlEnabled = true;
 
     public event Action Used;
+    public event Action<int, int> StockChanged;
+
     public float RemainingCooldown => Mathf.Max(0f, readyAt - Time.time);
+    public float RemainingRecharge => storedPoops >= maxStoredPoops
+        ? 0f
+        : Mathf.Max(0f, nextRechargeAt - Time.time);
     public bool ControlEnabled => controlEnabled;
+    public int StoredPoops => storedPoops;
+    public int MaxStoredPoops => maxStoredPoops;
     public int ActivePoopCount
     {
         get
@@ -31,6 +47,13 @@ public sealed class PoopAbility : MonoBehaviour
         }
     }
     public bool IsAtCapacity => ActivePoopCount >= maxActivePoops;
+
+    private void Awake()
+    {
+        ValidateSettings();
+        storedPoops = maxStoredPoops;
+        movementController = GetComponent<FlockMovementController>();
+    }
 
     private void OnEnable()
     {
@@ -46,23 +69,90 @@ public sealed class PoopAbility : MonoBehaviour
 
     private void Update()
     {
+        RechargeStock();
         if (runtimePoopAction != null && runtimePoopAction.WasPressedThisFrame()) TryUse();
     }
+
+    private void OnValidate() => ValidateSettings();
 
     public void SetControlEnabled(bool value) => controlEnabled = value;
 
     public bool TryUse()
     {
+        RechargeStock();
         if (!isActiveAndEnabled || !controlEnabled || Time.timeScale == 0f || RemainingCooldown > 0f ||
-            poopPrefab == null || spawnPoint == null || IsAtCapacity) return false;
+            poopPrefab == null || spawnPoint == null || storedPoops <= 0 || IsAtCapacity) return false;
 
-        GameObject instance = Instantiate(poopPrefab, spawnPoint.position, Quaternion.identity);
+        GameObject instance = Instantiate(poopPrefab, ResolveSpawnPosition(), Quaternion.identity);
         spawned.Add(instance);
-        Destroy(instance, Mathf.Max(0.01f, lifetimeSeconds));
+
+        PoopVisual visual = instance.GetComponent<PoopVisual>();
+        if (visual != null)
+            visual.BeginLifetime(lifetimeSeconds);
+        else
+            Destroy(instance, lifetimeSeconds);
+
+        ConsumeStock();
         readyAt = Time.time + Mathf.Max(0f, cooldownSeconds);
         if (poopClip != null && AudioManager.Instance != null) AudioManager.Instance.PlaySFX(poopClip);
         Used?.Invoke();
         return true;
+    }
+
+    private void ConsumeStock()
+    {
+        bool wasFull = storedPoops >= maxStoredPoops;
+        storedPoops = Mathf.Max(0, storedPoops - 1);
+
+        if (wasFull || float.IsPositiveInfinity(nextRechargeAt))
+            nextRechargeAt = Time.time + rechargeSeconds;
+
+        StockChanged?.Invoke(storedPoops, maxStoredPoops);
+    }
+
+    private Vector3 ResolveSpawnPosition()
+    {
+        if (movementController == null || spawnPoint.parent == null)
+            return spawnPoint.position;
+
+        Vector3 localPosition = spawnPoint.localPosition;
+        localPosition.x = Mathf.Abs(localPosition.x) * (movementController.FacingLeft ? 1f : -1f);
+        return spawnPoint.parent.TransformPoint(localPosition);
+    }
+
+    private void RechargeStock()
+    {
+        if (storedPoops >= maxStoredPoops)
+        {
+            nextRechargeAt = float.PositiveInfinity;
+            return;
+        }
+
+        if (float.IsPositiveInfinity(nextRechargeAt))
+            nextRechargeAt = Time.time + rechargeSeconds;
+
+        bool changed = false;
+        while (storedPoops < maxStoredPoops && Time.time >= nextRechargeAt)
+        {
+            storedPoops++;
+            nextRechargeAt += rechargeSeconds;
+            changed = true;
+        }
+
+        if (storedPoops >= maxStoredPoops)
+            nextRechargeAt = float.PositiveInfinity;
+
+        if (changed)
+            StockChanged?.Invoke(storedPoops, maxStoredPoops);
+    }
+
+    private void ValidateSettings()
+    {
+        maxStoredPoops = Mathf.Max(1, maxStoredPoops);
+        rechargeSeconds = Mathf.Max(0.01f, rechargeSeconds);
+        cooldownSeconds = Mathf.Max(0f, cooldownSeconds);
+        lifetimeSeconds = Mathf.Max(0.01f, lifetimeSeconds);
+        maxActivePoops = Mathf.Max(1, maxActivePoops);
     }
 
     private void OnDestroy()

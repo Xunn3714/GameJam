@@ -16,6 +16,19 @@ public sealed class CameraFollow2D : MonoBehaviour
     private Camera attachedCamera;
     private bool keepInsideBounds;
     private Rect cameraBounds;
+    private float shakeAmplitude;
+    private float shakeDuration;
+    private float shakeTimer;
+    private Vector3 basePosition;
+    private bool hasBasePosition;
+
+    /// <summary>触发一次镜头震动（例如撞破围栏）。</summary>
+    public void Shake(float amplitude, float duration)
+    {
+        shakeAmplitude = Mathf.Max(shakeAmplitude, amplitude);
+        shakeDuration = Mathf.Max(0.01f, duration);
+        shakeTimer = shakeDuration;
+    }
 
     private void Awake()
     {
@@ -31,6 +44,36 @@ public sealed class CameraFollow2D : MonoBehaviour
         if (target == null)
             return;
 
+        // 震动是叠加在跟随位置上的偏移，先把上一帧的偏移去掉再算跟随。
+        if (hasBasePosition)
+        {
+            transform.position = basePosition;
+        }
+        FollowTarget();
+        basePosition = transform.position;
+        hasBasePosition = true;
+        ApplyShake();
+    }
+
+    private void ApplyShake()
+    {
+        if (shakeTimer <= 0f)
+            return;
+
+        shakeTimer -= Time.deltaTime;
+        float strength = shakeAmplitude * Mathf.Clamp01(shakeTimer / shakeDuration);
+        Vector2 offset = Random.insideUnitCircle * strength;
+        transform.position = basePosition + new Vector3(offset.x, offset.y, 0f);
+
+        if (shakeTimer <= 0f)
+        {
+            shakeAmplitude = 0f;
+            transform.position = basePosition;
+        }
+    }
+
+    private void FollowTarget()
+    {
         if (flockController == null)
         {
             flockController = target.GetComponent<FlockController>();

@@ -9,10 +9,20 @@ public sealed class MvpHudView : MonoBehaviour
     [SerializeField] private TMP_Text taskText;
     [SerializeField] private TMP_Text flockCountText;
 
+    private int displayedMemberCount;
+    private int displayedPoopStock = -1;
+    private int displayedPoopCapacity;
+
     private void Awake()
     {
         MvpTmpUiFont.Apply(taskText);
         MvpTmpUiFont.Apply(flockCountText);
+
+        if (flockCountText != null)
+        {
+            flockCountText.fontSize = 30f;
+            flockCountText.rectTransform.sizeDelta = new Vector2(380f, 50f);
+        }
 
         if (taskText != null)
         {
@@ -34,10 +44,8 @@ public sealed class MvpHudView : MonoBehaviour
             taskText.text = $"找到羊：{progress}/{target}";
         }
 
-        if (flockCountText != null)
-        {
-            flockCountText.text = $"族群：{memberCount}";
-        }
+        displayedMemberCount = memberCount;
+        RefreshStatusText();
     }
 
     public void UpdateObjectives(
@@ -71,7 +79,24 @@ public sealed class MvpHudView : MonoBehaviour
             taskText.text = content.ToString();
         }
 
-        if (flockCountText != null)
-            flockCountText.text = $"族群：{memberCount}";
+        displayedMemberCount = memberCount;
+        RefreshStatusText();
+    }
+
+    public void UpdatePoopStock(int stored, int capacity)
+    {
+        displayedPoopStock = Mathf.Max(0, stored);
+        displayedPoopCapacity = Mathf.Max(0, capacity);
+        RefreshStatusText();
+    }
+
+    private void RefreshStatusText()
+    {
+        if (flockCountText == null)
+            return;
+
+        flockCountText.text = displayedPoopCapacity > 0
+            ? $"族群：{displayedMemberCount}  大便：{displayedPoopStock}/{displayedPoopCapacity}"
+            : $"族群：{displayedMemberCount}";
     }
 }
