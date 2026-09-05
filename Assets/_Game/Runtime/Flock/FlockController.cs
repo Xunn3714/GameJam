@@ -27,12 +27,10 @@ public sealed class FlockController : MonoBehaviour
     [Tooltip("成员场不会小于这个半径。这里只用于成员资格判定，不会施加吸引力。")]
     [FormerlySerializedAs("detachDistanceFromMainGroup")]
     [SerializeField, Min(0.5f)] private float minimumMembershipRadius = 5.5f;
-    [Tooltip("成员场半径公式的基础值：基础值 + 成长值 × sqrt(中心成员数)。")]
+    [Tooltip("成员场半径公式的基础值：基础值 + 成长值 × sqrt(当前成员数)。")]
     [SerializeField, Min(0f)] private float membershipRadiusBase = 3.5f;
-    [Tooltip("中心成员越多，成员场半径按平方根增长，避免大羊群半径线性膨胀。")]
-    [SerializeField, Min(0f)] private float membershipRadiusGrowth = 1f;
-    [Tooltip("成员场最大半径，避免极大羊群让远处成员永久不脱队。")]
-    [SerializeField, Min(0.5f)] private float maximumMembershipRadius = 25f;
+    [Tooltip("当前成员越多，成员场半径按平方根增长，避免大羊群半径线性膨胀。")]
+    [SerializeField, Min(0f)] private float membershipRadiusGrowth = 1.2f;
     [Tooltip("持续处于成员场外多久后正式脱队，避免短暂越界造成误判。")]
     [SerializeField, Min(0f)] private float detachDelay = 1.5f;
     [Tooltip("正式脱队时向外散开的初速度。")]
@@ -78,6 +76,7 @@ public sealed class FlockController : MonoBehaviour
     private readonly Dictionary<SheepMember, float> outsideMembershipSince =
         new Dictionary<SheepMember, float>();
     private readonly List<SheepMember> detachingMembers = new List<SheepMember>();
+    private readonly HashSet<SheepMember> detachingMemberSet = new HashSet<SheepMember>();
 
     public int RecruitedCount { get; private set; }
     public int MemberCount => members.Count;
@@ -633,6 +632,7 @@ public sealed class FlockController : MonoBehaviour
 
         agent.SetFlock(this);
         agent.SetSimulationSlot(members.Count - 1);
+        ScatteredSheep.Ensure(member);
 
         if (members.Count > HighestMemberCount)
         {
@@ -709,46 +709,9 @@ public sealed class FlockController : MonoBehaviour
     private float CalculateMembershipRadius()
     {
         float minimumRadius = Mathf.Max(0.5f, minimumMembershipRadius);
-        float maximumRadius = Mathf.Max(minimumRadius, maximumMembershipRadius);
-        float candidateRadius = minimumRadius;
-
-        // 从最小范围向外求一个稳定成员场。只有当前范围内的中心成员会扩大下一轮范围，
-        // 因此远处的待脱队羊不会反过来把自己计入“重力质量”。
-        const int maximumExpansionPasses = 8;
-        for (int pass = 0; pass < maximumExpansionPasses; pass++)
-        {
-            int centralMemberCount = CountMembersWithinRadius(candidateRadius);
-            float expandedRadius = Mathf.Clamp(
-                membershipRadiusBase
-                    + membershipRadiusGrowth * Mathf.Sqrt(centralMemberCount),
-                minimumRadius,
-                maximumRadius);
-            if (expandedRadius <= candidateRadius + 0.01f)
-                break;
-
-            candidateRadius = expandedRadius;
-        }
-
-        return candidateRadius;
-    }
-
-
-    private int CountMembersWithinRadius(float radius)
-    {
-        int count = 0;
-        float radiusSquared = radius * radius;
-        Vector2 center = Center;
-        for (int index = 0; index < members.Count; index++)
-        {
-            SheepMember member = members[index];
-            if (member != null
-                && (GetMemberPosition(member) - center).sqrMagnitude <= radiusSquared)
-            {
-                count++;
-            }
-        }
-
-        return count;
+        return Mathf.Max(
+            minimumRadius,
+            membershipRadiusBase + membershipRadiusGrowth * Mathf.Sqrt(members.Count));
     }
 
 
@@ -772,6 +735,31 @@ public sealed class FlockController : MonoBehaviour
         if (detachingMembers.Count == 0)
             return;
 
+        detachingMemberSet.Clear();
+        for (int index = 0; index < detachingMembers.Count; index++)
+        {
+            SheepMember member = detachingMembers[index];
+            if (member != null && member.Flock == this)
+                detachingMemberSet.Add(member);
+        }
+
+        int firstRemovedIndex = members.Count;
+        for (int index = members.Count - 1; index >= 0; index--)
+        {
+            SheepMember member = members[index];
+            if (member == null || !detachingMemberSet.Contains(member))
+                continue;
+
+            member.Agent?.SetFlock(null);
+            member.Leave(this);
+            outsideMembershipSince.Remove(member);
+            members.RemoveAt(index);
+            firstRemovedIndex = index;
+        }
+
+        if (firstRemovedIndex < members.Count)
+            RefreshSimulationSlots(firstRemovedIndex);
+
         int detachedCount = 0;
         bool wasDeferring = deferMemberCountChanged;
         deferMemberCountChanged = true;
@@ -780,7 +768,7 @@ public sealed class FlockController : MonoBehaviour
             for (int index = 0; index < detachingMembers.Count; index++)
             {
                 SheepMember member = detachingMembers[index];
-                if (member == null || member.Flock != this)
+                if (member == null || !detachingMemberSet.Contains(member))
                     continue;
 
                 Vector2 awayFromCenter = (Vector2)member.transform.position - Center;
@@ -803,6 +791,7 @@ public sealed class FlockController : MonoBehaviour
         }
 
         detachingMembers.Clear();
+        detachingMemberSet.Clear();
         if (detachedCount <= 0)
             return;
 
@@ -822,13 +811,9 @@ public sealed class FlockController : MonoBehaviour
         minimumMembershipRadius = Mathf.Max(0.5f, minimumMembershipRadius);
         membershipRadiusBase = Mathf.Max(0f, membershipRadiusBase);
         membershipRadiusGrowth = Mathf.Max(0f, membershipRadiusGrowth);
-        maximumMembershipRadius = Mathf.Max(minimumMembershipRadius, maximumMembershipRadius);
         detachDelay = Mathf.Max(0f, detachDelay);
         detachScatterSpeed = Mathf.Max(0f, detachScatterSpeed);
-        currentMembershipRadius = Mathf.Clamp(
-            currentMembershipRadius,
-            minimumMembershipRadius,
-            maximumMembershipRadius);
+        currentMembershipRadius = Mathf.Max(currentMembershipRadius, minimumMembershipRadius);
         memberGridDirty = true;
     }
 }

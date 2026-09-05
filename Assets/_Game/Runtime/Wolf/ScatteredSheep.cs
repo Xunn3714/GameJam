@@ -27,6 +27,15 @@ public sealed class ScatteredSheep : MonoBehaviour
     public bool IsScattered { get; private set; }
     public bool IsKnockbackActive => IsScattered && knockbackActive;
 
+    public static ScatteredSheep Ensure(SheepMember target)
+    {
+        if (target == null)
+            return null;
+
+        ScatteredSheep scattered = target.GetComponent<ScatteredSheep>();
+        return scattered != null ? scattered : target.gameObject.AddComponent<ScatteredSheep>();
+    }
+
     /// <summary>
     /// 把一只羊从羊群中撞开：移出羊群、施加击退速度，并允许之后被重新招募。
     /// </summary>
@@ -41,12 +50,7 @@ public sealed class ScatteredSheep : MonoBehaviour
             flock.Remove(target);
         }
 
-        ScatteredSheep scattered = target.GetComponent<ScatteredSheep>();
-        if (scattered == null)
-        {
-            scattered = target.gameObject.AddComponent<ScatteredSheep>();
-        }
-
+        ScatteredSheep scattered = Ensure(target);
         scattered.BeginKnockback(knockbackVelocity);
         return scattered;
     }
@@ -56,6 +60,7 @@ public sealed class ScatteredSheep : MonoBehaviour
         member = GetComponent<SheepMember>();
         body = GetComponent<Rigidbody2D>();
         spriteRenderer = GetComponent<SpriteRenderer>();
+        enabled = false;
     }
 
     private void BeginKnockback(Vector2 knockbackVelocity)

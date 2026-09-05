@@ -7,7 +7,7 @@ using Stopwatch = System.Diagnostics.Stopwatch;
 public sealed class FlockSeparationTests
 {
     [Test]
-    public void CentralMembersExpandMembershipFieldWithoutMovingSheep()
+    public void CurrentMemberCountDeterminesFieldWithoutMovingSheep()
     {
         List<GameObject> objects = new List<GameObject>();
         try
@@ -36,7 +36,8 @@ public sealed class FlockSeparationTests
             SetField(flock, "detachScatterSpeed", 0f);
             evaluate.Invoke(flock, new object[] { 10f });
 
-            Assert.That(flock.CurrentMembershipRadius, Is.GreaterThan(8.5f));
+            float expectedRadius = 3.5f + 1.2f * Mathf.Sqrt(31);
+            Assert.That(flock.CurrentMembershipRadius, Is.EqualTo(expectedRadius).Within(0.01f));
             Assert.AreEqual(31, flock.MemberCount);
             for (int index = 0; index < flock.Members.Count; index++)
             {
@@ -51,8 +52,9 @@ public sealed class FlockSeparationTests
         }
     }
 
-    [Test]
-    public void ThirtyDistantMembersDoNotExpandFieldAndDetachTogether()
+    [TestCase(30)]
+    [TestCase(1000)]
+    public void DistantMembersUseSnapshotRadiusAndDetachTogether(int distantMemberCount)
     {
         List<GameObject> objects = new List<GameObject>();
         try
@@ -64,13 +66,17 @@ public sealed class FlockSeparationTests
             SheepMember center = CreateMember("Center", Vector2.zero, objects);
             Assert.IsTrue((bool)addMember.Invoke(flock, new object[] { center }));
 
-            List<SheepMember> distantMembers = new List<SheepMember>();
-            for (int index = 0; index < 30; index++)
+            float expectedRadius = Mathf.Max(
+                5.5f,
+                3.5f + 1.2f * Mathf.Sqrt(distantMemberCount + 1));
+            List<SheepMember> distantMembers = new List<SheepMember>(distantMemberCount);
+            for (int index = 0; index < distantMemberCount; index++)
             {
                 Vector2 position = new Vector2(
-                    20f + index % 6 * 0.5f,
+                    expectedRadius + 10f + index % 6 * 0.5f,
                     index / 6 * 0.5f);
                 SheepMember member = CreateMember($"Distant_{index:00}", position, objects);
+                member.gameObject.AddComponent<RecruitableSheep>();
                 distantMembers.Add(member);
                 Assert.IsTrue((bool)addMember.Invoke(flock, new object[] { member }));
             }
@@ -79,16 +85,25 @@ public sealed class FlockSeparationTests
             SetField(flock, "detachScatterSpeed", 0f);
             int separatedCount = 0;
             flock.MembersSeparated += count => separatedCount += count;
+            Stopwatch stopwatch = Stopwatch.StartNew();
             evaluate.Invoke(flock, new object[] { 10f });
+            stopwatch.Stop();
 
-            Assert.That(flock.CurrentMembershipRadius, Is.EqualTo(5.5f).Within(0.01f));
+            Assert.That(flock.CurrentMembershipRadius, Is.EqualTo(expectedRadius).Within(0.01f));
             Assert.AreEqual(1, flock.MemberCount);
-            Assert.AreEqual(30, separatedCount);
+            Assert.AreEqual(distantMemberCount, separatedCount);
             for (int index = 0; index < distantMembers.Count; index++)
             {
                 Assert.IsNull(distantMembers[index].Flock);
                 Assert.IsTrue(distantMembers[index].GetComponent<ScatteredSheep>().IsScattered);
             }
+
+            evaluate.Invoke(flock, new object[] { 11f });
+            Assert.That(flock.CurrentMembershipRadius, Is.EqualTo(5.5f).Within(0.01f));
+
+            Debug.Log(
+                $"Membership field detached {distantMemberCount} distant members in "
+                + $"{stopwatch.Elapsed.TotalMilliseconds:0.###} ms.");
         }
         finally
         {
@@ -220,6 +235,7 @@ public sealed class FlockSeparationTests
     [TestCase(100)]
     [TestCase(200)]
     [TestCase(500)]
+    [TestCase(1000)]
     public void MembershipFieldScaleCheckKeepsDenseMembers(int memberCount)
     {
         List<GameObject> objects = new List<GameObject>(memberCount + 1);
@@ -229,17 +245,18 @@ public sealed class FlockSeparationTests
             MethodInfo addMember = GetPrivateMethod("AddMember");
             MethodInfo evaluate = GetPrivateMethod("EvaluateMemberSeparation");
 
-            const int membersPerRow = 25;
-            const float spacing = 0.75f;
-            int rowCount = Mathf.CeilToInt(memberCount / (float)membersPerRow);
-            Vector2 offset = new Vector2(
-                (membersPerRow - 1) * spacing * 0.5f,
-                (rowCount - 1) * spacing * 0.5f);
+            float comfortableRadius = 1f + 0.8f * Mathf.Sqrt(memberCount - 1);
+            float aspectRoot = Mathf.Sqrt(1.55f);
+            float longitudinalRadius = comfortableRadius * aspectRoot * 1.1f;
+            float lateralRadius = comfortableRadius / aspectRoot * 1.1f;
+            const float goldenAngle = 2.39996323f;
             for (int index = 0; index < memberCount; index++)
             {
+                float normalizedRadius = Mathf.Sqrt((index + 0.5f) / memberCount);
+                float angle = index * goldenAngle;
                 Vector2 position = new Vector2(
-                    index % membersPerRow * spacing,
-                    index / membersPerRow * spacing) - offset;
+                    Mathf.Cos(angle) * longitudinalRadius * normalizedRadius,
+                    Mathf.Sin(angle) * lateralRadius * normalizedRadius);
                 Assert.IsTrue((bool)addMember.Invoke(
                     flock,
                     new object[] { CreateMember($"Member_{index:000}", position, objects) }));
