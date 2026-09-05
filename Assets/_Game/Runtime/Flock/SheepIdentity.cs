@@ -63,7 +63,35 @@ public static class MvpSheepCatalog
             1,
             "普通",
             1,
-            "MVP Prototype")
+            "MVP Prototype"),
+        new MvpSheepCatalogEntry(
+            "sheep.special.tophat",
+            "礼帽小羊",
+            2,
+            "绿色",
+            1,
+            "Green Top Hat"),
+        new MvpSheepCatalogEntry(
+            "sheep.special.redbow",
+            "蝴蝶结小羊",
+            2,
+            "绿色",
+            1,
+            "Green Red Bow"),
+        new MvpSheepCatalogEntry(
+            "sheep.special.horned",
+            "山羊",
+            2,
+            "绿色",
+            1,
+            "Green Horned"),
+        new MvpSheepCatalogEntry(
+            "sheep.special.black",
+            "黑色小羊",
+            2,
+            "绿色",
+            1,
+            "Green Black")
     };
 
     public static IReadOnlyList<MvpSheepCatalogEntry> Entries => entries;

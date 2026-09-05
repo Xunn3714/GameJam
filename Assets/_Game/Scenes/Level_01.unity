@@ -2033,9 +2033,7 @@ MonoBehaviour:
   groupOfOneWeight: 60
   groupOfTwoWeight: 30
   groupOfThreeWeight: 10
-  specialSheepCount: 5
   specialSheepPool: {fileID: 11400000, guid: c6bdb1c49bd74264b6c1a4e8495a64e9, type: 2}
-  fallbackSpecialSheepPrefab: {fileID: 2358661416431911602, guid: f23df8856d744c99a0f985672b51f6d8, type: 3}
   fixedSpecialSpawnPoints: []
   hudView: {fileID: 1122711760}
   joinToastView: {fileID: 1122711762}

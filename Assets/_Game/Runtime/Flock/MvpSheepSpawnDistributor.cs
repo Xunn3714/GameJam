@@ -8,25 +8,21 @@ public static class MvpSheepSpawnDistributor
 {
     private readonly struct SpawnSlot
     {
-        public SpawnSlot(Vector2 position, bool isSpecial, RecruitableSheep prefabOverride = null)
+        public SpawnSlot(Vector2 position, bool isSpecial)
         {
             Position = position;
             IsSpecial = isSpecial;
-            PrefabOverride = prefabOverride;
         }
 
         public Vector2 Position { get; }
         public bool IsSpecial { get; }
-        public RecruitableSheep PrefabOverride { get; }
     }
 
     public static IReadOnlyList<RecruitableSheep> PrepareAndDistribute(
         RecruitableSheep normalPrefab,
         SpecialSheepPool specialPool,
-        RecruitableSheep fallbackSpecialPrefab,
         IReadOnlyList<SpecialSheepSpawnPoint> fixedSpecialSpawnPoints,
         int targetCount,
-        int specialCount,
         float groupOfOneWeight,
         float groupOfTwoWeight,
         float groupOfThreeWeight,
@@ -40,7 +36,6 @@ public static class MvpSheepSpawnDistributor
         int fixedSeed)
     {
         targetCount = Mathf.Max(1, targetCount);
-        specialCount = Mathf.Clamp(specialCount, 0, targetCount);
 
         List<RecruitableSheep> authoredSheep = new(Object.FindObjectsByType<RecruitableSheep>(
             FindObjectsInactive.Include));
@@ -63,6 +58,18 @@ public static class MvpSheepSpawnDistributor
             ? fixedSeed
             : unchecked(Environment.TickCount * 397 ^ DateTime.UtcNow.Ticks.GetHashCode());
         Random random = new(seed);
+        HashSet<string> consumedSpecialTypeIds = new(StringComparer.Ordinal);
+        List<SpecialSheepSelection> specialSelections = new();
+        for (int index = 0; index < targetCount; index++)
+        {
+            if (specialPool != null
+                && specialPool.TryPick(random, consumedSpecialTypeIds, out SpecialSheepSelection selection))
+            {
+                specialSelections.Add(selection);
+            }
+        }
+
+        int specialCount = specialSelections.Count;
         List<SpawnSlot> slots = new(targetCount);
 
         bool generated = TryGenerateRandomLayout(
@@ -122,13 +129,11 @@ public static class MvpSheepSpawnDistributor
         foreach (SpawnSlot slot in slots)
         {
             RecruitableSheep prefab = normalPrefab;
+            SpecialSheepSelection specialSelection = default;
             if (slot.IsSpecial)
             {
-                prefab = slot.PrefabOverride != null
-                    ? slot.PrefabOverride
-                    : specialPool != null
-                        ? specialPool.Pick(random, fallbackSpecialPrefab)
-                        : fallbackSpecialPrefab;
+                specialSelection = specialSelections[specialIndex];
+                prefab = specialSelection.Prefab;
                 prefab ??= normalPrefab;
             }
 
@@ -142,8 +147,9 @@ public static class MvpSheepSpawnDistributor
             {
                 specialIndex++;
                 sheep.name = $"SpecialSheep_{specialIndex:00}";
-                if (sheep.GetComponent<SpecialSheepMarker>() == null)
-                    sheep.gameObject.AddComponent<SpecialSheepMarker>();
+                SpecialSheepMarker marker = sheep.GetComponent<SpecialSheepMarker>();
+                marker ??= sheep.gameObject.AddComponent<SpecialSheepMarker>();
+                marker.Configure(specialSelection);
             }
             else
             {
@@ -429,7 +435,8 @@ public static class MvpSheepSpawnDistributor
 
             positions.Add(candidate);
             centers.Add(candidate);
-            slots.Add(new SpawnSlot(candidate, true, point.PrefabOverride));
+            // 固定点仅决定特殊羊的位置；羊种仍由本局概率与唯一性规则决定。
+            slots.Add(new SpawnSlot(candidate, true));
             appended++;
         }
 
