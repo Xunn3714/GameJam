@@ -20,6 +20,43 @@ public class ResultPanelView : MonoBehaviour
     public event Action ReturnTitleRequested;
 
     private bool isShowing;
+    private Image journeySummaryPaper;
+
+    public void StyleJourneySummary()
+    {
+        if (scoreLabel != null)
+            scoreLabel.text = scoreLabel.text.Replace("当前得分", "最多羊数");
+        if (resultDescription == null)
+            return;
+
+        resultDescription.richText = true;
+        resultDescription.fontSize = 26f;
+        resultDescription.enableAutoSizing = true;
+        resultDescription.fontSizeMin = 20f;
+        resultDescription.fontSizeMax = 26f;
+        resultDescription.alignment = TextAlignmentOptions.TopLeft;
+        resultDescription.textWrappingMode = TextWrappingModes.Normal;
+        resultDescription.lineSpacing = 3f;
+        resultDescription.margin = new Vector4(24f, 18f, 24f, 18f);
+        resultDescription.color = new Color32(65, 57, 39, 255);
+
+        if (journeySummaryPaper != null)
+            return;
+        RectTransform textRect = resultDescription.rectTransform;
+        journeySummaryPaper = MvpUiFactory.CreateImage("JourneySummaryPaper", textRect.parent,
+            new Color32(238, 229, 195, 180));
+        journeySummaryPaper.raycastTarget = false;
+        RectTransform paperRect = journeySummaryPaper.rectTransform;
+        paperRect.anchorMin = textRect.anchorMin;
+        paperRect.anchorMax = textRect.anchorMax;
+        paperRect.pivot = textRect.pivot;
+        paperRect.anchoredPosition = textRect.anchoredPosition;
+        paperRect.sizeDelta = textRect.sizeDelta;
+        paperRect.SetSiblingIndex(textRect.GetSiblingIndex());
+        Outline outline = journeySummaryPaper.gameObject.AddComponent<Outline>();
+        outline.effectColor = new Color32(101, 88, 59, 60);
+        outline.effectDistance = new Vector2(1f, -1f);
+    }
 
     private void Awake()
     {
