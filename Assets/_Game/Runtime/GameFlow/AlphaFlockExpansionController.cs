@@ -146,7 +146,6 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         if (tutorialPen != null)
         {
             tutorialPen.Opened += HandleTutorialPenOpened;
-            tutorialPen.HintRequested += ShowLatestBanner;
         }
     }
 
@@ -173,7 +172,6 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         if (tutorialPen != null)
         {
             tutorialPen.Opened -= HandleTutorialPenOpened;
-            tutorialPen.HintRequested -= ShowLatestBanner;
         }
     }
 

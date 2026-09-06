@@ -52,6 +52,22 @@ public sealed class ProgressiveSheepSpawner : MonoBehaviour
         public HashSet<RecruitableSheep> WildMembers { get; } = new();
     }
 
+    public sealed class RewardSpecialGroupReservation
+    {
+        internal RewardSpecialGroupReservation(
+            SpecialSheepCatalog.Entry catalogEntry,
+            SheepQuality quality)
+        {
+            CatalogEntry = catalogEntry;
+            Quality = quality;
+        }
+
+        public string TypeId => CatalogEntry != null ? CatalogEntry.TypeId : string.Empty;
+        internal SpecialSheepCatalog.Entry CatalogEntry { get; }
+        internal SheepQuality Quality { get; }
+        internal bool Consumed { get; set; }
+    }
+
     /// <summary>某种类型的羊被刷出时触发（类型 id, 羊）。</summary>
     public event Action<string, RecruitableSheep> SheepSpawned;
 
@@ -224,6 +240,96 @@ public sealed class ProgressiveSheepSpawner : MonoBehaviour
             $"Alpha 刷新了第 {groupId} 组，共 {count} 只{GetTypeDisplayName(typeId)}；" +
             $"累计刷新 {TotalSpawned} 只。",
             this);
+        return true;
+    }
+
+    /// <summary>
+    /// 在开局为固定奖励预留一种紫色或更高品质的羊。预留立即占用本局唯一名额，
+    /// 避免玩家打开宝箱之前，同一类型又被普通刷新器抽中。
+    /// </summary>
+    public bool TryReserveRewardSpecialGroup(out RewardSpecialGroupReservation reservation)
+    {
+        reservation = null;
+        if (!initialized)
+            Initialize();
+
+        if (specialSheepCatalog == null || specialSheepCatalog.BaseSheepPrefab == null)
+            return false;
+
+        SheepQuality[] rewardQualities = { SheepQuality.EasterEgg, SheepQuality.Gold, SheepQuality.Purple };
+        int qualityOffset = random.Next(rewardQualities.Length);
+
+        for (int index = 0; index < rewardQualities.Length; index++)
+        {
+            SheepQuality candidate = rewardQualities[(qualityOffset + index) % rewardQualities.Length];
+            if (!specialSheepCatalog.TryPickAvailable(
+                    candidate,
+                    random,
+                    specialRunState.IsAvailable,
+                    out SpecialSheepCatalog.Entry entry))
+                continue;
+
+            if (!specialRunState.TryActivate(entry.TypeId))
+                continue;
+
+            reservation = new RewardSpecialGroupReservation(entry, candidate);
+            return true;
+        }
+
+        Debug.LogWarning("红箱子奖励未预留：特殊羊目录里没有本局可用的紫色或更高品质羊。", this);
+        return false;
+    }
+
+    /// <summary>在指定位置生成已经预留的特殊羊组。每份预留只能消费一次。</summary>
+    public bool TrySpawnRewardSpecialGroup(
+        RewardSpecialGroupReservation reservation,
+        Vector2 center,
+        int minimumCount = 1,
+        int maximumCount = 3)
+    {
+        if (!initialized)
+            Initialize();
+
+        if (reservation == null
+            || reservation.Consumed
+            || reservation.CatalogEntry == null
+            || specialSheepCatalog == null
+            || specialSheepCatalog.BaseSheepPrefab == null)
+            return false;
+
+        reservation.Consumed = true;
+        SpecialSheepCatalog.Entry entry = reservation.CatalogEntry;
+
+        int count = random.Next(Mathf.Max(1, minimumCount), Mathf.Max(minimumCount, maximumCount) + 1);
+        groupSequence++;
+        List<RecruitableSheep> created = new(count);
+        if (!TryCreateGroupInstances(
+                specialSheepCatalog.BaseSheepPrefab,
+                count,
+                center,
+                groupSequence,
+                entry.TypeId,
+                entry,
+                reservation.Quality,
+                created))
+        {
+            DestroyGroupInstances(created);
+            specialRunState.ReleaseIfActive(entry.TypeId);
+            return false;
+        }
+
+        ActiveSpecialGroup specialGroup = new(entry.TypeId);
+        foreach (RecruitableSheep sheep in created)
+        {
+            TotalSpawned++;
+            activeBatch.Add(sheep);
+            specialGroup.WildMembers.Add(sheep);
+            specialGroupBySheep[sheep] = specialGroup;
+            SheepIdentity identity = sheep.GetComponent<SheepIdentity>();
+            SheepSpawned?.Invoke(identity.SheepTypeId, sheep);
+        }
+
+        Debug.Log($"红箱子奖励了 {count} 只{entry.DisplayName}。", this);
         return true;
     }
 

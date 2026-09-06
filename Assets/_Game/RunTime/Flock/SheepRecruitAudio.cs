@@ -9,6 +9,16 @@ public sealed class SheepRecruitAudio : MonoBehaviour
     [SerializeField] private AudioClip[] sheepClips;
     [SerializeField, Range(0f, 1f)] private float recruitBleatChance = 0.5f;
 
+    public void Configure(
+        TutorialPen pen,
+        AudioClip[] clips,
+        float bleatChance = 0.5f)
+    {
+        tutorialPen = pen;
+        sheepClips = clips;
+        recruitBleatChance = Mathf.Clamp01(bleatChance);
+    }
+
     private void OnEnable()
     {
         RecruitableSheep.AnyRecruited += HandleSheepRecruited;

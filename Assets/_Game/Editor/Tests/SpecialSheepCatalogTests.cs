@@ -222,6 +222,51 @@ public sealed class SpecialSheepRunStateTests
 public sealed class ProgressiveSheepSpawnerGroupTests
 {
     [Test]
+    public void RewardReservationsExhaustAvailableHighQualityTypesWithoutDuplicates()
+    {
+        GameObject spawnerObject = new("TestRewardSpawner");
+        SpecialSheepCatalog runtimeCatalog = UnityEngine.Object.Instantiate(
+            SpecialSheepCatalogEditorUtility.LoadOrCreateAndSynchronize());
+
+        try
+        {
+            ProgressiveSheepSpawner spawner = spawnerObject.AddComponent<ProgressiveSheepSpawner>();
+            SerializedObject serialized = new(spawner);
+            serialized.FindProperty("specialSheepCatalog").objectReferenceValue = runtimeCatalog;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+
+            HashSet<string> expected = new(StringComparer.Ordinal);
+            foreach (SpecialSheepCatalog.Tier tier in runtimeCatalog.Tiers)
+            {
+                if (tier == null
+                    || (tier.Quality != SheepQuality.Purple
+                        && tier.Quality != SheepQuality.Gold
+                        && tier.Quality != SheepQuality.EasterEgg))
+                    continue;
+
+                foreach (SpecialSheepCatalog.Entry entry in tier.Entries)
+                    if (entry != null && entry.CanSpawn) expected.Add(entry.TypeId);
+            }
+
+            Assert.IsNotEmpty(expected);
+            HashSet<string> reserved = new(StringComparer.Ordinal);
+            while (spawner.TryReserveRewardSpecialGroup(out ProgressiveSheepSpawner.RewardSpecialGroupReservation reservation))
+            {
+                Assert.IsTrue(reserved.Add(reservation.TypeId), $"重复预留了特殊羊 {reservation.TypeId}");
+                Assert.AreEqual(SpecialSheepRunStatus.Active, spawner.GetSpecialSheepStatus(reservation.TypeId));
+                Assert.LessOrEqual(reserved.Count, expected.Count);
+            }
+
+            CollectionAssert.AreEquivalent(expected, reserved);
+        }
+        finally
+        {
+            UnityEngine.Object.DestroyImmediate(spawnerObject);
+            UnityEngine.Object.DestroyImmediate(runtimeCatalog);
+        }
+    }
+
+    [Test]
     public void OneRollAppliesOneSpecialTypeToTheWholeGroupAndNextGroupUsesAnotherType()
     {
         GameObject flockObject = new("TestFlock");

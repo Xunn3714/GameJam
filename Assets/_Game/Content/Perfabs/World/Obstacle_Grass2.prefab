@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 1781132818316654616}
   - component: {fileID: 2658928749933934267}
   - component: {fileID: 4749954581493247575}
-  - component: {fileID: -2929954354609146421}
+  - component: {fileID: 2192788454304784777}
   m_Layer: 3
   m_Name: Obstacle_Grass2
   m_TagString: Untagged
@@ -225,12 +225,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d587e570eb2d0a94b80a067f26ca425a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BreakableObstacleVFX
-  breakParticlesPrefab: {fileID: 0}
+  breakParticlesPrefab: {fileID: 8882286306400846765, guid: 85d4791578168dd449df7c2c5edbe9cf, type: 3}
   fragmentPrefab: {fileID: 4741890322465624849, guid: c273f39e30f131644a291e8c21e28472, type: 3}
   fragmentCount: 8
   spawnOffset: {x: 0, y: 0}
   fragmentSpawnRadius: 0
---- !u!114 &-2929954354609146421
+--- !u!114 &2192788454304784777
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}

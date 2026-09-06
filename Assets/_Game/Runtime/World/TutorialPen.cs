@@ -29,7 +29,6 @@ public sealed class TutorialPen : MonoBehaviour
     [SerializeField, Min(1)] private int requiredFlockCount = DefaultRequiredFlockCount;
     [SerializeField] private Rect penRect = new Rect(-9f, -5f, 18f, 10f);
     [SerializeField, Min(0f)] private float signFadeDuration = 1.5f;
-    [SerializeField] private string readyHint = "羊群够了！按 E 后退蓄势，整群冲刺撞开栅栏";
 
     private bool isOpen;
     private TutorialStage stage;
@@ -45,7 +44,6 @@ public sealed class TutorialPen : MonoBehaviour
     public int RequiredFlockCount => EffectiveRequiredFlockCount;
 
     public event Action Opened;
-    public event Action<string> HintRequested;
 
     public void Configure(
         Rect rect,
@@ -82,7 +80,6 @@ public sealed class TutorialPen : MonoBehaviour
                 continue;
 
             fence.SetRequiredCountOverride(EffectiveRequiredFlockCount);
-            fence.StateChanged += HandleFenceStateChanged;
             if (fence.Breakable != null)
                 fence.Breakable.Broken += HandleFenceBroken;
         }
@@ -99,7 +96,6 @@ public sealed class TutorialPen : MonoBehaviour
             if (fence == null)
                 continue;
 
-            fence.StateChanged -= HandleFenceStateChanged;
             if (fence.Breakable != null)
                 fence.Breakable.Broken -= HandleFenceBroken;
         }
@@ -319,15 +315,6 @@ public sealed class TutorialPen : MonoBehaviour
             color.a = baseAlpha * alpha;
             text.color = color;
         }
-    }
-
-    private void HandleFenceStateChanged(FenceObstacle fence)
-    {
-        if (isOpen || !fence.IsFlockInRange)
-            return;
-
-        if (fence.CanBreak)
-            HintRequested?.Invoke(readyHint);
     }
 
     private void HandleFenceBroken(BreakableObstacle obstacle)
