@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 7858188445893955985}
   - component: {fileID: 3244210853965713887}
   - component: {fileID: 5432558891810948737}
+  - component: {fileID: 4188485052041973062}
   - component: {fileID: 7278596825629178529}
   m_Layer: 3
   m_Name: Obstacle_Barrel
@@ -212,6 +213,23 @@ MonoBehaviour:
   spriteRenderer: {fileID: 5080909433038491936}
   animator: {fileID: 0}
   breakTriggerName: Break
+--- !u!114 &4188485052041973062
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1211418967172175065}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d587e570eb2d0a94b80a067f26ca425a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BreakableObstacleVFX
+  breakParticlesPrefab: {fileID: 0}
+  fragmentPrefab: {fileID: 4741890322465624849, guid: f73eb5294d78c2b46a8256df3c5e6803, type: 3}
+  fragmentCount: 8
+  spawnOffset: {x: 0, y: 0}
+  fragmentSpawnRadius: 0.15
 --- !u!114 &7278596825629178529
 MonoBehaviour:
   m_ObjectHideFlags: 0
