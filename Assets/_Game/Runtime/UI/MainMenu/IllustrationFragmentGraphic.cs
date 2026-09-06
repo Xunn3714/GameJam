@@ -4,7 +4,7 @@ using UnityEngine.UI;
 [RequireComponent(typeof(CanvasRenderer))]
 public sealed class IllustrationFragmentGraphic : MaskableGraphic
 {
-    private const float DiagonalOffset = 0.06f;
+    private const float DiagonalOffset = 0.03f;
     private const float SplitIntersectionX = 0.53f;
     private const float SecondSplitBottomX = 0.65f;
 
