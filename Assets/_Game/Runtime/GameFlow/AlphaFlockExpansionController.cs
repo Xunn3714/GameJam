@@ -38,6 +38,8 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     [SerializeField] private TrueEndingSequence trueEndingSequence;
     [SerializeField] private Sprite holeFirstJumpSprite;
     [SerializeField] private Sprite holeSecondJumpSprite;
+    [Tooltip("胜利后、结算面板前播放的伪结局 / 真结局插画。留空会运行时创建。")]
+    [SerializeField] private EndingIllustrationSequence endingIllustrationSequence;
     [Tooltip("仓库里的 ResultPanel 预制体；留空则用 Alpha 自己的占位结算页。")]
     [SerializeField] private ResultPanelView resultPanelPrefab;
 
@@ -252,6 +254,8 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         if (trueEndingSequence == null)
             trueEndingSequence = gameObject.AddComponent<TrueEndingSequence>();
         trueEndingSequence.Configure(flock, cameraFollow, screenFlashView, holeFirstJumpSprite, holeSecondJumpSprite);
+        if (uiCanvas != null && endingIllustrationSequence == null)
+            endingIllustrationSequence = EndingIllustrationSequence.Create(uiCanvas.transform);
 
         ApplyStage(true);
         RefreshComposition();
@@ -642,6 +646,9 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     {
         yield return null;
         RefreshComposition();
+
+        if (victory && endingIllustrationSequence != null)
+            yield return endingIllustrationSequence.Play(stats.IsTrueEnding);
 
         if (wolfDirector != null)
             stats.SetWolfBreakdown(wolfDirector.LossTracker.TakenByLongWolves, wolfDirector.LossTracker.TakenBySingleWolves);
