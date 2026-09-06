@@ -94,6 +94,7 @@ public sealed class WolfEventDirector : MonoBehaviour
     /// <summary>本局按攻击方式统计的损失（节奏表模式下维护）。</summary>
     public WolfLossTracker LossTracker => lossTracker;
     public WolfAttackSchedule Schedule => schedule;
+    public AudioClip HowlClip => howlClip;
     /// <summary>当前羊数对应的节奏表阶段下标；没用节奏表为 -1。</summary>
     public int CurrentStageIndex => schedule != null ? schedule.GetStageIndex(CurrentMemberCount) : -1;
 

@@ -75,7 +75,7 @@ public sealed class JoinToastView : MonoBehaviour
 
         RectTransform root = (RectTransform)transform;
         MvpUiFactory.Anchor(root, Vector2.one, Vector2.one,
-            new Vector2(-24f, -124f), new Vector2(520f, RowSpacing * Capacity));
+            new Vector2(-24f, -24f), new Vector2(520f, RowSpacing * Capacity));
         stackGroup = gameObject.AddComponent<CanvasGroup>();
         stackGroup.blocksRaycasts = false;
         stackGroup.interactable = false;
@@ -152,7 +152,7 @@ public sealed class JoinToastView : MonoBehaviour
         toast.Age = 0f;
         toast.Group.alpha = 0f;
         toast.Rect.localScale = Vector3.one;
-        toast.Rect.anchoredPosition = new Vector2(32f, -index * RowSpacing);
+        toast.Rect.anchoredPosition = new Vector2(0f, -index * RowSpacing);
         toast.Rect.gameObject.SetActive(true);
     }
 

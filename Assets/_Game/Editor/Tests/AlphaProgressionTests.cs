@@ -5,7 +5,7 @@ public sealed class AlphaProgressionTests
     private static FlockGrowthStage[] Stages() => new[]
     {
         new FlockGrowthStage("孤羊", 1, 1, 1, 5f),
-        new FlockGrowthStage("小群", 5, 2, 3, 7f),
+        new FlockGrowthStage("小群", 12, 2, 3, 7f),
         new FlockGrowthStage("狼群来袭", 20, 5, 7, 10f),
         new FlockGrowthStage("暴力扩张", 50, 10, 15, 14f),
         new FlockGrowthStage("羊潮", 90, 20, 30, 18f)
@@ -78,5 +78,70 @@ public sealed class AlphaProgressionTests
         AlphaProgression progression = new AlphaProgression(Stages(), 100, 1);
         progression.Observe(60);
         Assert.AreEqual(3, progression.StageIndex);
+    }
+
+    [Test]
+    public void SequentialTaskReachesSixAfterFiveRecruitedPartners()
+    {
+        MvpObjectiveSnapshot first = CurrentTask(newRecruitCount: 0);
+        Assert.AreEqual("alpha.touch_first", first.Id);
+
+        MvpObjectiveSnapshot afterFirst = CurrentTask(newRecruitCount: 1);
+        Assert.AreEqual("alpha.recruit_five", afterFirst.Id);
+        Assert.AreEqual(1, afterFirst.Progress);
+        Assert.AreEqual(5, afterFirst.Target);
+
+        MvpObjectiveSnapshot beforeSixTotal = CurrentTask(newRecruitCount: 4);
+        Assert.AreEqual("alpha.recruit_five", beforeSixTotal.Id);
+        Assert.AreEqual(4, beforeSixTotal.Progress);
+
+        MvpObjectiveSnapshot atSixTotal = CurrentTask(newRecruitCount: 5);
+        Assert.AreEqual("alpha.break_pen", atSixTotal.Id);
+        Assert.AreEqual("撞开羊圈！", atSixTotal.Title);
+    }
+
+    [Test]
+    public void SequentialTaskAdvancesThroughPastureWolfAndExitStages()
+    {
+        Assert.AreEqual("alpha.expand_pasture", CurrentTask(6, penOpened: true, highestFlockSize: 7).Id);
+        Assert.AreEqual("alpha.survive_wolf", CurrentTask(6, true, 20).Id);
+        Assert.AreEqual("alpha.gather_army", CurrentTask(6, true, 20, firstWolfEventCompleted: true).Id);
+        Assert.AreEqual("alpha.fill_pasture", CurrentTask(6, true, 50, true).Id);
+        Assert.AreEqual("alpha.reach_exit", CurrentTask(6, true, 90, true).Id);
+
+        MvpObjectiveSnapshot restore = CurrentTask(6, true, 100, true, currentMemberCount: 96);
+        Assert.AreEqual("alpha.restore_for_exit", restore.Id);
+        Assert.AreEqual(96, restore.Progress);
+
+        Assert.AreEqual(
+            "alpha.break_border",
+            CurrentTask(6, true, 100, true, currentMemberCount: 100).Id);
+        Assert.AreEqual(
+            "alpha.escape",
+            CurrentTask(6, true, 100, true, borderBroken: true, currentMemberCount: 100).Id);
+    }
+
+    private static MvpObjectiveSnapshot CurrentTask(
+        int newRecruitCount,
+        bool penOpened = false,
+        int highestFlockSize = 1,
+        bool firstWolfEventCompleted = false,
+        bool borderBroken = false,
+        bool escaped = false,
+        int currentMemberCount = 1)
+    {
+        return AlphaTaskSequence.Current(
+            newRecruitCount,
+            penOpened,
+            highestFlockSize,
+            firstWolfEventCompleted,
+            borderBroken,
+            escaped,
+            currentMemberCount,
+            5,
+            20,
+            50,
+            90,
+            100);
     }
 }
