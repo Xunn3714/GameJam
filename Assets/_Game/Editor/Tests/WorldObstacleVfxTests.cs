@@ -10,16 +10,8 @@ public sealed class WorldObstacleVfxTests
     [Test]
     public void GeneratedObstaclePrefabsHaveExactlyOneConfiguredVfxComponent()
     {
-        GameObject particlesPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(
-            WorldObstaclePrefabBuilder.BreakParticlesPrefabPath);
-        Assert.IsNotNull(particlesPrefab, "Missing common break-particle prefab.");
-
-        ParticleSystem breakParticles = particlesPrefab.GetComponent<ParticleSystem>();
-        Assert.IsNotNull(breakParticles, "Common break-particle prefab has no ParticleSystem on its root.");
-
         AssertPrefabVfx(
             WorldObstaclePrefabBuilder.FencePrefabPath,
-            breakParticles,
             WorldObstaclePrefabBuilder.WoodFragmentPrefabPath,
             8,
             Vector2.zero,
@@ -29,7 +21,6 @@ public sealed class WorldObstacleVfxTests
         {
             AssertPrefabVfx(
                 spec.PrefabPath,
-                breakParticles,
                 spec.FragmentPrefabPath,
                 spec.FragmentCount,
                 spec.FragmentSpawnOffset,
@@ -58,7 +49,6 @@ public sealed class WorldObstacleVfxTests
 
     private static void AssertPrefabVfx(
         string prefabPath,
-        ParticleSystem expectedParticles,
         string expectedFragmentPath,
         int expectedFragmentCount,
         Vector2 expectedOffset,
@@ -71,10 +61,8 @@ public sealed class WorldObstacleVfxTests
         Assert.AreEqual(1, components.Length, $"{prefabPath} must have exactly one VFX component.");
 
         SerializedObject serialized = new SerializedObject(components[0]);
-        Assert.AreSame(
-            expectedParticles,
-            serialized.FindProperty("breakParticlesPrefab").objectReferenceValue,
-            $"{prefabPath} has the wrong common particle prefab.");
+        Assert.IsNull(serialized.FindProperty("breakParticlesPrefab"),
+            $"{prefabPath} must no longer expose the legacy white-particle effect.");
 
         GameObject expectedFragment = string.IsNullOrWhiteSpace(expectedFragmentPath)
             ? null

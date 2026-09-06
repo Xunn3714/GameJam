@@ -4,9 +4,6 @@ using UnityEngine;
 [RequireComponent(typeof(BreakableObstacle))]
 public sealed class BreakableObstacleVFX : MonoBehaviour
 {
-    [Header("Break Particles")]
-    [SerializeField] private ParticleSystem breakParticlesPrefab;
-
     [Header("Fragments")]
     [SerializeField] private GameObject fragmentPrefab;
     [SerializeField, Min(0)] private int fragmentCount = 6;
@@ -18,13 +15,11 @@ public sealed class BreakableObstacleVFX : MonoBehaviour
     private BreakableObstacle breakableObstacle;
 
     public void Configure(
-        ParticleSystem particlesPrefab,
         GameObject physicalFragmentPrefab,
         int physicalFragmentCount,
         Vector2 offset,
         float spawnRadius)
     {
-        breakParticlesPrefab = particlesPrefab;
         fragmentPrefab = physicalFragmentPrefab;
         fragmentCount = Mathf.Max(0, physicalFragmentCount);
         spawnOffset = offset;
@@ -56,15 +51,7 @@ public sealed class BreakableObstacleVFX : MonoBehaviour
     {
         Vector3 spawnPosition = transform.position + (Vector3)spawnOffset;
 
-        // Spawn the common break particle effect.
-        if (breakParticlesPrefab != null)
-        {
-            ParticleSystem particles =
-                Instantiate(breakParticlesPrefab, spawnPosition, Quaternion.identity);
-
-            particles.Play();
-        }
-
+        // Only colored fragments are emitted; legacy white-particle references are ignored.
         // Spawn physical fragments if this obstacle has a fragment prefab.
         if (fragmentPrefab != null)
         {
