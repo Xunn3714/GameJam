@@ -26,6 +26,7 @@ public class CollectionPanelController : MonoBehaviour
 
 
     private SheepCardView selectedCard;
+    private SheepDetailCardView detailCard;
 
 
     private Image scrollbarSheepIcon;
@@ -33,7 +34,33 @@ public class CollectionPanelController : MonoBehaviour
     private void OnEnable()
     {
         EnsureScrollbarSheepIcon();
+        GetOrCreateDetailCard();
         RefreshCollection();
+    }
+
+    public SheepDetailCardView GetOrCreateDetailCard()
+    {
+        if (detailCard != null)
+            return detailCard;
+
+        Transform detailRoot = detailImage != null ? detailImage.transform.parent : null;
+        if (detailRoot == null)
+            return null;
+
+        detailCard = detailRoot.GetComponent<SheepDetailCardView>();
+        if (detailCard == null)
+            detailCard = detailRoot.gameObject.AddComponent<SheepDetailCardView>();
+
+        detailCard.Configure(
+            detailImage,
+            sheepNameText,
+            rarityText,
+            countText,
+            descriptionText,
+            abilityNameText,
+            abilityDescriptionText,
+            sentenceImage);
+        return detailCard;
     }
 
     private void EnsureScrollbarSheepIcon()
@@ -291,121 +318,7 @@ public class CollectionPanelController : MonoBehaviour
                     sheep.sheepId
                 );
 
-
-        // ========================================================
-        // IMAGE
-        // ========================================================
-
-        if (detailImage != null)
-        {
-            detailImage.sprite =
-                sheep.icon;
-
-
-            detailImage.enabled =
-                sheep.icon != null;
-        }
-
-
-        // ========================================================
-        // NAME
-        // ========================================================
-
-        if (sheepNameText != null)
-        {
-            sheepNameText.text =
-                sheep.displayName;
-        }
-
-
-        // ========================================================
-        // RARITY
-        // ========================================================
-
-        if (rarityText != null)
-        {
-            rarityText.richText =
-                true;
-
-
-            rarityText.text =
-                SheepCardView.GetRarityRichText(
-                    sheep.quality,
-                    sheep.rarityName
-                );
-
-
-            // 彩色羊的每个字自己带颜色，
-            // 所以整个 TMP 保持白色。
-            if (sheep.quality ==
-                SheepQuality.EasterEgg)
-            {
-                rarityText.color =
-                    Color.white;
-            }
-            else
-            {
-                rarityText.color =
-                    SheepCardView.GetQualityColor(
-                        sheep.quality
-                    );
-            }
-        }
-
-
-        // ========================================================
-        // COUNT
-        // ========================================================
-
-        if (countText != null)
-        {
-            countText.text =
-                $"遇到过 {encounterCount} 次";
-        }
-
-
-        // ========================================================
-        // DESCRIPTION
-        // ========================================================
-
-        if (descriptionText != null)
-        {
-            descriptionText.text =
-                sheep.description;
-        }
-
-
-        // ========================================================
-        // ABILITY
-        // ========================================================
-
-        if (abilityNameText != null)
-        {
-            abilityNameText.text =
-                sheep.abilityName;
-        }
-
-
-        if (abilityDescriptionText != null)
-        {
-            abilityDescriptionText.text =
-                sheep.abilityDescription;
-        }
-
-
-        // ========================================================
-        // SENTENCE IMAGE
-        // ========================================================
-
-        if (sentenceImage != null)
-        {
-            sentenceImage.sprite =
-                sheep.sentenceImage;
-
-
-            sentenceImage.enabled =
-                sheep.sentenceImage != null;
-        }
+        GetOrCreateDetailCard()?.Show(sheep, encounterCount);
     }
 
 
@@ -415,68 +328,7 @@ public class CollectionPanelController : MonoBehaviour
 
     private void ClearDetail()
     {
-        if (detailImage != null)
-        {
-            detailImage.sprite =
-                null;
-
-
-            detailImage.enabled =
-                false;
-        }
-
-
-        if (sheepNameText != null)
-        {
-            sheepNameText.text =
-                "选择一只羊";
-        }
-
-
-        if (rarityText != null)
-        {
-            rarityText.text =
-                "";
-        }
-
-
-        if (countText != null)
-        {
-            countText.text =
-                "";
-        }
-
-
-        if (descriptionText != null)
-        {
-            descriptionText.text =
-                "在草原上遇见新的羊，\n它的资料就会记录在这里。";
-        }
-
-
-        if (abilityNameText != null)
-        {
-            abilityNameText.text =
-                "";
-        }
-
-
-        if (abilityDescriptionText != null)
-        {
-            abilityDescriptionText.text =
-                "";
-        }
-
-
-        if (sentenceImage != null)
-        {
-            sentenceImage.sprite =
-                null;
-
-
-            sentenceImage.enabled =
-                false;
-        }
+        GetOrCreateDetailCard()?.Clear();
     }
 
 
