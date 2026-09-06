@@ -171,8 +171,8 @@ public sealed class AlphaUiIntegrationTests
             TMP_Text gatherHint = objects
                 .Select(item => item.GetComponent<TMP_Text>())
                 .FirstOrDefault(item => item != null && item.gameObject.name == "Gather_Hint");
-            Assert.That(gatherHint, Is.Not.Null);
-            Assert.That(gatherHint.text, Does.Contain("收拢"));
+            Assert.That(gatherHint, Is.Null, "新手教程不应再介绍 Q 收拢");
+            Assert.That(objects.Any(item => item.name == "Key_Q"), Is.False);
 
             FenceObstacle[] fences = objects
                 .Select(item => item.GetComponent<FenceObstacle>())
@@ -199,8 +199,8 @@ public sealed class AlphaUiIntegrationTests
         Transform taskPanel = taskPrefab.GetComponentsInChildren<Transform>(true)
             .First(item => item.name == "TaskPanel");
         RectTransform taskRect = taskPanel.GetComponent<RectTransform>();
-        Assert.That(taskRect.sizeDelta.x, Is.EqualTo(410f).Within(0.01f));
-        Assert.That(taskRect.sizeDelta.y, Is.EqualTo(520f).Within(0.01f));
+        Assert.That(taskRect.sizeDelta.x, Is.EqualTo(440f).Within(0.01f));
+        Assert.That(taskRect.sizeDelta.y, Is.EqualTo(220f).Within(0.01f));
         Assert.That(taskPanel.GetComponent<Image>().sprite, Is.Not.Null);
 
         Scene scene = EditorSceneManager.OpenScene(MainMenuScenePath, OpenSceneMode.Additive);
@@ -230,6 +230,106 @@ public sealed class AlphaUiIntegrationTests
                 .First(button => button.gameObject.name == "Btn_Developers");
             Assert.That(developers.onClick.GetPersistentEventCount(), Is.EqualTo(1));
             Assert.That(developers.onClick.GetPersistentMethodName(0), Is.EqualTo(nameof(MainMenuController.ShowCredits)));
+        }
+        finally
+        {
+            EditorSceneManager.CloseScene(scene, true);
+        }
+    }
+
+    [Test]
+    public void SequentialTaskPrefabShowsOnlyCurrentObjective()
+    {
+        GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(TaskSystemPrefabPath);
+        GameObject instance = Object.Instantiate(prefab);
+        try
+        {
+            TaskChecklistView checklist = instance.GetComponentInChildren<TaskChecklistView>(true);
+            Assert.That(checklist, Is.Not.Null);
+
+            SerializedObject checklistData = new SerializedObject(checklist);
+            Assert.That(checklistData.FindProperty("taskRow01").objectReferenceValue, Is.Not.Null);
+            Assert.That(checklistData.FindProperty("taskTitle01").objectReferenceValue, Is.Not.Null);
+
+            checklist.ApplyObjectives(new[]
+            {
+                new MvpObjectiveSnapshot(
+                    "alpha.recruit_five",
+                    "找五个新伙伴",
+                    true,
+                    false,
+                    false,
+                    2,
+                    5)
+            }, 4);
+
+            Transform taskPanel = instance.GetComponentsInChildren<Transform>(true)
+                .First(item => item.name == "TaskPanel");
+            Transform[] taskRows = taskPanel.GetComponentsInChildren<Transform>(true)
+                .Where(item => item.name.StartsWith("TaskRow_"))
+                .ToArray();
+            Assert.That(taskRows, Has.Length.EqualTo(4));
+            Assert.That(taskRows.Count(item => item.gameObject.activeSelf), Is.EqualTo(1));
+            Assert.That(taskRows.Single(item => item.gameObject.activeSelf).name, Is.EqualTo("TaskRow_01"));
+            Assert.That(taskPanel.GetComponentsInChildren<TMP_Text>(true)
+                .First(item => item.name == "Txt_Task_01").text, Is.EqualTo("找五个新伙伴"));
+            Assert.That(taskPanel.GetComponentsInChildren<TMP_Text>(true)
+                .First(item => item.name == "Progress_01").text, Is.EqualTo("2/5"));
+
+            RectTransform check = taskPanel.GetComponentsInChildren<Image>(true)
+                .First(item => item.name.StartsWith("Check_ICon")).rectTransform;
+            RectTransform title = taskPanel.GetComponentsInChildren<TMP_Text>(true)
+                .First(item => item.name == "Txt_Task_01").rectTransform;
+            RectTransform counter = taskPanel.GetComponentsInChildren<TMP_Text>(true)
+                .First(item => item.name == "Progress_01").rectTransform;
+            Assert.That(check.anchoredPosition.y, Is.EqualTo(title.anchoredPosition.y).Within(0.01f));
+            Assert.That(counter.anchoredPosition.y, Is.EqualTo(title.anchoredPosition.y).Within(0.01f));
+            Assert.That(title.GetComponent<TMP_Text>().fontSize, Is.EqualTo(26f).Within(0.01f));
+
+            Image progressFill = taskPanel.GetComponentsInChildren<Image>(true)
+                .First(item => item.name == "TaskProgressFill");
+            Assert.That(progressFill.type, Is.EqualTo(Image.Type.Filled));
+            Assert.That(progressFill.fillAmount, Is.EqualTo(0.4f).Within(0.01f));
+        }
+        finally
+        {
+            Object.DestroyImmediate(instance);
+        }
+    }
+
+    [Test]
+    public void SequentialTaskSceneUsesSixTutorialSheepAndUpdatedThresholds()
+    {
+        Scene scene = EditorSceneManager.OpenScene(AlphaScenePath, OpenSceneMode.Additive);
+        try
+        {
+            Transform[] transforms = scene.GetRootGameObjects()
+                .SelectMany(root => root.GetComponentsInChildren<Transform>(true))
+                .ToArray();
+            Transform tutorialRoot = transforms.Single(item => item.name == "TutorialSheep");
+            Assert.That(tutorialRoot.Cast<Transform>().Count(), Is.EqualTo(6));
+            Assert.That(tutorialRoot.Find("TutorialSheep_6"), Is.Not.Null);
+
+            TutorialPen pen = transforms.Select(item => item.GetComponent<TutorialPen>())
+                .First(item => item != null);
+            Assert.That(pen.Fences, Is.Not.Empty);
+            Assert.That(pen.RequiredFlockCount, Is.EqualTo(6));
+
+            WolfEventDirector director = transforms.Select(item => item.GetComponent<WolfEventDirector>())
+                .First(item => item != null);
+            Assert.That(director.RequiredMemberCount, Is.EqualTo(20));
+
+            TMP_Text fenceTitle = transforms.Select(item => item.GetComponent<TMP_Text>())
+                .First(item => item != null && item.gameObject.name == "Fence_Title");
+            Assert.That(fenceTitle.text, Is.EqualTo("撞开羊圈！"));
+
+            Assert.That(transforms.Any(item => item.name == "Key_Q"), Is.False);
+            Transform moveTutorial = transforms.Single(item => item.name == "MoveTutorial");
+            Transform recruitTutorial = transforms.Single(item => item.name == "RecruitTutorial");
+            Transform fenceTutorial = transforms.Single(item => item.name == "FenceTutorial");
+            Assert.That(moveTutorial.gameObject.activeSelf, Is.True);
+            Assert.That(recruitTutorial.gameObject.activeSelf, Is.False);
+            Assert.That(fenceTutorial.gameObject.activeSelf, Is.False);
         }
         finally
         {

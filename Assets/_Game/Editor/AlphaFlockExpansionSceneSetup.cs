@@ -10,7 +10,7 @@ using UnityEngine.UI;
 
 /// <summary>
 /// Builds the primary AlphaFlockExpansion gameplay scene without modifying the legacy Level_01.
-/// 240x140 的草原、外圈围栏、出生羊圈（5 只教程羊 + 地面教程标识）、种子驱动的可破坏物、狼群节奏与 HUD。
+/// 240x140 的草原、外圈围栏、出生羊圈（6 只教程羊 + 地面教程标识）、种子驱动的可破坏物、狼群节奏与 HUD。
 /// 可重复执行：只重建由它管理的对象。
 /// </summary>
 public static class AlphaFlockExpansionSceneSetup
@@ -60,7 +60,8 @@ public static class AlphaFlockExpansionSceneSetup
     private const float BorderFenceScale = 2f;   // 外围围栏 4x2 单位
     private const float PenFenceScale = 1f;      // 羊圈栅栏 2x1 单位
     private const int ExitUnlockFlockSize = 100;
-    private const int WolfUnlockFlockSize = 6;
+    private const int TutorialRequiredFlockSize = 6;
+    private const int WolfUnlockFlockSize = 20;
 
     private static readonly Vector2[] TutorialSheepPositions =
     {
@@ -68,7 +69,8 @@ public static class AlphaFlockExpansionSceneSetup
         new Vector2(-2.6f, 3.4f),
         new Vector2(4.8f, 3.4f),
         new Vector2(7.2f, 0.4f),
-        new Vector2(0.5f, -3.6f)
+        new Vector2(0.5f, -3.6f),
+        new Vector2(-3.8f, -3.4f)
     };
 
     private static readonly string[] ManagedRootNames =
@@ -98,6 +100,74 @@ public static class AlphaFlockExpansionSceneSetup
         Scene scene = OpenOrCreateScene();
         BuildScene(scene);
         Selection.activeGameObject = scene.GetRootGameObjects().FirstOrDefault(root => root.name == "SheepFlock");
+    }
+
+    [MenuItem("Game Jam/Alpha Flock Expansion/Apply Sequential Task Flow")]
+    public static void ApplySequentialTaskFlow()
+    {
+        UiVisualPolish.ApplyTaskPrefab();
+        ConfigureTaskSystemPrefab();
+
+        Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+        ClearOrphanedTutorialVisuals(scene);
+        TutorialPen pen = FindComponentInScene<TutorialPen>(scene);
+        if (pen == null)
+            throw new System.InvalidOperationException("Alpha scene is missing TutorialPen.");
+
+        foreach (FenceObstacle fence in pen.Fences)
+        {
+            if (fence == null)
+                continue;
+
+            fence.SetRequiredCountOverride(TutorialRequiredFlockSize);
+            EditorUtility.SetDirty(fence);
+        }
+
+        GameObject sheepRoot = FindNamedObjectInScene(scene, "TutorialSheep");
+        GameObject recruitablePrefab = LoadRequired<GameObject>(RecruitableSheepPrefabPath);
+        Transform sixthSheep = sheepRoot != null ? sheepRoot.transform.Find("TutorialSheep_6") : null;
+        if (sheepRoot == null)
+            throw new System.InvalidOperationException("Alpha scene is missing the TutorialSheep root.");
+        if (sixthSheep == null)
+        {
+            GameObject sheep = (GameObject)PrefabUtility.InstantiatePrefab(recruitablePrefab, sheepRoot.transform);
+            sheep.name = "TutorialSheep_6";
+            sheep.transform.position = TutorialSheepPositions[5];
+        }
+        else
+        {
+            sixthSheep.position = TutorialSheepPositions[5];
+            EditorUtility.SetDirty(sixthSheep);
+        }
+
+        GameObject existingSigns = FindNamedObjectInScene(scene, "TutorialSigns");
+        if (existingSigns != null)
+            Object.DestroyImmediate(existingSigns);
+        TutorialSignGroups signs = CreateTutorialSigns(pen.transform);
+        pen.Configure(PenRect, pen.Fences.ToArray(), signs.Root, signs.Move, signs.Recruit, signs.Fence);
+        pen.BindFlock(FindComponentInScene<FlockController>(scene));
+        EditorUtility.SetDirty(pen);
+
+        WolfEventDirector director = FindComponentInScene<WolfEventDirector>(scene);
+        if (director != null)
+        {
+            SerializedObject directorData = new SerializedObject(director);
+            directorData.FindProperty("requiredMemberCount").intValue = WolfUnlockFlockSize;
+            directorData.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        AlphaFlockExpansionController controller = FindComponentInScene<AlphaFlockExpansionController>(scene);
+        if (controller != null)
+        {
+            SerializedObject controllerData = new SerializedObject(controller);
+            controllerData.FindProperty("wolfUnlockFlockSize").intValue = WolfUnlockFlockSize;
+            controllerData.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        EditorSceneManager.MarkSceneDirty(scene);
+        EditorSceneManager.SaveScene(scene);
+        AssetDatabase.SaveAssets();
+        Debug.Log("Alpha 顺序任务栏、教程羊与阶段门槛已更新。");
     }
 
     [MenuItem("Game Jam/Alpha Flock Expansion/Apply Audio Integration")]
@@ -174,6 +244,7 @@ public static class AlphaFlockExpansionSceneSetup
         ObstacleDefinition borderFenceDefinition = LoadRequired<ObstacleDefinition>(WorldObstaclePrefabBuilder.BorderFenceDefinitionPath);
 
         ClearManagedObjects(scene);
+        ClearOrphanedTutorialVisuals(scene);
 
         EnsureSceneAudio(scene);
         CreateWorld(scene);
@@ -188,11 +259,12 @@ public static class AlphaFlockExpansionSceneSetup
             out FlockController flock,
             out FlockMovementController movement,
             out FlockActionController actions);
+        tutorialPen.BindFlock(flock);
         CameraFollow2D cameraFollow = ConfigureCamera(scene, flockObject.transform, out Camera gameplayCamera);
         ConfigureLighting(scene);
         ProgressiveSheepSpawner sheepSpawner = CreateSheepSpawner(scene, flock, namePool, gameplayCamera, worldSeed);
         CreateWolfSystem(scene, flock, wolfPrefab.GetComponent<Wolf>(), out WolfSpawner wolfSpawner, out WolfEventDirector director);
-        LevelUi ui = CreateLevelUi(scene, director);
+        LevelUi ui = CreateLevelUi(scene);
         CreateGameController(
             scene,
             flock,
@@ -211,7 +283,7 @@ public static class AlphaFlockExpansionSceneSetup
         AssetDatabase.SaveAssets();
         Debug.Log(
             $"Alpha 羊群扩张场景已生成：{ScenePath}。" +
-            $"地图 {WorldRect.width}x{WorldRect.height}，出生羊圈 5 只教程羊，狼在 {WolfUnlockFlockSize} 只后出现，" +
+            $"地图 {WorldRect.width}x{WorldRect.height}，出生羊圈 6 只教程羊，狼在 {WolfUnlockFlockSize} 只后出现，" +
             $"历史最高 {ExitUnlockFlockSize} 只后解锁出口，冲刺时当前羊数达标才能撞开外围围栏。");
     }
 
@@ -262,6 +334,19 @@ public static class AlphaFlockExpansionSceneSetup
                 || root.name.StartsWith("Wolf_")
                 || root.name.StartsWith("AlphaWildSheep_");
             if (managed)
+                Object.DestroyImmediate(root);
+        }
+    }
+
+    private static void ClearOrphanedTutorialVisuals(Scene scene)
+    {
+        foreach (GameObject root in scene.GetRootGameObjects().ToArray())
+        {
+            bool orphanedKeycapFrame = root.name == "Frame"
+                && root.GetComponent<SpriteRenderer>() != null;
+            bool orphanedKeycapLetter = root.name == "Letter"
+                && root.GetComponent<TextMeshPro>() != null;
+            if (orphanedKeycapFrame || orphanedKeycapLetter)
                 Object.DestroyImmediate(root);
         }
     }
@@ -426,6 +511,8 @@ public static class AlphaFlockExpansionSceneSetup
         GameObject fenceRoot = new GameObject("PenFences");
         fenceRoot.transform.SetParent(root.transform, false);
         List<FenceObstacle> fences = BuildFenceRing(fenceRoot.transform, fencePrefab, penDefinition, PenRect, PenFenceScale, "PenFence");
+        foreach (FenceObstacle fence in fences)
+            fence.SetRequiredCountOverride(TutorialRequiredFlockSize);
 
         GameObject sheepRoot = new GameObject("TutorialSheep");
         sheepRoot.transform.SetParent(root.transform, false);
@@ -437,47 +524,67 @@ public static class AlphaFlockExpansionSceneSetup
             sheep.transform.position = new Vector3(position.x, position.y, 0f);
         }
 
-        GameObject signs = CreateTutorialSigns(root.transform);
+        TutorialSignGroups signs = CreateTutorialSigns(root.transform);
 
         TutorialPen pen = root.AddComponent<TutorialPen>();
-        pen.Configure(PenRect, fences.ToArray(), signs);
+        pen.Configure(PenRect, fences.ToArray(), signs.Root, signs.Move, signs.Recruit, signs.Fence);
         return pen;
     }
 
     /// <summary>草地上的教程标识（占位：粉笔色文字 + 键帽方块；美术出图后替换 Sprite 即可）。</summary>
-    private static GameObject CreateTutorialSigns(Transform parent)
+    private static TutorialSignGroups CreateTutorialSigns(Transform parent)
     {
         GameObject signs = new GameObject("TutorialSigns");
         signs.transform.SetParent(parent, false);
 
         Sprite keycapSprite = AssetDatabase.LoadAllAssetsAtPath(WarningRectAssetPath).OfType<Sprite>().FirstOrDefault();
-        Color chalk = new Color(0.22f, 0.20f, 0.12f, 0.90f);
+        Color chalk = new Color(0.16f, 0.14f, 0.08f, 1f);
 
-        // 1. 移动（放在左下，避开左上角的调试 HUD）
+        GameObject moveGroup = new GameObject("MoveTutorial");
+        moveGroup.transform.SetParent(signs.transform, false);
+        GameObject recruitGroup = new GameObject("RecruitTutorial");
+        recruitGroup.transform.SetParent(signs.transform, false);
+        GameObject fenceGroup = new GameObject("FenceTutorial");
+        fenceGroup.transform.SetParent(signs.transform, false);
+
+        // 1. 玩家开始移动前，只显示移动操作。
         Vector2 moveOrigin = new Vector2(-5.5f, -1.6f);
-        CreateWorldText(signs.transform, "Move_Title", "移动", moveOrigin + new Vector2(0f, 2.2f), 1.1f, chalk);
-        CreateKeycap(signs.transform, keycapSprite, "W", moveOrigin + new Vector2(0f, 0.9f), chalk);
-        CreateKeycap(signs.transform, keycapSprite, "A", moveOrigin + new Vector2(-1.1f, -0.2f), chalk);
-        CreateKeycap(signs.transform, keycapSprite, "S", moveOrigin + new Vector2(0f, -0.2f), chalk);
-        CreateKeycap(signs.transform, keycapSprite, "D", moveOrigin + new Vector2(1.1f, -0.2f), chalk);
+        CreateWorldText(moveGroup.transform, "Move_Title", "WASD  移动", moveOrigin + new Vector2(0f, 2.2f), 1.05f, chalk);
+        CreateKeycap(moveGroup.transform, keycapSprite, "W", moveOrigin + new Vector2(0f, 0.9f), chalk);
+        CreateKeycap(moveGroup.transform, keycapSprite, "A", moveOrigin + new Vector2(-1.1f, -0.2f), chalk);
+        CreateKeycap(moveGroup.transform, keycapSprite, "S", moveOrigin + new Vector2(0f, -0.2f), chalk);
+        CreateKeycap(moveGroup.transform, keycapSprite, "D", moveOrigin + new Vector2(1.1f, -0.2f), chalk);
 
-        // 2. 招募
-        Vector2 recruitOrigin = new Vector2(1.5f, 1.0f);
-        CreateWorldText(signs.transform, "Recruit_Title", "碰到羊 → 加入羊群", recruitOrigin + new Vector2(0f, 1.6f), 0.9f, chalk);
-        CreateWorldText(signs.transform, "Recruit_Hint", "把它们都收进来", recruitOrigin + new Vector2(0f, 0.7f), 0.6f, chalk);
+        // 2. 开始移动后持续显示寻找目标，累计找到五只才收起。
+        Vector2 recruitOrigin = new Vector2(1.5f, 1.1f);
+        CreateWorldText(recruitGroup.transform, "Recruit_Title", "找五个新伙伴", recruitOrigin + new Vector2(0f, 1.0f), 1.0f, chalk);
 
-        // 3. Q 收拢：放在招募提示下方，与 E 冲刺教学分开。
-        Vector2 gatherOrigin = new Vector2(1.2f, -1.25f);
-        CreateKeycap(signs.transform, keycapSprite, "Q", gatherOrigin + new Vector2(-1.25f, 0f), chalk);
-        CreateWorldText(signs.transform, "Gather_Hint", "按住收拢", gatherOrigin + new Vector2(0.75f, 0f), 0.66f, chalk);
+        // 3. 羊群达到撞栏门槛后才显示 E。Q 不再出现在新手教程里。
+        Vector2 fenceOrigin = new Vector2(4.7f, -2.7f);
+        CreateWorldText(fenceGroup.transform, "Fence_Title", "撞开羊圈！", fenceOrigin + new Vector2(-0.5f, 1.25f), 1.05f, chalk);
+        CreateKeycap(fenceGroup.transform, keycapSprite, "E", fenceOrigin + new Vector2(-1.7f, 0f), chalk);
+        CreateWorldText(fenceGroup.transform, "Fence_Hint", "整群冲刺  →", fenceOrigin + new Vector2(0.45f, 0f), 0.78f, chalk);
 
-        // 4. E 整群后退蓄势后撞栅栏
-        Vector2 fenceOrigin = new Vector2(5.2f, -3.2f);
-        CreateWorldText(signs.transform, "Fence_Title", "羊够 6 只 → 撞开栅栏", fenceOrigin + new Vector2(-1.2f, 1.2f), 0.85f, chalk);
-        CreateKeycap(signs.transform, keycapSprite, "E", fenceOrigin + new Vector2(0.4f, 0f), chalk);
-        CreateWorldText(signs.transform, "Fence_Arrow", "→", fenceOrigin + new Vector2(2.0f, 0f), 1.4f, chalk);
+        moveGroup.SetActive(true);
+        recruitGroup.SetActive(false);
+        fenceGroup.SetActive(false);
+        return new TutorialSignGroups(signs, moveGroup, recruitGroup, fenceGroup);
+    }
 
-        return signs;
+    private readonly struct TutorialSignGroups
+    {
+        public TutorialSignGroups(GameObject root, GameObject move, GameObject recruit, GameObject fence)
+        {
+            Root = root;
+            Move = move;
+            Recruit = recruit;
+            Fence = fence;
+        }
+
+        public GameObject Root { get; }
+        public GameObject Move { get; }
+        public GameObject Recruit { get; }
+        public GameObject Fence { get; }
     }
 
     private static void CreateWorldText(Transform parent, string name, string text, Vector2 position, float scale, Color color)
@@ -489,7 +596,7 @@ public static class AlphaFlockExpansionSceneSetup
 
         TextMeshPro label = textObject.AddComponent<TextMeshPro>();
         label.text = text;
-        label.fontSize = 4f;
+        label.fontSize = 4.5f;
         label.alignment = TextAlignmentOptions.Center;
         label.color = color;
         label.fontStyle = FontStyles.Bold;
@@ -673,12 +780,17 @@ public static class AlphaFlockExpansionSceneSetup
 
     private static void ConfigureWolfAudio(WolfEventDirector director)
     {
+        AudioClip wolfWarningClip = LoadRequired<AudioClip>(WolfSpawnClipPath);
+        SerializedObject directorData = new SerializedObject(director);
+        directorData.FindProperty("howlClip").objectReferenceValue = wolfWarningClip;
+        directorData.ApplyModifiedPropertiesWithoutUndo();
+
         WolfEventAudio wolfAudio = director.GetComponent<WolfEventAudio>();
         if (wolfAudio == null)
             wolfAudio = director.gameObject.AddComponent<WolfEventAudio>();
 
         wolfAudio.Configure(
-            LoadRequired<AudioClip>(WolfSpawnClipPath),
+            wolfWarningClip,
             new[]
             {
                 LoadRequired<AudioClip>(WolfAttack1ClipPath),
@@ -805,10 +917,33 @@ public static class AlphaFlockExpansionSceneSetup
         try
         {
             SetText(taskRoot, "Txt_Task", "任务");
-            SetText(taskRoot, "Txt_Task_01", "撞开出生羊圈");
-            SetText(taskRoot, "Txt_Task_02", "壮大羊群并解锁出口");
-            SetText(taskRoot, "Txt_Task_03", "撞开外围围栏并逃离");
-            SetText(taskRoot, "Txt_Task_04", "招募一只特殊羊");
+            SetText(taskRoot, "Txt_Task_01", "去触碰另一只羊！");
+
+            GameObject row01 = FindNamedObject(taskRoot, "TaskRow_01");
+            GameObject row02 = FindNamedObject(taskRoot, "TaskRow_02");
+            GameObject row03 = FindNamedObject(taskRoot, "TaskRow_03");
+            GameObject row04 = FindNamedObject(taskRoot, "TaskRow_04");
+            if (row01 != null) row01.SetActive(true);
+            if (row02 != null) row02.SetActive(false);
+            if (row03 != null) row03.SetActive(false);
+            if (row04 != null) row04.SetActive(false);
+
+            TaskChecklistView checklist = taskRoot.GetComponentInChildren<TaskChecklistView>(true);
+            if (checklist != null)
+            {
+                SerializedObject checklistData = new SerializedObject(checklist);
+                checklistData.FindProperty("taskHeaderText").objectReferenceValue =
+                    FindNamedComponent<TMP_Text>(taskRoot, "Txt_Task");
+                checklistData.FindProperty("taskRow01").objectReferenceValue = row01;
+                checklistData.FindProperty("taskTitle01").objectReferenceValue =
+                    FindNamedComponent<TMP_Text>(taskRoot, "Txt_Task_01");
+                checklistData.FindProperty("progressFill01").objectReferenceValue =
+                    FindNamedComponent<Image>(taskRoot, "TaskProgressFill");
+                checklistData.FindProperty("taskRow02").objectReferenceValue = row02;
+                checklistData.FindProperty("taskRow03").objectReferenceValue = row03;
+                checklistData.FindProperty("taskRow04").objectReferenceValue = row04;
+                checklistData.ApplyModifiedPropertiesWithoutUndo();
+            }
 
             GameObject taskPanel = FindNamedObject(taskRoot, "TaskPanel");
             GameObject taskButton = FindNamedObject(taskRoot, "Btn_TaskIcon");
@@ -859,7 +994,7 @@ public static class AlphaFlockExpansionSceneSetup
     /// <summary>
     /// 使用正式 UI Prefab 构建 Alpha 界面，不再从归档 Level_01 复制层级。
     /// </summary>
-    private static LevelUi CreateLevelUi(Scene scene, WolfEventDirector director)
+    private static LevelUi CreateLevelUi(Scene scene)
     {
         LevelUi ui = new LevelUi();
 
@@ -888,10 +1023,10 @@ public static class AlphaFlockExpansionSceneSetup
         RectTransform toastRect = MvpUiFactory.CreateRect("JoinToast", canvasObject.transform);
         MvpUiFactory.Anchor(
             toastRect,
-            new Vector2(0.5f, 1f),
-            new Vector2(0.5f, 1f),
-            new Vector2(0f, -190f),
-            new Vector2(720f, 64f));
+            Vector2.one,
+            Vector2.one,
+            new Vector2(-24f, -24f),
+            new Vector2(520f, 294f));
         TMP_Text toastText = MvpUiFactory.CreateText(
             "Message",
             toastRect,
@@ -918,20 +1053,10 @@ public static class AlphaFlockExpansionSceneSetup
             }
         }
 
-        // 狼群节奏 HUD：复制过来的可能已经带了一个（Level_01 集成过），没有就新建；都重新指向本场景的 Director。
+        // 狼群仍由 Director 驱动，但 Alpha 不再显示屏幕顶部的阶段 / 倒计时提示。
         WolfEventHudView hud = canvasObject.GetComponentInChildren<WolfEventHudView>(true);
-        if (hud == null)
-        {
-            RectTransform hudRect = MvpUiFactory.CreateRect("WolfEventHud", canvasObject.transform);
-            MvpUiFactory.Anchor(hudRect, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -16f), new Vector2(560f, 80f));
-            hudRect.pivot = new Vector2(0.5f, 1f);
-            hudRect.anchoredPosition = new Vector2(0f, -16f);
-            hud = hudRect.gameObject.AddComponent<WolfEventHudView>();
-        }
-        SerializedObject hudSerialized = new SerializedObject(hud);
-        hudSerialized.FindProperty("director").objectReferenceValue = director;
-        hudSerialized.FindProperty("showOnlyDuringEvent").boolValue = true;
-        hudSerialized.ApplyModifiedPropertiesWithoutUndo();
+        if (hud != null)
+            Object.DestroyImmediate(hud.gameObject);
 
         // 横幅：优先用仓库的 BannerSystem 预制体。
         GameObject bannerPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(BannerPrefabPath);
@@ -1120,6 +1245,19 @@ public static class AlphaFlockExpansionSceneSetup
             T component = root.GetComponentInChildren<T>(true);
             if (component != null)
                 return component;
+        }
+
+        return null;
+    }
+
+    private static GameObject FindNamedObjectInScene(Scene scene, string objectName)
+    {
+        foreach (GameObject root in scene.GetRootGameObjects())
+        {
+            Transform match = root.GetComponentsInChildren<Transform>(true)
+                .FirstOrDefault(item => item.name == objectName);
+            if (match != null)
+                return match.gameObject;
         }
 
         return null;
