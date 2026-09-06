@@ -8,6 +8,8 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "WolfAttackSchedule", menuName = "Game/Wolf Attack Schedule")]
 public sealed class WolfAttackSchedule : ScriptableObject
 {
+    public const float CameraScaledLongWolfWidthFactor = 0.85f;
+
     [Serializable]
     public sealed class Stage
     {
@@ -126,7 +128,7 @@ public sealed class WolfAttackSchedule : ScriptableObject
     public float GetLongWolfWidthMultiplier(int memberCount, float cameraSize, float baseCameraSize)
     {
         float zoomCompensation = Mathf.Max(1f, cameraSize / Mathf.Max(0.1f, baseCameraSize));
-        return GetLongWolfWidthMultiplier(memberCount) * zoomCompensation;
+        return GetLongWolfWidthMultiplier(memberCount) * zoomCompensation * CameraScaledLongWolfWidthFactor;
     }
 
     public static Stage[] CreateDefaultStages()

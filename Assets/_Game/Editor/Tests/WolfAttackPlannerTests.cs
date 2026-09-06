@@ -87,9 +87,9 @@ public sealed class WolfAttackPlannerTests
             float stageThree = schedule.GetLongWolfWidthMultiplier(50, 14f, 5f);
             float stageFour = schedule.GetLongWolfWidthMultiplier(90, 18f, 5f);
 
-            Assert.AreEqual(2f, stageTwo, 0.0001f);
-            Assert.AreEqual(3.78f, stageThree, 0.0001f);
-            Assert.AreEqual(5.4f, stageFour, 0.0001f);
+            Assert.AreEqual(1.7f, stageTwo, 0.0001f);
+            Assert.AreEqual(3.213f, stageThree, 0.0001f);
+            Assert.AreEqual(4.59f, stageFour, 0.0001f);
             Assert.Greater(stageThree / 14f, stageTwo / 10f);
             Assert.Greater(stageFour / 18f, stageThree / 14f);
         }
