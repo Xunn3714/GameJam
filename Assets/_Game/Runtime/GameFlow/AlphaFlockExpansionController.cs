@@ -79,14 +79,6 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     [Tooltip("左上角开发者调试信息；只在 Inspector 里勾选才显示，正常游玩不要开。")]
     [SerializeField] private bool showDebugHud;
 
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-    [Header("Special Sheep Debug Shortcut")]
-    [Tooltip("同时按住 O + P 多少秒后，在出生羊圈外生成五种品质测试羊。")]
-    [SerializeField, Min(0.1f)] private float specialSheepDebugHoldDuration = 5f;
-    [SerializeField, Min(0.8f)] private float specialSheepDebugSpacing = 2f;
-    [SerializeField, Min(0.8f)] private float specialSheepDebugOutsideOffset = 2.2f;
-#endif
-
     private AlphaProgression progression;
     private AlphaRunStats stats;
     private AlphaResultView resultView;
@@ -106,10 +98,6 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     private float nextPopulationRefreshTime;
     private float nextImpactFeedbackTime;
     private float runStartTime;
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-    private float specialSheepDebugHeldTime;
-    private bool specialSheepDebugTriggered;
-#endif
     private readonly List<string> typeScratch = new List<string>();
 
     public int CurrentStageIndex => progression != null ? progression.StageIndex : 0;
@@ -254,10 +242,6 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
 
         if (ended)
             return;
-
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-        UpdateSpecialSheepDebugShortcut();
-#endif
 
         stats.SurvivalSeconds = Time.time - runStartTime;
 
@@ -703,59 +687,6 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
 
         nextPopulationRefreshTime = Time.unscaledTime + populationRefreshInterval;
     }
-
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-    private void UpdateSpecialSheepDebugShortcut()
-    {
-        Keyboard keyboard = Keyboard.current;
-        bool chordHeld = keyboard != null
-            && keyboard.oKey.isPressed
-            && keyboard.pKey.isPressed
-            && Time.timeScale > 0f;
-        if (!chordHeld)
-        {
-            specialSheepDebugHeldTime = 0f;
-            specialSheepDebugTriggered = false;
-            return;
-        }
-
-        if (specialSheepDebugTriggered)
-            return;
-
-        specialSheepDebugHeldTime += Time.unscaledDeltaTime;
-        if (specialSheepDebugHeldTime < Mathf.Max(0.1f, specialSheepDebugHoldDuration))
-            return;
-
-        specialSheepDebugTriggered = true;
-        Vector2 spawnCenter = ResolveSpecialSheepDebugSpawnCenter();
-        int spawned = sheepSpawner.SpawnDebugQualitySamples(spawnCenter, specialSheepDebugSpacing);
-        string message = spawned == 5
-            ? "调试：已在出生羊圈外生成五种品质羊"
-            : $"调试：品质羊生成 {spawned}/5 只，请检查 Catalog";
-        ShowLatestBanner(message);
-        Debug.Log(message, this);
-    }
-
-    private Vector2 ResolveSpecialSheepDebugSpawnCenter()
-    {
-        Rect pen = tutorialPen != null
-            ? tutorialPen.PenRect
-            : new Rect(flock.Center - new Vector2(9f, 5f), new Vector2(18f, 10f));
-        Rect world = sheepSpawner.SpawnBounds;
-        float rowHalfWidth = specialSheepDebugSpacing * 2f;
-        float margin = 0.75f;
-        float x = Mathf.Clamp(
-            pen.center.x,
-            world.xMin + rowHalfWidth + margin,
-            world.xMax - rowHalfWidth - margin);
-
-        float below = pen.yMin - Mathf.Max(0.8f, specialSheepDebugOutsideOffset);
-        float y = below >= world.yMin + margin
-            ? below
-            : Mathf.Min(world.yMax - margin, pen.yMax + specialSheepDebugOutsideOffset);
-        return new Vector2(x, y);
-    }
-#endif
 
     private void OnGUI()
     {
