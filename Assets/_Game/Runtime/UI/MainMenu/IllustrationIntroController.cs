@@ -29,11 +29,13 @@ public class IllustrationIntroController : MonoBehaviour
     [SerializeField] private Image fadeImage;
 
     [Header("Timing")]
+    [SerializeField, Min(0.1f)] private float autoAdvanceDelay = 2f;
     [SerializeField] private float fragmentFadeDuration = 0.3f;
     [SerializeField] private float completeLockDuration = 0.6f;
     [SerializeField] private float sceneFadeDuration = 0.5f;
 
     private int currentStep = 0;
+    private float autoAdvanceTimer = 0f;
 
     private bool isAnimating = false;
     private bool canEnterGame = false;
@@ -84,13 +86,19 @@ public class IllustrationIntroController : MonoBehaviour
 
     private void Update()
     {
-        if (isLoadingGame)
+        if (isLoadingGame || isAnimating)
             return;
 
-        if (!WasAdvancePressed())
+        if (WasAdvancePressed())
+        {
+            Advance();
             return;
+        }
 
-        Advance();
+        autoAdvanceTimer += Time.unscaledDeltaTime;
+
+        if (autoAdvanceTimer >= autoAdvanceDelay)
+            Advance();
     }
 
 
@@ -127,6 +135,8 @@ public class IllustrationIntroController : MonoBehaviour
         {
             return;
         }
+
+        autoAdvanceTimer = 0f;
 
         // 三张图全部完成以后
         // 下一次点击正式进入游戏

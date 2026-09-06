@@ -1379,6 +1379,7 @@ MonoBehaviour:
   continueHint: {fileID: 0}
   continueButton: {fileID: 584955318}
   fadeImage: {fileID: 1852959031}
+  autoAdvanceDelay: 2
   fragmentFadeDuration: 0.4
   completeLockDuration: 0.45
   sceneFadeDuration: 0.65
