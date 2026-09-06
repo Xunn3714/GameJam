@@ -7,6 +7,12 @@ using Random = UnityEngine.Random;
 public sealed class ProgressiveSheepSpawner : MonoBehaviour
 {
     private const float GoldenAngle = 2.39996323f;
+    private static readonly SheepQuality[] RewardQualities =
+    {
+        SheepQuality.EasterEgg,
+        SheepQuality.Purple,
+        SheepQuality.Gold,
+    };
 
     [Header("References")]
     [SerializeField] private FlockController flock;
@@ -50,6 +56,18 @@ public sealed class ProgressiveSheepSpawner : MonoBehaviour
         public string TypeId { get; }
         public bool Collected { get; set; }
         public HashSet<RecruitableSheep> WildMembers { get; } = new();
+    }
+
+    private readonly struct RewardCandidate
+    {
+        public RewardCandidate(SpecialSheepCatalog.Entry entry, SheepQuality quality)
+        {
+            Entry = entry;
+            Quality = quality;
+        }
+
+        public SpecialSheepCatalog.Entry Entry { get; }
+        public SheepQuality Quality { get; }
     }
 
     public sealed class RewardSpecialGroupReservation
@@ -244,10 +262,21 @@ public sealed class ProgressiveSheepSpawner : MonoBehaviour
     }
 
     /// <summary>
-    /// 在开局为固定奖励预留一种紫色或金色羊。预留立即占用本局唯一名额，
+    /// 在开局为固定奖励预留一种彩色、紫色或金色羊。预留立即占用本局唯一名额，
     /// 避免玩家打开宝箱之前，同一类型又被普通刷新器抽中。
     /// </summary>
     public bool TryReserveRewardSpecialGroup(out RewardSpecialGroupReservation reservation)
+    {
+        return TryReserveRewardSpecialGroup(null, out reservation);
+    }
+
+    /// <summary>
+    /// 优先从尚未发现的奖励羊中等概率选择；没有未发现候选时，从全部奖励候选中等概率选择。
+    /// 因为每个候选羊只出现一次，各品质概率自然等于该品质候选数占候选池总数的比例。
+    /// </summary>
+    public bool TryReserveRewardSpecialGroup(
+        Func<string, bool> isDiscovered,
+        out RewardSpecialGroupReservation reservation)
     {
         reservation = null;
         if (!initialized)
@@ -256,27 +285,48 @@ public sealed class ProgressiveSheepSpawner : MonoBehaviour
         if (specialSheepCatalog == null || specialSheepCatalog.BaseSheepPrefab == null)
             return false;
 
-        SheepQuality[] rewardQualities = { SheepQuality.Gold, SheepQuality.Purple };
-        int qualityOffset = random.Next(rewardQualities.Length);
-
-        for (int index = 0; index < rewardQualities.Length; index++)
+        List<RewardCandidate> allCandidates = new();
+        List<RewardCandidate> undiscoveredCandidates = new();
+        foreach (SheepQuality quality in RewardQualities)
         {
-            SheepQuality candidate = rewardQualities[(qualityOffset + index) % rewardQualities.Length];
-            if (!specialSheepCatalog.TryPickAvailable(
-                    candidate,
-                    random,
-                    specialRunState.IsAvailable,
-                    out SpecialSheepCatalog.Entry entry))
+            foreach (SpecialSheepCatalog.Tier tier in specialSheepCatalog.Tiers)
+            {
+                if (tier == null || tier.Quality != quality)
+                    continue;
+
+                foreach (SpecialSheepCatalog.Entry entry in tier.Entries)
+                {
+                    if (entry == null
+                        || !entry.CanSpawn
+                        || !specialRunState.IsAvailable(entry.TypeId))
+                    {
+                        continue;
+                    }
+
+                    RewardCandidate candidate = new(entry, quality);
+                    allCandidates.Add(candidate);
+                    if (isDiscovered == null || !isDiscovered(entry.TypeId))
+                        undiscoveredCandidates.Add(candidate);
+                }
+            }
+        }
+
+        List<RewardCandidate> candidates = undiscoveredCandidates.Count > 0
+            ? undiscoveredCandidates
+            : allCandidates;
+        while (candidates.Count > 0)
+        {
+            int candidateIndex = random.Next(candidates.Count);
+            RewardCandidate candidate = candidates[candidateIndex];
+            candidates.RemoveAt(candidateIndex);
+            if (!specialRunState.TryActivate(candidate.Entry.TypeId))
                 continue;
 
-            if (!specialRunState.TryActivate(entry.TypeId))
-                continue;
-
-            reservation = new RewardSpecialGroupReservation(entry, candidate);
+            reservation = new RewardSpecialGroupReservation(candidate.Entry, candidate.Quality);
             return true;
         }
 
-        Debug.LogWarning("红箱子奖励未预留：特殊羊目录里没有本局可用的紫色或金色羊。", this);
+        Debug.LogWarning("红箱子奖励未预留：特殊羊目录里没有本局可用的彩色、紫色或金色羊。", this);
         return false;
     }
 

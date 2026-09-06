@@ -233,7 +233,7 @@ public sealed class ProgressiveSheepSpawnerGroupTests
     }
 
     [Test]
-    public void RewardReservationsExhaustAvailablePurpleAndGoldTypesWithoutDuplicates()
+    public void RewardReservationsExhaustAvailableColorPurpleAndGoldTypesWithoutDuplicates()
     {
         GameObject spawnerObject = new("TestRewardSpawner");
         SpecialSheepCatalog runtimeCatalog = UnityEngine.Object.Instantiate(
@@ -251,7 +251,8 @@ public sealed class ProgressiveSheepSpawnerGroupTests
             {
                 if (tier == null
                     || (tier.Quality != SheepQuality.Purple
-                        && tier.Quality != SheepQuality.Gold))
+                        && tier.Quality != SheepQuality.Gold
+                        && tier.Quality != SheepQuality.EasterEgg))
                     continue;
 
                 foreach (SpecialSheepCatalog.Entry entry in tier.Entries)
@@ -268,6 +269,53 @@ public sealed class ProgressiveSheepSpawnerGroupTests
             }
 
             CollectionAssert.AreEquivalent(expected, reserved);
+        }
+        finally
+        {
+            UnityEngine.Object.DestroyImmediate(spawnerObject);
+            UnityEngine.Object.DestroyImmediate(runtimeCatalog);
+        }
+    }
+
+    [Test]
+    public void RewardReservationPrefersUndiscoveredThenFallsBackToAllEligibleTypes()
+    {
+        GameObject spawnerObject = new("TestPreferredRewardSpawner");
+        SpecialSheepCatalog runtimeCatalog = UnityEngine.Object.Instantiate(
+            SpecialSheepCatalogEditorUtility.LoadOrCreateAndSynchronize());
+
+        try
+        {
+            ProgressiveSheepSpawner spawner = spawnerObject.AddComponent<ProgressiveSheepSpawner>();
+            SerializedObject serialized = new(spawner);
+            serialized.FindProperty("specialSheepCatalog").objectReferenceValue = runtimeCatalog;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+
+            List<string> eligibleTypeIds = new();
+            foreach (SpecialSheepCatalog.Tier tier in runtimeCatalog.Tiers)
+            {
+                if (tier == null
+                    || (tier.Quality != SheepQuality.Purple
+                        && tier.Quality != SheepQuality.Gold
+                        && tier.Quality != SheepQuality.EasterEgg))
+                    continue;
+
+                foreach (SpecialSheepCatalog.Entry entry in tier.Entries)
+                    if (entry != null && entry.CanSpawn) eligibleTypeIds.Add(entry.TypeId);
+            }
+
+            Assert.GreaterOrEqual(eligibleTypeIds.Count, 2);
+            string onlyUndiscoveredTypeId = eligibleTypeIds[0];
+            Assert.IsTrue(spawner.TryReserveRewardSpecialGroup(
+                typeId => !string.Equals(typeId, onlyUndiscoveredTypeId, StringComparison.Ordinal),
+                out ProgressiveSheepSpawner.RewardSpecialGroupReservation preferred));
+            Assert.AreEqual(onlyUndiscoveredTypeId, preferred.TypeId);
+
+            Assert.IsTrue(spawner.TryReserveRewardSpecialGroup(
+                _ => true,
+                out ProgressiveSheepSpawner.RewardSpecialGroupReservation fallback));
+            CollectionAssert.Contains(eligibleTypeIds, fallback.TypeId);
+            Assert.AreNotEqual(preferred.TypeId, fallback.TypeId);
         }
         finally
         {
