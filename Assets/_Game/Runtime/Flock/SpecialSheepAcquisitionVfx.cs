@@ -3,8 +3,8 @@ using UnityEngine;
 using UnityEngine.Rendering;
 
 /// <summary>
-/// 特殊羊被获得时播放品质发光，发光结束后开启低成本的移动粒子拖尾。
-/// 金色羊与彩蛋羊还会获得常驻的环绕或发散粒子。
+/// 紫色或金色羊被获得时播放品质发光，发光结束后开启低成本的移动粒子拖尾。
+/// 金色羊还会获得常驻的环绕粒子。
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class SpecialSheepAcquisitionVfx : MonoBehaviour, ISpecialSheepFeature
@@ -14,8 +14,6 @@ public sealed class SpecialSheepAcquisitionVfx : MonoBehaviour, ISpecialSheepFea
     private const string AcquisitionBurstName = "SpecialSheepAcquisitionBurst";
     private const string TrailName = "SpecialSheepQualityTrail";
     private const string PremiumAuraName = "SpecialSheepPremiumAura";
-    private const string SwearingSheepTypeId = "sheep.special.cb84fbf1582531943b56d4fda6e4fe9d";
-    private const string SwearingParticleResourcePath = "SpecialSheepVfx/骂骂咧咧羊粒子";
     private const string VfxShaderResourcePath = "SpecialSheepVfx/SpecialSheepUnlit";
 
     [Header("Acquisition Glow")]
@@ -36,7 +34,7 @@ public sealed class SpecialSheepAcquisitionVfx : MonoBehaviour, ISpecialSheepFea
     [SerializeField] private Vector2 trailSize = new(0.14f, 0.24f);
     [SerializeField, Min(1)] private int trailMaxParticles = 40;
 
-    [Header("Gold / Easter Egg Aura")]
+    [Header("Gold Aura")]
     [SerializeField, Min(0f)] private float premiumEmissionRate = 6f;
     [SerializeField, Min(1)] private int premiumMaxParticles = 24;
 
@@ -44,10 +42,6 @@ public sealed class SpecialSheepAcquisitionVfx : MonoBehaviour, ISpecialSheepFea
     private static Texture2D sharedParticleTexture;
     private static Shader sharedVfxShader;
     private static Material sharedGlowMaterial;
-    private static Material swearingParticleMaterial;
-    private static Sprite[] swearingParticleSprites;
-    private static bool attemptedSwearingParticleLoad;
-
     private SpriteRenderer sourceRenderer;
     private SpriteRenderer outerGlow;
     private SpriteRenderer innerGlow;
@@ -55,7 +49,6 @@ public sealed class SpecialSheepAcquisitionVfx : MonoBehaviour, ISpecialSheepFea
     private ParticleSystem trailParticles;
     private ParticleSystem premiumParticles;
     private Coroutine acquisitionRoutine;
-    private string sheepTypeId;
     private SheepQuality quality;
     private Color qualityColor = Color.white;
     private bool glowVisible;
@@ -69,13 +62,17 @@ public sealed class SpecialSheepAcquisitionVfx : MonoBehaviour, ISpecialSheepFea
         return effect != null ? effect : target.AddComponent<SpecialSheepAcquisitionVfx>();
     }
 
+    public static bool SupportsQuality(SheepQuality sheepQuality)
+    {
+        return sheepQuality == SheepQuality.Purple || sheepQuality == SheepQuality.Gold;
+    }
+
     public void OnSpecialSheepSpawned(SpecialSheepMarker sheep)
     {
-        if (sheep == null)
+        if (sheep == null || !SupportsQuality(sheep.Quality))
             return;
 
         quality = sheep.Quality;
-        sheepTypeId = sheep.SheepTypeId;
         qualityColor = GetQualityColor(quality);
         // 野生羊阶段只记录品质，不创建渲染节点。这样特效完全不会影响生成成功与否，
         // 也避免为尚未获得、可能被距离系统回收的羊分配粒子系统与材质。
@@ -85,11 +82,10 @@ public sealed class SpecialSheepAcquisitionVfx : MonoBehaviour, ISpecialSheepFea
 
     public void OnSpecialSheepRecruited(SpecialSheepMarker sheep, FlockController flock)
     {
-        if (sheep == null || sheep.Quality == SheepQuality.Common)
+        if (sheep == null || !SupportsQuality(sheep.Quality))
             return;
 
         quality = sheep.Quality;
-        sheepTypeId = sheep.SheepTypeId;
         qualityColor = GetQualityColor(quality);
         EnsureVisuals();
         if (outerGlow == null || innerGlow == null
@@ -177,21 +173,18 @@ public sealed class SpecialSheepAcquisitionVfx : MonoBehaviour, ISpecialSheepFea
             outerGlow = CreateGlowRenderer(OuterGlowName);
         if (innerGlow == null)
             innerGlow = CreateGlowRenderer(InnerGlowName);
-        Material particleMaterial = GetParticleMaterial(out Sprite[] particleSprites);
-        float sizeMultiplier = particleSprites != null ? 3.2f : 1f;
+        Material particleMaterial = GetSharedParticleMaterial();
         if (acquisitionBurstParticles == null)
         {
             acquisitionBurstParticles = CreateAcquisitionBurstParticles(
                 particleMaterial,
-                particleSprites,
-                sizeMultiplier);
+                1f);
         }
 
         if (trailParticles == null)
-            trailParticles = CreateTrailParticles(particleMaterial, particleSprites, sizeMultiplier);
+            trailParticles = CreateTrailParticles(particleMaterial, 1f);
 
-        if ((quality == SheepQuality.Gold || quality == SheepQuality.EasterEgg)
-            && premiumParticles == null)
+        if (quality == SheepQuality.Gold && premiumParticles == null)
         {
             premiumParticles = CreatePremiumParticles();
         }
@@ -241,10 +234,9 @@ public sealed class SpecialSheepAcquisitionVfx : MonoBehaviour, ISpecialSheepFea
 
     private ParticleSystem CreateTrailParticles(
         Material particleMaterial,
-        Sprite[] particleSprites,
         float sizeMultiplier)
     {
-        ParticleSystem particles = CreateParticleSystem(TrailName, particleMaterial, particleSprites);
+        ParticleSystem particles = CreateParticleSystem(TrailName, particleMaterial);
         ParticleSystem.MainModule main = particles.main;
         main.loop = true;
         main.simulationSpace = ParticleSystemSimulationSpace.World;
@@ -274,10 +266,9 @@ public sealed class SpecialSheepAcquisitionVfx : MonoBehaviour, ISpecialSheepFea
 
     private ParticleSystem CreateAcquisitionBurstParticles(
         Material particleMaterial,
-        Sprite[] particleSprites,
         float sizeMultiplier)
     {
-        ParticleSystem particles = CreateParticleSystem(AcquisitionBurstName, particleMaterial, particleSprites);
+        ParticleSystem particles = CreateParticleSystem(AcquisitionBurstName, particleMaterial);
         ParticleSystem.MainModule main = particles.main;
         main.loop = false;
         main.duration = 1.1f;
@@ -312,7 +303,7 @@ public sealed class SpecialSheepAcquisitionVfx : MonoBehaviour, ISpecialSheepFea
 
     private ParticleSystem CreatePremiumParticles()
     {
-        ParticleSystem particles = CreateParticleSystem(PremiumAuraName, GetSharedParticleMaterial(), null);
+        ParticleSystem particles = CreateParticleSystem(PremiumAuraName, GetSharedParticleMaterial());
         ParticleSystem.MainModule main = particles.main;
         main.loop = true;
         main.maxParticles = Mathf.Max(1, premiumMaxParticles);
@@ -329,36 +320,23 @@ public sealed class SpecialSheepAcquisitionVfx : MonoBehaviour, ISpecialSheepFea
         shape.shapeType = ParticleSystemShapeType.Circle;
         shape.radiusThickness = 1f;
 
-        if (quality == SheepQuality.Gold)
-        {
-            main.simulationSpace = ParticleSystemSimulationSpace.Local;
-            main.startLifetime = new ParticleSystem.MinMaxCurve(1.4f, 2f);
-            main.startSpeed = new ParticleSystem.MinMaxCurve(0f, 0.04f);
-            main.startColor = WithAlpha(qualityColor, 0.9f);
-            shape.radius = 0.58f;
+        main.simulationSpace = ParticleSystemSimulationSpace.Local;
+        main.startLifetime = new ParticleSystem.MinMaxCurve(1.4f, 2f);
+        main.startSpeed = new ParticleSystem.MinMaxCurve(0f, 0.04f);
+        main.startColor = WithAlpha(qualityColor, 0.9f);
+        shape.radius = 0.58f;
 
-            ParticleSystem.VelocityOverLifetimeModule velocity = particles.velocityOverLifetime;
-            velocity.enabled = true;
-            velocity.space = ParticleSystemSimulationSpace.Local;
-            velocity.orbitalZ = new ParticleSystem.MinMaxCurve(1.6f, 2.4f);
-            ApplyFadeAndShrink(particles, Color.white, 0.75f);
-        }
-        else
-        {
-            main.simulationSpace = ParticleSystemSimulationSpace.World;
-            main.startLifetime = new ParticleSystem.MinMaxCurve(0.75f, 1.25f);
-            main.startSpeed = new ParticleSystem.MinMaxCurve(0.18f, 0.42f);
-            main.startColor = CreateRainbowGradient();
-            shape.radius = 0.3f;
-            shape.randomDirectionAmount = 1f;
-            ApplyFadeAndShrink(particles, Color.white, 0.85f);
-        }
+        ParticleSystem.VelocityOverLifetimeModule velocity = particles.velocityOverLifetime;
+        velocity.enabled = true;
+        velocity.space = ParticleSystemSimulationSpace.Local;
+        velocity.orbitalZ = new ParticleSystem.MinMaxCurve(1.6f, 2.4f);
+        ApplyFadeAndShrink(particles, Color.white, 0.75f);
 
         particles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         return particles;
     }
 
-    private ParticleSystem CreateParticleSystem(string objectName, Material material, Sprite[] particleSprites)
+    private ParticleSystem CreateParticleSystem(string objectName, Material material)
     {
         Transform existing = transform.Find(objectName);
         GameObject particleObject = existing != null ? existing.gameObject : new GameObject(objectName);
@@ -381,65 +359,7 @@ public sealed class SpecialSheepAcquisitionVfx : MonoBehaviour, ISpecialSheepFea
         renderer.sortingLayerID = sourceRenderer.sortingLayerID;
         renderer.sortingOrder = sourceRenderer.sortingOrder + 12;
         renderer.sharedMaterial = material != null ? material : GetSharedParticleMaterial();
-        ApplyParticleSprites(particles, particleSprites);
         return particles;
-    }
-
-    private static void ApplyParticleSprites(ParticleSystem particles, Sprite[] particleSprites)
-    {
-        if (particleSprites == null || particleSprites.Length == 0)
-            return;
-
-        ParticleSystem.TextureSheetAnimationModule animation = particles.textureSheetAnimation;
-        animation.enabled = true;
-        animation.mode = ParticleSystemAnimationMode.Sprites;
-        animation.frameOverTime = new ParticleSystem.MinMaxCurve(0f);
-        animation.startFrame = new ParticleSystem.MinMaxCurve(0f, 0.999f);
-        animation.cycleCount = 1;
-        foreach (Sprite sprite in particleSprites)
-            if (sprite != null) animation.AddSprite(sprite);
-    }
-
-    private Material GetParticleMaterial(out Sprite[] particleSprites)
-    {
-        particleSprites = null;
-        if (!string.Equals(sheepTypeId, SwearingSheepTypeId, System.StringComparison.Ordinal))
-            return GetSharedParticleMaterial();
-
-        Material material = GetSwearingParticleMaterial();
-        if (material == null)
-            return GetSharedParticleMaterial();
-
-        particleSprites = swearingParticleSprites;
-        return material;
-    }
-
-    private static Material GetSwearingParticleMaterial()
-    {
-        if (swearingParticleMaterial != null)
-            return swearingParticleMaterial;
-        if (attemptedSwearingParticleLoad)
-            return null;
-
-        attemptedSwearingParticleLoad = true;
-        swearingParticleSprites = Resources.LoadAll<Sprite>(SwearingParticleResourcePath);
-        if (swearingParticleSprites == null || swearingParticleSprites.Length == 0)
-        {
-            Debug.LogWarning($"未找到 Resources/{SwearingParticleResourcePath}，骂骂咧咧羊将使用通用品质粒子。");
-            return null;
-        }
-
-        Texture2D texture = swearingParticleSprites[0].texture;
-
-        Shader shader = FindParticleShader();
-        if (shader == null)
-            return null;
-
-        swearingParticleMaterial = CreateParticleMaterial(
-            shader,
-            texture,
-            "Swearing Sheep Particle Material");
-        return swearingParticleMaterial;
     }
 
     private void StartPremiumAuraIfNeeded()
@@ -496,30 +416,6 @@ public sealed class SpecialSheepAcquisitionVfx : MonoBehaviour, ISpecialSheepFea
                 new Keyframe(0f, 0.55f),
                 new Keyframe(0.18f, 1f),
                 new Keyframe(1f, 0f)));
-    }
-
-    private static ParticleSystem.MinMaxGradient CreateRainbowGradient()
-    {
-        Gradient rainbow = new();
-        rainbow.SetKeys(
-            new[]
-            {
-                new GradientColorKey(new Color32(255, 90, 150, 255), 0f),
-                new GradientColorKey(new Color32(90, 220, 255, 255), 0.34f),
-                new GradientColorKey(new Color32(255, 225, 80, 255), 0.67f),
-                new GradientColorKey(new Color32(175, 105, 255, 255), 1f),
-            },
-            new[]
-            {
-                new GradientAlphaKey(1f, 0f),
-                new GradientAlphaKey(1f, 1f),
-            });
-
-        ParticleSystem.MinMaxGradient result = new(rainbow)
-        {
-            mode = ParticleSystemGradientMode.RandomColor,
-        };
-        return result;
     }
 
     private static Material GetSharedParticleMaterial()
@@ -650,11 +546,8 @@ public sealed class SpecialSheepAcquisitionVfx : MonoBehaviour, ISpecialSheepFea
     {
         return sheepQuality switch
         {
-            SheepQuality.Green => new Color32(120, 220, 110, 255),
-            SheepQuality.Blue => new Color32(95, 165, 255, 255),
             SheepQuality.Purple => new Color32(190, 120, 245, 255),
             SheepQuality.Gold => new Color32(255, 205, 70, 255),
-            SheepQuality.EasterEgg => new Color32(255, 100, 180, 255),
             _ => Color.white,
         };
     }

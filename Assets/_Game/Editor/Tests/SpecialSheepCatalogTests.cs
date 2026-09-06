@@ -221,8 +221,19 @@ public sealed class SpecialSheepRunStateTests
 
 public sealed class ProgressiveSheepSpawnerGroupTests
 {
+    [TestCase(SheepQuality.Common, false)]
+    [TestCase(SheepQuality.Green, false)]
+    [TestCase(SheepQuality.Blue, false)]
+    [TestCase(SheepQuality.Purple, true)]
+    [TestCase(SheepQuality.Gold, true)]
+    [TestCase(SheepQuality.EasterEgg, false)]
+    public void AcquisitionVfxOnlySupportsPurpleAndGold(SheepQuality quality, bool expected)
+    {
+        Assert.AreEqual(expected, SpecialSheepAcquisitionVfx.SupportsQuality(quality));
+    }
+
     [Test]
-    public void RewardReservationsExhaustAvailableHighQualityTypesWithoutDuplicates()
+    public void RewardReservationsExhaustAvailablePurpleAndGoldTypesWithoutDuplicates()
     {
         GameObject spawnerObject = new("TestRewardSpawner");
         SpecialSheepCatalog runtimeCatalog = UnityEngine.Object.Instantiate(
@@ -240,8 +251,7 @@ public sealed class ProgressiveSheepSpawnerGroupTests
             {
                 if (tier == null
                     || (tier.Quality != SheepQuality.Purple
-                        && tier.Quality != SheepQuality.Gold
-                        && tier.Quality != SheepQuality.EasterEgg))
+                        && tier.Quality != SheepQuality.Gold))
                     continue;
 
                 foreach (SpecialSheepCatalog.Entry entry in tier.Entries)

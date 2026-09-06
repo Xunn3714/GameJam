@@ -244,7 +244,7 @@ public sealed class ProgressiveSheepSpawner : MonoBehaviour
     }
 
     /// <summary>
-    /// 在开局为固定奖励预留一种紫色或更高品质的羊。预留立即占用本局唯一名额，
+    /// 在开局为固定奖励预留一种紫色或金色羊。预留立即占用本局唯一名额，
     /// 避免玩家打开宝箱之前，同一类型又被普通刷新器抽中。
     /// </summary>
     public bool TryReserveRewardSpecialGroup(out RewardSpecialGroupReservation reservation)
@@ -256,7 +256,7 @@ public sealed class ProgressiveSheepSpawner : MonoBehaviour
         if (specialSheepCatalog == null || specialSheepCatalog.BaseSheepPrefab == null)
             return false;
 
-        SheepQuality[] rewardQualities = { SheepQuality.EasterEgg, SheepQuality.Gold, SheepQuality.Purple };
+        SheepQuality[] rewardQualities = { SheepQuality.Gold, SheepQuality.Purple };
         int qualityOffset = random.Next(rewardQualities.Length);
 
         for (int index = 0; index < rewardQualities.Length; index++)
@@ -276,7 +276,7 @@ public sealed class ProgressiveSheepSpawner : MonoBehaviour
             return true;
         }
 
-        Debug.LogWarning("红箱子奖励未预留：特殊羊目录里没有本局可用的紫色或更高品质羊。", this);
+        Debug.LogWarning("红箱子奖励未预留：特殊羊目录里没有本局可用的紫色或金色羊。", this);
         return false;
     }
 

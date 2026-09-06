@@ -43,9 +43,9 @@ public sealed class WorldLandmarkSpawner : MonoBehaviour
     [SerializeField] private Vector2 redChestColliderOffset = new(0.06f, 0.36f);
     [Tooltip("摆放红箱子时与其他地标 / 已有碰撞体的最小间距。")]
     [SerializeField, Min(0.5f)] private float redChestClearance = 6f;
-    [Tooltip("本局唯一奖励箱摔碎后掉落的紫色及以上品质羊的最少数量。")]
+    [Tooltip("本局唯一奖励箱摔碎后掉落的紫色或金色羊的最少数量。")]
     [SerializeField, Min(1)] private int rewardSheepMinimum = 3;
-    [Tooltip("本局唯一奖励箱摔碎后掉落的紫色及以上品质羊的最多数量。")]
+    [Tooltip("本局唯一奖励箱摔碎后掉落的紫色或金色羊的最多数量。")]
     [SerializeField, Min(1)] private int rewardSheepMaximum = 5;
 
     [Header("House")]
@@ -350,7 +350,7 @@ public sealed class LandmarkChestReward : MonoBehaviour
         if (rewarded || broken != obstacle)
             return;
         rewarded = true;
-        // 3~5 只同一种紫色及以上品质的羊，成簇落在箱子旁边。
+        // 3~5 只同一种紫色或金色羊，成簇落在箱子旁边。
         sheepSpawner?.TrySpawnRewardSpecialGroup(
             reservation,
             (Vector2)transform.position + Vector2.right * 2f,

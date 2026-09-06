@@ -42,10 +42,11 @@ public sealed class SpecialSheepMarker : MonoBehaviour
         identity ??= gameObject.AddComponent<SheepIdentity>();
         identity.AssignType(sheepTypeId);
 
-        // 特效初始化不能阻断特殊羊生成。这里只挂载轻量组件；粒子在获得时才创建。
+        // 只有紫色和金色羊需要获得特效；粒子在获得时才创建。
         try
         {
-            SpecialSheepAcquisitionVfx.Ensure(gameObject);
+            if (SpecialSheepAcquisitionVfx.SupportsQuality(sheepQuality))
+                SpecialSheepAcquisitionVfx.Ensure(gameObject);
         }
         catch (System.Exception exception)
         {
