@@ -25,18 +25,18 @@ public sealed class SpecialSheepAcquisitionVfx : MonoBehaviour, ISpecialSheepFea
     [SerializeField, Min(1f)] private float glowMaxScale = 1.4f;
 
     [Header("Acquisition Particle Burst")]
-    [SerializeField, Min(1)] private int acquisitionBurstCount = 32;
-    [SerializeField] private Vector2 acquisitionBurstSize = new(0.2f, 0.34f);
+    [SerializeField, Min(1)] private int acquisitionBurstCount = 18;
+    [SerializeField] private Vector2 acquisitionBurstSize = new(0.12f, 0.22f);
 
     [Header("Particle Trail")]
-    [SerializeField, Min(0f)] private float trailParticlesPerUnit = 9f;
+    [SerializeField, Min(0f)] private float trailParticlesPerUnit = 5f;
     [SerializeField] private Vector2 trailLifetime = new(0.55f, 0.9f);
-    [SerializeField] private Vector2 trailSize = new(0.14f, 0.24f);
-    [SerializeField, Min(1)] private int trailMaxParticles = 40;
+    [SerializeField] private Vector2 trailSize = new(0.08f, 0.14f);
+    [SerializeField, Min(1)] private int trailMaxParticles = 24;
 
     [Header("Gold Aura")]
-    [SerializeField, Min(0f)] private float premiumEmissionRate = 6f;
-    [SerializeField, Min(1)] private int premiumMaxParticles = 24;
+    [SerializeField, Min(0f)] private float premiumEmissionRate = 3.5f;
+    [SerializeField, Min(1)] private int premiumMaxParticles = 14;
 
     private static Material sharedParticleMaterial;
     private static Texture2D sharedParticleTexture;
@@ -254,7 +254,7 @@ public sealed class SpecialSheepAcquisitionVfx : MonoBehaviour, ISpecialSheepFea
         ParticleSystem.ShapeModule shape = particles.shape;
         shape.enabled = true;
         shape.shapeType = ParticleSystemShapeType.Circle;
-        shape.radius = 0.22f;
+        shape.radius = 0.18f;
         shape.radiusThickness = 1f;
         shape.randomDirectionAmount = 0.2f;
 
@@ -292,7 +292,7 @@ public sealed class SpecialSheepAcquisitionVfx : MonoBehaviour, ISpecialSheepFea
         ParticleSystem.ShapeModule shape = particles.shape;
         shape.enabled = true;
         shape.shapeType = ParticleSystemShapeType.Circle;
-        shape.radius = 0.28f;
+        shape.radius = 0.22f;
         shape.radiusThickness = 1f;
         shape.randomDirectionAmount = 1f;
 
@@ -307,7 +307,7 @@ public sealed class SpecialSheepAcquisitionVfx : MonoBehaviour, ISpecialSheepFea
         ParticleSystem.MainModule main = particles.main;
         main.loop = true;
         main.maxParticles = Mathf.Max(1, premiumMaxParticles);
-        main.startSize = new ParticleSystem.MinMaxCurve(0.07f, 0.15f);
+        main.startSize = new ParticleSystem.MinMaxCurve(0.05f, 0.1f);
         main.startRotation = new ParticleSystem.MinMaxCurve(0f, Mathf.PI * 2f);
 
         ParticleSystem.EmissionModule emission = particles.emission;
@@ -324,12 +324,14 @@ public sealed class SpecialSheepAcquisitionVfx : MonoBehaviour, ISpecialSheepFea
         main.startLifetime = new ParticleSystem.MinMaxCurve(1.4f, 2f);
         main.startSpeed = new ParticleSystem.MinMaxCurve(0f, 0.04f);
         main.startColor = WithAlpha(qualityColor, 0.9f);
-        shape.radius = 0.58f;
+        shape.radius = 0.48f;
 
         ParticleSystem.VelocityOverLifetimeModule velocity = particles.velocityOverLifetime;
         velocity.enabled = true;
         velocity.space = ParticleSystemSimulationSpace.Local;
-        velocity.orbitalZ = new ParticleSystem.MinMaxCurve(1.6f, 2.4f);
+        // Orbital X/Y/Z 必须使用相同的曲线模式。X/Y 默认为 Constant，
+        // 因此为每只金羊随机一个 Constant 转速，而不是把 Z 设为 TwoConstants。
+        velocity.orbitalZ = new ParticleSystem.MinMaxCurve(Random.Range(1.6f, 2.4f));
         ApplyFadeAndShrink(particles, Color.white, 0.75f);
 
         particles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
@@ -346,6 +348,7 @@ public sealed class SpecialSheepAcquisitionVfx : MonoBehaviour, ISpecialSheepFea
         ParticleSystem particles = particleObject.GetComponent<ParticleSystem>();
         if (particles == null)
             particles = particleObject.AddComponent<ParticleSystem>();
+        particles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         ParticleSystem.MainModule main = particles.main;
         main.playOnAwake = false;
         main.prewarm = false;
