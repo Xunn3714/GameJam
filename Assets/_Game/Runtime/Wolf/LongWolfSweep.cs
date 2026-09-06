@@ -28,8 +28,9 @@ public sealed class LongWolfSweep : MonoBehaviour
 
     private readonly List<SheepMember> candidates = new List<SheepMember>();
     private float runtimeLength;
+    private float runtimeWidthMultiplier = 1f;
     public float BodyLength => runtimeLength > 0f ? runtimeLength : bodyLength;
-    public float BodyWidth => bodyWidth;
+    public float BodyWidth => bodyWidth * runtimeWidthMultiplier;
     public int CapturedCount { get; private set; }
     public float CoverageSeconds { get; private set; }
     public float ClearTravelDistance { get; private set; }
@@ -43,6 +44,7 @@ public sealed class LongWolfSweep : MonoBehaviour
             skinRenderer.sprite = skins[SelectedSkinIndex];
         }
         runtimeLength = 0f;
+        runtimeWidthMultiplier = 1f;
         ClearTravelDistance = 0f;
         CoverageSeconds = Random.Range(minCoverageSeconds, maxCoverageSeconds);
         if (coverageCamera == null) coverageCamera = Camera.main;
@@ -54,8 +56,14 @@ public sealed class LongWolfSweep : MonoBehaviour
             return;
 
         runtimeLength = CalculateCoverageLength(max - min, speed, CoverageSeconds);
-        ClearTravelDistance = Mathf.Max(0f, max) + runtimeLength + bodyWidth;
+        ClearTravelDistance = Mathf.Max(0f, max) + runtimeLength + BodyWidth;
         SetDirection(direction);
+    }
+
+    /// <summary>仅影响本次出场的身体宽度，不修改 Prefab 配置。</summary>
+    public void SetRuntimeWidthMultiplier(float multiplier)
+    {
+        runtimeWidthMultiplier = Mathf.Max(0.1f, multiplier);
     }
 
     // Visual only: extend both ends beyond the viewport without changing the attack duration.

@@ -81,6 +81,7 @@ public static class AlphaFlockExpansionSceneSetup
         "WolfSystem",
         "WorldSeed",
         "WorldDebrisSpawner",
+        "WorldLandmarkSpawner",
         "BorderFence",
         "TutorialPen",
         "AlphaCanvas",
@@ -191,6 +192,7 @@ public static class AlphaFlockExpansionSceneSetup
         CameraFollow2D cameraFollow = ConfigureCamera(scene, flockObject.transform, out Camera gameplayCamera);
         ConfigureLighting(scene);
         ProgressiveSheepSpawner sheepSpawner = CreateSheepSpawner(scene, flock, namePool, gameplayCamera, worldSeed);
+        CreateLandmarkSpawner(scene, worldSeed, sheepSpawner, fencePrefab, penFenceDefinition);
         CreateWolfSystem(scene, flock, wolfPrefab.GetComponent<Wolf>(), out WolfSpawner wolfSpawner, out WolfEventDirector director);
         LevelUi ui = CreateLevelUi(scene, director);
         CreateGameController(
@@ -535,6 +537,45 @@ public static class AlphaFlockExpansionSceneSetup
         SerializedProperty zones = serialized.FindProperty("exclusionZones");
         zones.arraySize = 1;
         zones.GetArrayElementAtIndex(0).rectValue = Expand(PenRect, 4f);
+        serialized.ApplyModifiedPropertiesWithoutUndo();
+        return spawner;
+    }
+
+    private static WorldLandmarkSpawner CreateLandmarkSpawner(
+        Scene scene,
+        WorldSeed worldSeed,
+        ProgressiveSheepSpawner sheepSpawner,
+        GameObject fencePrefab,
+        ObstacleDefinition penFenceDefinition)
+    {
+        GameObject spawnerObject = new GameObject("WorldLandmarkSpawner");
+        SceneManager.MoveGameObjectToScene(spawnerObject, scene);
+        WorldLandmarkSpawner spawner = spawnerObject.AddComponent<WorldLandmarkSpawner>();
+
+        SerializedObject serialized = new SerializedObject(spawner);
+        serialized.FindProperty("worldSeed").objectReferenceValue = worldSeed;
+        serialized.FindProperty("sheepSpawner").objectReferenceValue = sheepSpawner;
+        serialized.FindProperty("riceFieldPrefab").objectReferenceValue =
+            LoadRequired<GameObject>(WorldObstaclePrefabBuilder.PrefabFolder + "/Obstacle_RiceField.prefab");
+        serialized.FindProperty("haystackPrefab").objectReferenceValue =
+            LoadRequired<GameObject>(WorldObstaclePrefabBuilder.PrefabFolder + "/Obstacle_Haystack.prefab");
+        serialized.FindProperty("barrelPrefab").objectReferenceValue =
+            LoadRequired<GameObject>(WorldObstaclePrefabBuilder.PrefabFolder + "/Obstacle_Barrel.prefab");
+        serialized.FindProperty("fencePrefab").objectReferenceValue = fencePrefab;
+        serialized.FindProperty("penFenceDefinition").objectReferenceValue = penFenceDefinition;
+        serialized.FindProperty("redChestDefinition").objectReferenceValue =
+            LoadRequired<ObstacleDefinition>(WorldObstaclePrefabBuilder.RedChestDefinitionPath);
+        serialized.FindProperty("houseDefinition").objectReferenceValue =
+            LoadRequired<ObstacleDefinition>(WorldObstaclePrefabBuilder.HouseDefinitionPath);
+        serialized.FindProperty("redChestSprite").objectReferenceValue =
+            WorldObstaclePrefabBuilder.LoadBuildingSprite("红箱子");
+        serialized.FindProperty("houseSprite").objectReferenceValue =
+            WorldObstaclePrefabBuilder.LoadBuildingSprite("房子");
+        serialized.FindProperty("redChestCount").intValue = 10;
+        serialized.FindProperty("area").rectValue = WorldRect;
+        SerializedProperty zones = serialized.FindProperty("exclusionZones");
+        zones.arraySize = 1;
+        zones.GetArrayElementAtIndex(0).rectValue = Expand(PenRect, 5f);
         serialized.ApplyModifiedPropertiesWithoutUndo();
         return spawner;
     }

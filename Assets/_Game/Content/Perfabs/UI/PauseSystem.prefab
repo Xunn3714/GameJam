@@ -2035,6 +2035,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: CollectionPanel
       objectReference: {fileID: 0}
+    - target: {fileID: 9195101949866837353, guid: 0a68c203d7e6de348ae0aaf73278d1ef, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

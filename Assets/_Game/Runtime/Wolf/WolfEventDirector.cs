@@ -269,9 +269,19 @@ public sealed class WolfEventDirector : MonoBehaviour
 
             case WolfEventPhase.Calm:
                 RoundIndex++;
-                phaseDuration = RoundIndex == 1 && firstCalmDurationOverride > 0f
-                    ? firstCalmDurationOverride
-                    : UnityEngine.Random.Range(calmDurationMin, calmDurationMax);
+                if (RoundIndex == 1 && firstCalmDurationOverride > 0f)
+                {
+                    phaseDuration = firstCalmDurationOverride;
+                }
+                else if (schedule != null)
+                {
+                    Vector2 range = schedule.GetCalmDurationRange(CurrentMemberCount);
+                    phaseDuration = UnityEngine.Random.Range(range.x, range.y);
+                }
+                else
+                {
+                    phaseDuration = UnityEngine.Random.Range(calmDurationMin, calmDurationMax);
+                }
                 SetHuddle(false);
                 break;
 
@@ -488,12 +498,23 @@ public sealed class WolfEventDirector : MonoBehaviour
 
     private void HandleFormationWolfLaunched(Wolf wolf)
     {
+        ApplyLongWolfStageScale(wolf);
         if (wolf != null && CurrentAttackType.HasValue)
         {
             wolf.AttackType = CurrentAttackType.Value;
             wolf.Attacked += HandleWolfAttackedForStats;
         }
         WolfReleased?.Invoke(wolf);
+    }
+
+    private void ApplyLongWolfStageScale(Wolf wolf)
+    {
+        if (schedule == null || wolf == null)
+            return;
+
+        LongWolfSweep sweep = wolf.GetComponent<LongWolfSweep>();
+        if (sweep != null)
+            sweep.SetRuntimeWidthMultiplier(schedule.GetLongWolfWidthMultiplier(CurrentMemberCount));
     }
 
     private void HandleWolfFinished(Wolf wolf)

@@ -1,4 +1,4 @@
-using UnityEditor;
+﻿using UnityEditor;
 using UnityEngine;
 
 /// <summary>
@@ -10,6 +10,7 @@ public static class WorldObstaclePrefabBuilder
     public const string PrefabFolder = "Assets/_Game/Content/Perfabs/World";
     public const string DefinitionFolder = "Assets/_Game/Content/Data/World/Obstacles";
     private const string DebrisFolder = "Assets/Art/Debris";
+    private const string BuildingFolder = "Assets/Art/Buildings";
     private const string WoodBreakClipPath = "Assets/_Game/Content/Audio/BGM/sound efct/wood.mp3";
     private const string StoneBreakClipPath = "Assets/_Game/Content/Audio/BGM/sound efct/stone.mp3";
 
@@ -21,6 +22,8 @@ public static class WorldObstaclePrefabBuilder
     public const string FenceDefinitionPath = DefinitionFolder + "/obstacle.fence.asset";
     public const string PenFenceDefinitionPath = DefinitionFolder + "/obstacle.pen_fence.asset";
     public const string BorderFenceDefinitionPath = DefinitionFolder + "/obstacle.border_fence.asset";
+    public const string RedChestDefinitionPath = DefinitionFolder + "/obstacle.red_chest.asset";
+    public const string HouseDefinitionPath = DefinitionFolder + "/obstacle.house.asset";
 
     /// <summary>
     /// 美术组提供的散布物（Assets/Art/Debris 下的中文命名 PNG）。
@@ -35,7 +38,11 @@ public static class WorldObstaclePrefabBuilder
         public string BrokenSprite;  // 坏图文件名；null = 碰到就消失；"=" = 坏了仍用原图（只沉到背景）
         public ObstacleSizeCategory Size;
         public float Scale;          // prefab 缩放
-        public float SolidRadius;    // 实体碰撞半径（缩放前，世界单位按 scale 后算）
+        public float SolidRadius;    // 实体碰撞半径（世界单位；SolidSize 为零时用圆形碰撞）
+        /// <summary>非零时改用矩形实体碰撞（世界单位），用来贴合"底座"而不是把整张图都算进去。</summary>
+        public Vector2 SolidSize = Vector2.zero;
+        /// <summary>矩形实体碰撞相对 transform 原点的偏移（世界单位）。</summary>
+        public Vector2 SolidOffset = Vector2.zero;
         public float Weight;         // 散布权重
         public float Clearance;      // 散布时与其他物体的最小间距
         /// <summary>未破坏时在 Default 层的 Order：花草 / 小石头这类矮的贴地物用 -1，永远在羊下面；树、木桶这类高的用 1。</summary>
@@ -61,7 +68,7 @@ public static class WorldObstaclePrefabBuilder
         new DebrisSpec { Id = "obstacle.bush_2", DisplayName = "草丛", PrefabName = "Obstacle_Bush2", Sprite = "小草丛（2）", BrokenSprite = null, Size = ObstacleSizeCategory.Small, Scale = 0.65f, SolidRadius = 0.5f, Weight = 3f, Clearance = 2.4f, SortingOrder = -1 },
         // ---- 有坏图：碰到后换坏图、沉到背景 ----
         new DebrisSpec { Id = "obstacle.barrel", DisplayName = "木桶", PrefabName = "Obstacle_Barrel", Sprite = "木桶", BrokenSprite = "木桶（坏）", Size = ObstacleSizeCategory.Small, Scale = 0.7f, SolidRadius = 0.55f, Weight = 1.5f, Clearance = 3f, BreakClipPath = WoodBreakClipPath, BreakVolume = 0.6f },
-        new DebrisSpec { Id = "obstacle.rock", DisplayName = "石块", PrefabName = "Obstacle_Rock", Sprite = "石块（2）", BrokenSprite = "石块2（坏）", Size = ObstacleSizeCategory.Medium, Scale = 0.75f, SolidRadius = 0.7f, Weight = 1.5f, Clearance = 3.2f, BreakClipPath = StoneBreakClipPath, BreakVolume = 1f },
+        new DebrisSpec { Id = "obstacle.rock", DisplayName = "石块", PrefabName = "Obstacle_Rock", Sprite = "石块（2）", BrokenSprite = "石块2（坏）", Size = ObstacleSizeCategory.Medium, Scale = 0.75f, SolidRadius = 0.7f, SolidSize = new Vector2(3.3f, 1.5f), SolidOffset = new Vector2(0.05f, -0.7f), Weight = 1.5f, Clearance = 3.2f, BreakClipPath = StoneBreakClipPath, BreakVolume = 1f },
         new DebrisSpec { Id = "obstacle.pebble", DisplayName = "小石头", PrefabName = "Obstacle_Pebble", Sprite = "小石头（1）", BrokenSprite = "=", Size = ObstacleSizeCategory.Small, Scale = 0.5f, SolidRadius = 0.35f, Weight = 2f, Clearance = 2f, SortingOrder = -1 },
         new DebrisSpec { Id = "obstacle.haystack", DisplayName = "干草垛", PrefabName = "Obstacle_Haystack", Sprite = "干草垛", BrokenSprite = "干草垛（坏）", Size = ObstacleSizeCategory.Medium, Scale = 0.8f, SolidRadius = 0.7f, Weight = 1f, Clearance = 3.5f },
         new DebrisSpec { Id = "obstacle.rice_field", DisplayName = "稻田", PrefabName = "Obstacle_RiceField", Sprite = "稻田", BrokenSprite = "稻田（坏）", Size = ObstacleSizeCategory.Medium, Scale = 0.8f, SolidRadius = 0.75f, Weight = 1f, Clearance = 3.5f },
@@ -76,6 +83,8 @@ public static class WorldObstaclePrefabBuilder
 
         Sprite fence = LoadSprite("obstacle_fence_256x128");
         Sprite fenceBroken = LoadSprite("obstacle_fence_broken_256x128");
+        Sprite redChestBroken = LoadBuildingSprite("红箱子-坏");
+        Sprite houseBroken = LoadBuildingSprite("房子--坏");
 
         ObstacleDefinition fenceDefinition = GetOrCreateDefinition(
             FenceDefinitionPath, "obstacle.fence", "围栏", ObstacleSizeCategory.Medium,
@@ -89,6 +98,14 @@ public static class WorldObstaclePrefabBuilder
             BorderFenceDefinitionPath, "obstacle.border_fence", "外围围栏", ObstacleSizeCategory.Large,
             ObstacleBreakRule.RequireCountAndInteract, 100, ObstacleCountSource.CurrentFlockCount,
             ObstacleBrokenBehavior.BecomeBackground, fenceBroken);
+        GetOrCreateDefinition(
+            RedChestDefinitionPath, "obstacle.red_chest", "红色箱子", ObstacleSizeCategory.Medium,
+            ObstacleBreakRule.RequireCountAndInteract, 15, ObstacleCountSource.CurrentFlockCount,
+            ObstacleBrokenBehavior.BecomeBackground, redChestBroken);
+        GetOrCreateDefinition(
+            HouseDefinitionPath, "obstacle.house", "房子", ObstacleSizeCategory.Large,
+            ObstacleBreakRule.RequireCountAndInteract, 50, ObstacleCountSource.CurrentFlockCount,
+            ObstacleBrokenBehavior.BecomeBackground, houseBroken);
 
         BuildFencePrefab(
             FencePrefabPath,
@@ -110,9 +127,13 @@ public static class WorldObstaclePrefabBuilder
 
             ObstacleDefinition definition = GetOrCreateDefinition(
                 spec.DefinitionPath, spec.Id, spec.DisplayName, spec.Size,
-                ObstacleBreakRule.OnAnyContact, 1, ObstacleCountSource.CurrentFlockCount,
-                spec.Disappears ? ObstacleBrokenBehavior.Disappear : ObstacleBrokenBehavior.BecomeBackground,
-                broken);
+            spec.Id == "obstacle.rock" ? ObstacleBreakRule.RequireCountAndInteract : ObstacleBreakRule.OnAnyContact,
+            spec.Id == "obstacle.rock" ? 20 : 1, ObstacleCountSource.CurrentFlockCount,
+            spec.Id == "obstacle.rock" || spec.Disappears
+                ? ObstacleBrokenBehavior.Disappear
+                : ObstacleBrokenBehavior.BecomeBackground,
+            broken,
+            spec.Id == "obstacle.rock" ? 2 : 1);
 
             BuildDebrisPrefab(
                 spec.PrefabPath,
@@ -120,6 +141,8 @@ public static class WorldObstaclePrefabBuilder
                 sprite,
                 definition,
                 spec.SolidRadius,
+                spec.SolidSize,
+                spec.SolidOffset,
                 spec.Scale,
                 spec.SortingOrder,
                 LoadAudioClip(spec.BreakClipPath),
@@ -302,6 +325,8 @@ public static class WorldObstaclePrefabBuilder
         Sprite sprite,
         ObstacleDefinition definition,
         float solidRadius,
+        Vector2 solidSize,
+        Vector2 solidOffset,
         float scale,
         int sortingOrder,
         AudioClip breakClip,
@@ -324,15 +349,33 @@ public static class WorldObstaclePrefabBuilder
             Rigidbody2D body = root.AddComponent<Rigidbody2D>();
             body.bodyType = RigidbodyType2D.Static;
 
-            // 半径按缩放前的本地单位给，世界半径 = radius * scale。
-            float localSolid = solidRadius / Mathf.Max(0.01f, scale);
-            CircleCollider2D solid = root.AddComponent<CircleCollider2D>();
-            solid.isTrigger = false;
-            solid.radius = localSolid;
+            // 碰撞体都按缩放前的本地单位给，世界尺寸 = 本地值 * scale。
+            float inverseScale = 1f / Mathf.Max(0.01f, scale);
+            if (solidSize.x > 0.001f && solidSize.y > 0.001f)
+            {
+                // 高个子的散布物（例如石块）用矩形贴合底座：图整整 5 个世界单位高，
+                // 但只有最下面那截是"挡路"的，上半截让羊从背后绕过去才自然。
+                BoxCollider2D solidBox = root.AddComponent<BoxCollider2D>();
+                solidBox.isTrigger = false;
+                solidBox.size = solidSize * inverseScale;
+                solidBox.offset = solidOffset * inverseScale;
 
-            CircleCollider2D trigger = root.AddComponent<CircleCollider2D>();
-            trigger.isTrigger = true;
-            trigger.radius = localSolid + 0.45f / Mathf.Max(0.01f, scale);
+                BoxCollider2D triggerBox = root.AddComponent<BoxCollider2D>();
+                triggerBox.isTrigger = true;
+                triggerBox.size = (solidSize + Vector2.one * 0.45f) * inverseScale;
+                triggerBox.offset = solidBox.offset;
+            }
+            else
+            {
+                float localSolid = solidRadius * inverseScale;
+                CircleCollider2D solid = root.AddComponent<CircleCollider2D>();
+                solid.isTrigger = false;
+                solid.radius = localSolid;
+
+                CircleCollider2D trigger = root.AddComponent<CircleCollider2D>();
+                trigger.isTrigger = true;
+                trigger.radius = localSolid + 0.45f * inverseScale;
+            }
 
             BreakableObstacle breakable = root.AddComponent<BreakableObstacle>();
             SerializedObject serialized = new SerializedObject(breakable);
@@ -364,6 +407,7 @@ public static class WorldObstaclePrefabBuilder
         ObstacleCountSource countSource,
         ObstacleBrokenBehavior broken,
         Sprite brokenSprite,
+        int requiredDashHits = 1,
         bool createOnly = false)
     {
         ObstacleDefinition existing = AssetDatabase.LoadAssetAtPath<ObstacleDefinition>(path);
@@ -383,6 +427,7 @@ public static class WorldObstaclePrefabBuilder
         serialized.FindProperty("sizeCategory").enumValueIndex = (int)size;
         serialized.FindProperty("breakRule").enumValueIndex = (int)rule;
         serialized.FindProperty("requiredFlockCount").intValue = requiredCount;
+        serialized.FindProperty("requiredDashHits").intValue = Mathf.Max(1, requiredDashHits);
         serialized.FindProperty("countSource").enumValueIndex = (int)countSource;
         serialized.FindProperty("brokenBehavior").enumValueIndex = (int)broken;
         // 花草被踩扁 + 淡出的时长；换坏图的类型是瞬间切换，这个值不再使用。
@@ -402,6 +447,32 @@ public static class WorldObstaclePrefabBuilder
         Sprite sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
         if (sprite == null)
             Debug.LogWarning($"Sprite not found: {path}");
+        return sprite;
+    }
+
+    public static Sprite LoadBuildingSprite(string fileName)
+    {
+        string path = $"{BuildingFolder}/{fileName}.png";
+        AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
+        TextureImporter importer = AssetImporter.GetAtPath(path) as TextureImporter;
+        // spriteImportMode 也要检查：美术给的图被自动切成 Multiple 时，LoadAssetAtPath<Sprite> 只会拿到
+        // 第一个碎片（例如"房子--坏_0"是 27x25 的一块木屑），破坏后的图就完全不对。
+        if (importer != null
+            && (importer.textureType != TextureImporterType.Sprite
+                || importer.spriteImportMode != SpriteImportMode.Single
+                || importer.spritePixelsPerUnit != 128f))
+        {
+            importer.textureType = TextureImporterType.Sprite;
+            importer.spriteImportMode = SpriteImportMode.Single;
+            importer.spritePixelsPerUnit = 128f;
+            importer.mipmapEnabled = false;
+            importer.alphaIsTransparency = true;
+            importer.SaveAndReimport();
+        }
+
+        Sprite sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
+        if (sprite == null)
+            Debug.LogWarning($"Building sprite not found: {path}");
         return sprite;
     }
 

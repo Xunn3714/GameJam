@@ -15,11 +15,12 @@ MonoBehaviour:
   obstacleId: obstacle.rock
   displayName: "\u77F3\u5757"
   sizeCategory: 1
-  breakRule: 0
-  requiredFlockCount: 1
+  breakRule: 1
+  requiredFlockCount: 20
+  requiredDashHits: 2
   countSource: 0
-  brokenBehavior: 0
-  breakAnimationDuration: 0.4
+  brokenBehavior: 1
+  breakAnimationDuration: 0.6
   brokenSortingLayer: Background
   brokenSortingOrder: 10
   brokenSprite: {fileID: 21300000, guid: 4b5dda1c8d528ca4181aa70f32bd3f9e, type: 3}

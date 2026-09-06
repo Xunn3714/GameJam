@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using NUnit.Framework;
+using UnityEngine;
 
 public sealed class WolfAttackPlannerTests
 {
@@ -22,6 +23,35 @@ public sealed class WolfAttackPlannerTests
     }
 
     [Test]
+    public void DefaultStagesUseTheRequestedRhythmAndLongWolfGrowth()
+    {
+        WolfAttackSchedule.Stage[] stages = Stages();
+        Assert.AreEqual(8f, stages[1].calmDurationMin);
+        Assert.AreEqual(10f, stages[1].calmDurationMax);
+        Assert.AreEqual(6f, stages[2].calmDurationMin);
+        Assert.AreEqual(10f, stages[2].calmDurationMax);
+        Assert.AreEqual(6f, stages[3].calmDurationMin);
+        Assert.AreEqual(8f, stages[3].calmDurationMax);
+        Assert.Greater(stages[3].longWolfWidthMultiplier, 1f);
+        Assert.Greater(stages[4].longWolfWidthMultiplier, stages[3].longWolfWidthMultiplier);
+    }
+
+    [Test]
+    public void ScheduleUsesFiveSecondRhythmAtOneHundredThirtySheep()
+    {
+        WolfAttackSchedule schedule = ScriptableObject.CreateInstance<WolfAttackSchedule>();
+        try
+        {
+            Assert.AreEqual(new Vector2(5f, 5f), schedule.GetCalmDurationRange(130));
+            Assert.AreEqual(1.65f, schedule.GetLongWolfWidthMultiplier(130));
+        }
+        finally
+        {
+            UnityEngine.Object.DestroyImmediate(schedule);
+        }
+    }
+
+    [Test]
     public void TutorialStageNeverAttacks()
     {
         WolfAttackSchedule.Stage stage = Stages()[0];
@@ -36,7 +66,7 @@ public sealed class WolfAttackPlannerTests
     public void StageOneIsAlwaysStraightWolf()
     {
         WolfAttackSchedule.Stage stage = Stages()[1];
-        Random random = new Random(7);
+        System.Random random = new System.Random(7);
         for (int index = 0; index < 200; index++)
         {
             Assert.AreEqual(WolfAttackType.StraightWolf, WolfAttackPlanner.Pick(stage, null, () => (float)random.NextDouble()));
@@ -82,7 +112,7 @@ public sealed class WolfAttackPlannerTests
     public void DistributionRoughlyMatchesWeights()
     {
         WolfAttackSchedule.Stage stage = Stages()[3];
-        Random random = new Random(42);
+        System.Random random = new System.Random(42);
         int single = 0, pack = 0;
         const int samples = 20000;
         for (int index = 0; index < samples; index++)

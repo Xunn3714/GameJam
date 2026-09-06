@@ -222,7 +222,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3114ec9ab15781d42b090c98f94a6342, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BreakableObstacleAudio
   breakClip: {fileID: 8300000, guid: 6401a012d552b1f46bca0eb0aed4328b, type: 3}
   volumeScale: 0.6

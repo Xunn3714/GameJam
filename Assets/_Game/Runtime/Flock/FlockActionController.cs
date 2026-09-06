@@ -46,6 +46,7 @@ public sealed class FlockActionController : MonoBehaviour
     private float remainingDashDistance;
     private float currentDashSpeed;
     private float currentImpactForce;
+    private bool lastImpactDamagedObstacle;
     private Vector2 dashDirection = Vector2.right;
     private FlockActionPhase phase;
 
@@ -278,7 +279,7 @@ public sealed class FlockActionController : MonoBehaviour
     private bool HandleDashBlock(Collider2D blocker)
     {
         bool brokeObstacle = TryBreakObstacle(blocker);
-        bool impactAnimationStarted = PlayFlockImpact(hardImpact: !brokeObstacle);
+        bool impactAnimationStarted = PlayFlockImpact(hardImpact: !brokeObstacle && !lastImpactDamagedObstacle);
         if (brokeObstacle)
             return true;
 
@@ -314,6 +315,7 @@ public sealed class FlockActionController : MonoBehaviour
 
     private bool TryBreakObstacle(Collider2D blocker)
     {
+        lastImpactDamagedObstacle = false;
         if (blocker == null)
         {
             flock.ReportFenceChargeImpact(hardImpact: true);
@@ -337,9 +339,13 @@ public sealed class FlockActionController : MonoBehaviour
             : breakable.Definition.RequiredFlockCount;
         bool canBreak = MeetsBreakThreshold(currentImpactForce, requiredForce);
         flock.ReportFenceChargeImpact(hardImpact: !canBreak);
-        if (canBreak)
-            breakable.Break();
-        return canBreak;
+        if (!canBreak)
+            return false;
+
+        // 多段障碍（大石头）吃掉本次冲刺，下一次 E 才能完成破坏。
+        bool destroyed = breakable.Break();
+        lastImpactDamagedObstacle = !destroyed && breakable.IsDamaged;
+        return destroyed;
     }
 
     private bool PlayFlockImpact(bool hardImpact)

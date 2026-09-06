@@ -17,6 +17,7 @@ MonoBehaviour:
   sizeCategory: 0
   breakRule: 0
   requiredFlockCount: 1
+  requiredDashHits: 1
   countSource: 0
   brokenBehavior: 0
   breakAnimationDuration: 0.4
