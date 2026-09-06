@@ -13,6 +13,15 @@ public static class WorldObstaclePrefabBuilder
     private const string BuildingFolder = "Assets/Art/Buildings";
     private const string WoodBreakClipPath = "Assets/_Game/Content/Audio/SFX/wood.mp3";
     private const string StoneBreakClipPath = "Assets/_Game/Content/Audio/SFX/stone.mp3";
+    private static readonly string[] VegetationBreakClipPaths =
+    {
+        "Assets/_Game/Content/Audio/SFX/footstep/sand/Sand1.wav",
+        "Assets/_Game/Content/Audio/SFX/footstep/sand/Sand2.wav",
+        "Assets/_Game/Content/Audio/SFX/footstep/sand/Sand3.wav",
+        "Assets/_Game/Content/Audio/SFX/footstep/sand/Sand4.wav",
+        "Assets/_Game/Content/Audio/SFX/footstep/sand/Sand5.wav",
+        "Assets/_Game/Content/Audio/SFX/footstep/sand/Sand6.wav"
+    };
     private const string VfxFolder = PrefabFolder + "/VFX";
 
     public const string BreakParticlesPrefabPath = VfxFolder + "/BreakParticles.prefab";
@@ -55,7 +64,8 @@ public static class WorldObstaclePrefabBuilder
         /// <summary>未破坏时在 Default 层的 Order：花草 / 小石头这类矮的贴地物用 -1，永远在羊下面；树、木桶这类高的用 1。</summary>
         public int SortingOrder = 1;
         public string BreakClipPath;
-        public float BreakVolume = 0.6f;
+        public string[] RandomBreakClipPaths;
+        public float BreakVolume = 1f;
         public string FragmentPrefabPath;
         public int FragmentCount;
         public Vector2 FragmentSpawnOffset;
@@ -69,21 +79,21 @@ public static class WorldObstaclePrefabBuilder
     public static readonly DebrisSpec[] DebrisSpecs =
     {
         // ---- 花草：碰到直接消失 ----
-        new DebrisSpec { Id = "obstacle.flower", DisplayName = "小花", PrefabName = "Obstacle_Flower", Sprite = "小花（1）", BrokenSprite = null, Size = ObstacleSizeCategory.Small, Scale = 0.55f, SolidRadius = 0.35f, Weight = 5f, Clearance = 1.8f, SortingOrder = -1, FragmentPrefabPath = GreenFragmentPrefabPath, FragmentCount = 8 },
-        new DebrisSpec { Id = "obstacle.flower_daisy", DisplayName = "雏菊", PrefabName = "Obstacle_FlowerDaisy", Sprite = "小花（2）", BrokenSprite = null, Size = ObstacleSizeCategory.Small, Scale = 0.55f, SolidRadius = 0.35f, Weight = 5f, Clearance = 1.8f, SortingOrder = -1, FragmentPrefabPath = GreenFragmentPrefabPath, FragmentCount = 8 },
-        new DebrisSpec { Id = "obstacle.flower_cluster", DisplayName = "花丛", PrefabName = "Obstacle_FlowerCluster", Sprite = "花丛", BrokenSprite = null, Size = ObstacleSizeCategory.Small, Scale = 0.65f, SolidRadius = 0.5f, Weight = 3f, Clearance = 2.2f, SortingOrder = -1, FragmentPrefabPath = GreenFragmentPrefabPath, FragmentCount = 8 },
-        new DebrisSpec { Id = "obstacle.grass_1", DisplayName = "小草", PrefabName = "Obstacle_Grass1", Sprite = "小草（1）", BrokenSprite = null, Size = ObstacleSizeCategory.Small, Scale = 0.5f, SolidRadius = 0.3f, Weight = 6f, Clearance = 1.6f, SortingOrder = -1, FragmentPrefabPath = GreenFragmentPrefabPath, FragmentCount = 8 },
-        new DebrisSpec { Id = "obstacle.grass_2", DisplayName = "小草", PrefabName = "Obstacle_Grass2", Sprite = "小草（2）", BrokenSprite = null, Size = ObstacleSizeCategory.Small, Scale = 0.5f, SolidRadius = 0.3f, Weight = 6f, Clearance = 1.6f, SortingOrder = -1, FragmentPrefabPath = GreenFragmentPrefabPath, FragmentCount = 8 },
-        new DebrisSpec { Id = "obstacle.grass_3", DisplayName = "小草", PrefabName = "Obstacle_Grass3", Sprite = "小草（3）", BrokenSprite = null, Size = ObstacleSizeCategory.Small, Scale = 0.5f, SolidRadius = 0.3f, Weight = 6f, Clearance = 1.6f, SortingOrder = -1, FragmentPrefabPath = GreenFragmentPrefabPath, FragmentCount = 8 },
-        new DebrisSpec { Id = "obstacle.bush_1", DisplayName = "草丛", PrefabName = "Obstacle_Bush1", Sprite = "小草丛（1）", BrokenSprite = null, Size = ObstacleSizeCategory.Small, Scale = 0.65f, SolidRadius = 0.5f, Weight = 3f, Clearance = 2.4f, SortingOrder = -1, FragmentPrefabPath = GreenFragmentPrefabPath, FragmentCount = 8 },
-        new DebrisSpec { Id = "obstacle.bush_2", DisplayName = "草丛", PrefabName = "Obstacle_Bush2", Sprite = "小草丛（2）", BrokenSprite = null, Size = ObstacleSizeCategory.Small, Scale = 0.65f, SolidRadius = 0.5f, Weight = 3f, Clearance = 2.4f, SortingOrder = -1, FragmentPrefabPath = GreenFragmentPrefabPath, FragmentCount = 8 },
+        new DebrisSpec { Id = "obstacle.flower", DisplayName = "小花", PrefabName = "Obstacle_Flower", Sprite = "小花（1）", BrokenSprite = null, Size = ObstacleSizeCategory.Small, Scale = 0.55f, SolidRadius = 0.35f, Weight = 5f, Clearance = 1.8f, SortingOrder = -1, RandomBreakClipPaths = VegetationBreakClipPaths, FragmentPrefabPath = GreenFragmentPrefabPath, FragmentCount = 8 },
+        new DebrisSpec { Id = "obstacle.flower_daisy", DisplayName = "雏菊", PrefabName = "Obstacle_FlowerDaisy", Sprite = "小花（2）", BrokenSprite = null, Size = ObstacleSizeCategory.Small, Scale = 0.55f, SolidRadius = 0.35f, Weight = 5f, Clearance = 1.8f, SortingOrder = -1, RandomBreakClipPaths = VegetationBreakClipPaths, FragmentPrefabPath = GreenFragmentPrefabPath, FragmentCount = 8 },
+        new DebrisSpec { Id = "obstacle.flower_cluster", DisplayName = "花丛", PrefabName = "Obstacle_FlowerCluster", Sprite = "花丛", BrokenSprite = null, Size = ObstacleSizeCategory.Small, Scale = 0.65f, SolidRadius = 0.5f, Weight = 3f, Clearance = 2.2f, SortingOrder = -1, RandomBreakClipPaths = VegetationBreakClipPaths, FragmentPrefabPath = GreenFragmentPrefabPath, FragmentCount = 8 },
+        new DebrisSpec { Id = "obstacle.grass_1", DisplayName = "小草", PrefabName = "Obstacle_Grass1", Sprite = "小草（1）", BrokenSprite = null, Size = ObstacleSizeCategory.Small, Scale = 0.5f, SolidRadius = 0.3f, Weight = 6f, Clearance = 1.6f, SortingOrder = -1, RandomBreakClipPaths = VegetationBreakClipPaths, FragmentPrefabPath = GreenFragmentPrefabPath, FragmentCount = 8 },
+        new DebrisSpec { Id = "obstacle.grass_2", DisplayName = "小草", PrefabName = "Obstacle_Grass2", Sprite = "小草（2）", BrokenSprite = null, Size = ObstacleSizeCategory.Small, Scale = 0.5f, SolidRadius = 0.3f, Weight = 6f, Clearance = 1.6f, SortingOrder = -1, RandomBreakClipPaths = VegetationBreakClipPaths, FragmentPrefabPath = GreenFragmentPrefabPath, FragmentCount = 8 },
+        new DebrisSpec { Id = "obstacle.grass_3", DisplayName = "小草", PrefabName = "Obstacle_Grass3", Sprite = "小草（3）", BrokenSprite = null, Size = ObstacleSizeCategory.Small, Scale = 0.5f, SolidRadius = 0.3f, Weight = 6f, Clearance = 1.6f, SortingOrder = -1, RandomBreakClipPaths = VegetationBreakClipPaths, FragmentPrefabPath = GreenFragmentPrefabPath, FragmentCount = 8 },
+        new DebrisSpec { Id = "obstacle.bush_1", DisplayName = "草丛", PrefabName = "Obstacle_Bush1", Sprite = "小草丛（1）", BrokenSprite = null, Size = ObstacleSizeCategory.Small, Scale = 0.65f, SolidRadius = 0.5f, Weight = 3f, Clearance = 2.4f, SortingOrder = -1, RandomBreakClipPaths = VegetationBreakClipPaths, FragmentPrefabPath = GreenFragmentPrefabPath, FragmentCount = 8 },
+        new DebrisSpec { Id = "obstacle.bush_2", DisplayName = "草丛", PrefabName = "Obstacle_Bush2", Sprite = "小草丛（2）", BrokenSprite = null, Size = ObstacleSizeCategory.Small, Scale = 0.65f, SolidRadius = 0.5f, Weight = 3f, Clearance = 2.4f, SortingOrder = -1, RandomBreakClipPaths = VegetationBreakClipPaths, FragmentPrefabPath = GreenFragmentPrefabPath, FragmentCount = 8 },
         // ---- 有坏图：碰到后换坏图、沉到背景 ----
-        new DebrisSpec { Id = "obstacle.barrel", DisplayName = "木桶", PrefabName = "Obstacle_Barrel", Sprite = "木桶", BrokenSprite = "木桶（坏）", Size = ObstacleSizeCategory.Small, Scale = 0.7f, SolidRadius = 0.55f, Weight = 1.5f, Clearance = 3f, BreakClipPath = WoodBreakClipPath, BreakVolume = 0.6f, FragmentPrefabPath = WoodFragmentPrefabPath, FragmentCount = 8, FragmentSpawnRadius = 0.15f },
+        new DebrisSpec { Id = "obstacle.barrel", DisplayName = "木桶", PrefabName = "Obstacle_Barrel", Sprite = "木桶", BrokenSprite = "木桶（坏）", Size = ObstacleSizeCategory.Small, Scale = 0.7f, SolidRadius = 0.55f, Weight = 1.5f, Clearance = 3f, BreakClipPath = WoodBreakClipPath, FragmentPrefabPath = WoodFragmentPrefabPath, FragmentCount = 8, FragmentSpawnRadius = 0.15f },
         new DebrisSpec { Id = "obstacle.rock", DisplayName = "石块", PrefabName = "Obstacle_Rock", Sprite = "石块（2）", BrokenSprite = "石块2（坏）", Size = ObstacleSizeCategory.Medium, Scale = 0.75f, SolidRadius = 0.7f, SolidSize = new Vector2(3.3f, 1.5f), SolidOffset = new Vector2(0.05f, -0.7f), Weight = 1.5f, Clearance = 3.2f, BreakClipPath = StoneBreakClipPath, BreakVolume = 1f, FragmentPrefabPath = RockFragmentPrefabPath, FragmentCount = 12, FragmentSpawnRadius = 0.5f },
         new DebrisSpec { Id = "obstacle.pebble", DisplayName = "小石头", PrefabName = "Obstacle_Pebble", Sprite = "小石头（1）", BrokenSprite = "=", Size = ObstacleSizeCategory.Small, Scale = 0.5f, SolidRadius = 0.35f, Weight = 2f, Clearance = 2f, SortingOrder = -1 },
-        new DebrisSpec { Id = "obstacle.haystack", DisplayName = "干草垛", PrefabName = "Obstacle_Haystack", Sprite = "干草垛", BrokenSprite = "干草垛（坏）", Size = ObstacleSizeCategory.Medium, Scale = 0.8f, SolidRadius = 0.7f, Weight = 1f, Clearance = 3.5f, FragmentPrefabPath = CropFragmentPrefabPath, FragmentCount = 8 },
-        new DebrisSpec { Id = "obstacle.rice_field", DisplayName = "稻田", PrefabName = "Obstacle_RiceField", Sprite = "稻田", BrokenSprite = "稻田（坏）", Size = ObstacleSizeCategory.Medium, Scale = 0.8f, SolidRadius = 0.75f, Weight = 1f, Clearance = 3.5f, FragmentPrefabPath = CropFragmentPrefabPath, FragmentCount = 8 },
-        new DebrisSpec { Id = "obstacle.tree", DisplayName = "大树", PrefabName = "Obstacle_Tree", Sprite = "大树（完整）", BrokenSprite = "大树（断）", Size = ObstacleSizeCategory.Large, Scale = 1.1f, SolidRadius = 0.55f, Weight = 2.5f, Clearance = 4.5f, FragmentPrefabPath = WoodFragmentPrefabPath, FragmentCount = 8, FragmentSpawnOffset = new Vector2(0f, -0.5f), FragmentSpawnRadius = 0.2f },
+        new DebrisSpec { Id = "obstacle.haystack", DisplayName = "干草垛", PrefabName = "Obstacle_Haystack", Sprite = "干草垛", BrokenSprite = "干草垛（坏）", Size = ObstacleSizeCategory.Medium, Scale = 0.8f, SolidRadius = 0.7f, Weight = 1f, Clearance = 3.5f, RandomBreakClipPaths = VegetationBreakClipPaths, FragmentPrefabPath = CropFragmentPrefabPath, FragmentCount = 8 },
+        new DebrisSpec { Id = "obstacle.rice_field", DisplayName = "稻田", PrefabName = "Obstacle_RiceField", Sprite = "稻田", BrokenSprite = "稻田（坏）", Size = ObstacleSizeCategory.Medium, Scale = 0.8f, SolidRadius = 0.75f, Weight = 1f, Clearance = 3.5f, RandomBreakClipPaths = VegetationBreakClipPaths, FragmentPrefabPath = CropFragmentPrefabPath, FragmentCount = 8 },
+        new DebrisSpec { Id = "obstacle.tree", DisplayName = "大树", PrefabName = "Obstacle_Tree", Sprite = "大树（完整）", BrokenSprite = "大树（断）", Size = ObstacleSizeCategory.Large, Scale = 1.1f, SolidRadius = 0.55f, Weight = 2.5f, Clearance = 4.5f, BreakClipPath = WoodBreakClipPath, FragmentPrefabPath = WoodFragmentPrefabPath, FragmentCount = 8, FragmentSpawnOffset = new Vector2(0f, -0.5f), FragmentSpawnRadius = 0.2f },
     };
 
     [MenuItem("Game Jam/World/Build Obstacle Prefabs")]
@@ -129,7 +139,7 @@ public static class WorldObstaclePrefabBuilder
             Vector2.zero,
             0f,
             LoadAudioClip(WoodBreakClipPath),
-            0.35f);
+            1f);
 
         int built = 0;
         foreach (DebrisSpec spec in DebrisSpecs)
@@ -168,6 +178,7 @@ public static class WorldObstaclePrefabBuilder
                 spec.FragmentSpawnOffset,
                 spec.FragmentSpawnRadius,
                 LoadAudioClip(spec.BreakClipPath),
+                LoadAudioClips(spec.RandomBreakClipPaths),
                 spec.BreakVolume);
             built++;
         }
@@ -370,6 +381,7 @@ public static class WorldObstaclePrefabBuilder
         Vector2 fragmentSpawnOffset,
         float fragmentSpawnRadius,
         AudioClip breakClip,
+        AudioClip[] randomBreakClips,
         float breakVolume)
     {
         GameObject root = new GameObject(name);
@@ -431,10 +443,13 @@ public static class WorldObstaclePrefabBuilder
                 fragmentSpawnOffset,
                 fragmentSpawnRadius);
 
-            if (breakClip != null)
+            if (breakClip != null || randomBreakClips.Length > 0)
             {
                 BreakableObstacleAudio audio = root.AddComponent<BreakableObstacleAudio>();
-                audio.Configure(breakClip, breakVolume);
+                if (randomBreakClips.Length > 0)
+                    audio.ConfigureRandom(randomBreakClips, breakVolume);
+                else
+                    audio.Configure(breakClip, breakVolume);
             }
 
             PrefabUtility.SaveAsPrefabAsset(root, path);
@@ -553,6 +568,17 @@ public static class WorldObstaclePrefabBuilder
         if (clip == null)
             Debug.LogWarning($"Audio clip not found: {path}");
         return clip;
+    }
+
+    private static AudioClip[] LoadAudioClips(string[] paths)
+    {
+        if (paths == null || paths.Length == 0)
+            return new AudioClip[0];
+
+        AudioClip[] clips = new AudioClip[paths.Length];
+        for (int index = 0; index < paths.Length; index++)
+            clips[index] = LoadAudioClip(paths[index]);
+        return clips;
     }
 
     private static GameObject LoadGameObjectPrefab(string path)

@@ -141,6 +141,26 @@ public sealed class AlphaUiIntegrationTests
                 Has.Length.EqualTo(1));
             Assert.That(objects.SelectMany(item => item.GetComponents<TutorialPen>()).ToArray(),
                 Has.Length.EqualTo(1));
+            SheepRecruitAudio[] recruitAudio = objects
+                .SelectMany(item => item.GetComponents<SheepRecruitAudio>())
+                .ToArray();
+            Assert.That(recruitAudio, Has.Length.EqualTo(1));
+            SerializedObject recruitAudioData = new SerializedObject(recruitAudio[0]);
+            Assert.That(
+                recruitAudioData.FindProperty("tutorialPen").objectReferenceValue,
+                Is.Not.Null);
+            SerializedProperty sheepClips = recruitAudioData.FindProperty("sheepClips");
+            Assert.That(sheepClips.arraySize, Is.EqualTo(7));
+            for (int index = 0; index < sheepClips.arraySize; index++)
+            {
+                Assert.That(
+                    sheepClips.GetArrayElementAtIndex(index).objectReferenceValue,
+                    Is.Not.Null,
+                    $"SheepRecruitAudio clip {index + 1} is missing.");
+            }
+            Assert.That(
+                recruitAudioData.FindProperty("recruitBleatChance").floatValue,
+                Is.EqualTo(0.5f).Within(0.001f));
             Assert.That(objects.SelectMany(item => item.GetComponents<TaskPanelToggle>()).ToArray(),
                 Has.Length.EqualTo(1));
 

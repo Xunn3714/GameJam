@@ -21,6 +21,14 @@ public sealed class BreakableObstacleAudio : MonoBehaviour
     public void Configure(AudioClip clip, float scale = 0.6f)
     {
         breakClip = clip;
+        randomBreakClips = null;
+        volumeScale = Mathf.Clamp01(scale);
+    }
+
+    public void ConfigureRandom(AudioClip[] clips, float scale = 1f)
+    {
+        breakClip = null;
+        randomBreakClips = clips;
         volumeScale = Mathf.Clamp01(scale);
     }
 
@@ -45,7 +53,7 @@ public sealed class BreakableObstacleAudio : MonoBehaviour
 
         if (clipToPlay != null && AudioManager.Instance != null)
             AudioManager.Instance.PlaySFX(clipToPlay, volumeScale, SharedClipCooldown);
-        }
+    }
 
     private AudioClip GetBreakClip()
     {

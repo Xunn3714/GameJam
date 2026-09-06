@@ -36,6 +36,17 @@ public static class AlphaFlockExpansionSceneSetup
     private const string WolfAttack3ClipPath = "Assets/_Game/Content/Audio/SFX/woof/attack3.wav";
     private const string WolfCaptureClipPath = "Assets/_Game/Content/Audio/SFX/sheep/sheep (8).wav";
 
+    private static readonly string[] SheepRecruitClipPaths =
+    {
+        "Assets/_Game/Content/Audio/SFX/sheep/sheep (1).wav",
+        "Assets/_Game/Content/Audio/SFX/sheep/sheep (2).wav",
+        "Assets/_Game/Content/Audio/SFX/sheep/sheep (3).wav",
+        "Assets/_Game/Content/Audio/SFX/sheep/sheep (4).wav",
+        "Assets/_Game/Content/Audio/SFX/sheep/sheep (5).wav",
+        "Assets/_Game/Content/Audio/SFX/sheep/sheep (6).wav",
+        "Assets/_Game/Content/Audio/SFX/sheep/sheep (7).wav"
+    };
+
     private static readonly string[] GrassFootstepPaths =
     {
         "Assets/_Game/Content/Audio/SFX/footstep/grass/Grass1.wav",
@@ -177,12 +188,14 @@ public static class AlphaFlockExpansionSceneSetup
         Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
         FlockMovementController movement = FindComponentInScene<FlockMovementController>(scene);
         WolfEventDirector wolfDirector = FindComponentInScene<WolfEventDirector>(scene);
+        TutorialPen tutorialPen = FindComponentInScene<TutorialPen>(scene);
 
-        if (movement == null || wolfDirector == null)
-            throw new System.InvalidOperationException("Alpha scene is missing its flock or wolf system.");
+        if (movement == null || wolfDirector == null || tutorialPen == null)
+            throw new System.InvalidOperationException("Alpha scene is missing its flock, tutorial pen, or wolf system.");
 
         EnsureSceneAudio(scene);
         ConfigureFootstepAudio(movement);
+        ConfigureRecruitAudio(movement, tutorialPen);
         ConfigureWolfAudio(wolfDirector);
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene, ScenePath);
@@ -261,6 +274,7 @@ public static class AlphaFlockExpansionSceneSetup
             out FlockMovementController movement,
             out FlockActionController actions);
         tutorialPen.BindFlock(flock);
+        ConfigureRecruitAudio(movement, tutorialPen);
         CameraFollow2D cameraFollow = ConfigureCamera(scene, flockObject.transform, out Camera gameplayCamera);
         ConfigureLighting(scene);
         ProgressiveSheepSpawner sheepSpawner = CreateSheepSpawner(scene, flock, namePool, gameplayCamera, worldSeed);
@@ -817,6 +831,20 @@ public static class AlphaFlockExpansionSceneSetup
             LoadAudioClips(SandFootstepPaths),
             0.7f,
             0.35f);
+    }
+
+    private static void ConfigureRecruitAudio(
+        FlockMovementController movement,
+        TutorialPen tutorialPen)
+    {
+        SheepRecruitAudio recruitAudio = movement.GetComponent<SheepRecruitAudio>();
+        if (recruitAudio == null)
+            recruitAudio = movement.gameObject.AddComponent<SheepRecruitAudio>();
+
+        recruitAudio.Configure(
+            tutorialPen,
+            LoadAudioClips(SheepRecruitClipPaths),
+            0.5f);
     }
 
     private static void ConfigureWolfAudio(WolfEventDirector director)
