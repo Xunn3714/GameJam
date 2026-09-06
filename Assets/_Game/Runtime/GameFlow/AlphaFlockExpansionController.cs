@@ -205,7 +205,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         stats = new AlphaRunStats();
         progression = new AlphaProgression(stages, exitUnlockFlockSize, Mathf.Max(1, flock.MemberCount));
 
-        // 有节奏控制器时狼由它管（含阶段门槛、狼嚎抱团）；否则退回旧的定时生成器。
+        // 有节奏控制器时狼由它管（含阶段门槛和狼嚎预警）；否则退回旧的定时生成器。
         if (wolfDirector == null)
             wolfSpawner?.StopSpawning();
 
@@ -745,7 +745,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
                 labelStyle);
         }
         GUILayout.Label(exitLine, labelStyle);
-        GUILayout.Label("WASD 移动 · E 整群后退蓄势冲刺 · Q 收拢", labelStyle);
+        GUILayout.Label("WASD 移动 · E 整群后退蓄势冲刺", labelStyle);
         GUILayout.EndArea();
     }
 

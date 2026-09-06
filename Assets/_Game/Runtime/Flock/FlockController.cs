@@ -11,12 +11,6 @@ public sealed class FlockController : MonoBehaviour
     [SerializeField] private FlockMovementController movementController;
     [SerializeField] private SheepMember[] startingMembers;
 
-    [Header("Huddle")]
-    [Tooltip("抱团时羊群半径缩小到原来的多少倍（狼嚎提示期间）。")]
-    [SerializeField, Range(0.2f, 1f)] private float huddleCompactness = 0.55f;
-    [Tooltip("松散 ↔ 抱团 的过渡速度（每秒变化量）。")]
-    [SerializeField, Min(0.05f)] private float huddleTransitionSpeed = 1.2f;
-
     [Header("Flock Shape")]
     [Tooltip("羊群长轴转向当前移动方向的速度（弧度/秒）。")]
     [SerializeField, Min(0.1f)] private float shapeDirectionTurnSpeed = 4f;
@@ -66,7 +60,6 @@ public sealed class FlockController : MonoBehaviour
     private bool pendingFacingLeft;
     private bool hasPendingFacing;
     private bool facingCommittedThisHold;
-    private float manualCompactness = 1f;
     private float actionMemberSpeedMultiplier = 1f;
     private Vector2 groupActionDirection = Vector2.right;
     private Collider2D pendingGroupActionBlocker;
@@ -113,16 +106,6 @@ public sealed class FlockController : MonoBehaviour
 
     public IReadOnlyList<SheepMember> Members => members;
 
-    /// <summary>当前紧凑程度：1 = 松散的一大群，越小越抱团。由 SheepFlockAgent 读取来缩放半径。</summary>
-    public float Compactness { get; private set; } = 1f;
-
-    /// <summary>Q 收拢提供的紧凑度通道；1 为常态，越小排列越紧。</summary>
-    public float ManualCompactness => manualCompactness;
-
-    /// <summary>是否处于抱团状态（目标值；实际半径会平滑过渡）。</summary>
-    public bool IsHuddling { get; private set; }
-    public bool IsCompressed => IsHuddling || manualCompactness < 0.999f;
-
     /// <summary>整体速度倍率：中心移动速度和每只羊的最大速度 / 加速度都乘它。</summary>
     public float SpeedMultiplier { get; private set; } = 1f;
     public float MemberSpeedMultiplier => SpeedMultiplier * actionMemberSpeedMultiplier;
@@ -134,11 +117,6 @@ public sealed class FlockController : MonoBehaviour
         {
             movementController.SetSpeedMultiplier(SpeedMultiplier);
         }
-    }
-
-    public void SetManualCompactness(float compactness)
-    {
-        manualCompactness = Mathf.Clamp(compactness, 0.2f, 1f);
     }
 
     /// <summary>整群主动动作期间临时提高成员速度，使所有羊与中心同步。</summary>
@@ -241,13 +219,6 @@ public sealed class FlockController : MonoBehaviour
         fixedStepIndex = (fixedStepIndex + 1) & int.MaxValue;
         UpdateFacingIntent();
         UpdateShapeForward();
-
-        float huddleTarget = IsHuddling ? huddleCompactness : 1f;
-        float targetCompactness = Mathf.Min(huddleTarget, manualCompactness);
-        Compactness = Mathf.MoveTowards(
-            Compactness,
-            targetCompactness,
-            huddleTransitionSpeed * Time.fixedDeltaTime);
 
         RebuildMemberGrid();
         UpdateMemberSeparation();
@@ -383,7 +354,7 @@ public sealed class FlockController : MonoBehaviour
     /// <summary>把 idle 移动平均分散在羊群里，并严格限制同时具备资格的数量。</summary>
     public bool CanIdlePace(int simulationSlot)
     {
-        if (IsMoving || IsHuddling || IsGroupActionActive || maximumIdlePacingMembers <= 0)
+        if (IsMoving || IsGroupActionActive || maximumIdlePacingMembers <= 0)
             return false;
 
         int eligibleCount = MemberCount;
@@ -454,12 +425,6 @@ public sealed class FlockController : MonoBehaviour
             Mathf.FloorToInt(position.y / cellSize));
     }
 
-
-    /// <summary>让羊群抱团（true）或恢复松散（false）。</summary>
-    public void SetHuddle(bool huddle)
-    {
-        IsHuddling = huddle;
-    }
 
     public bool TryRecruit(RecruitableSheep sheep)
     {

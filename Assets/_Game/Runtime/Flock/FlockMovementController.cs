@@ -33,7 +33,6 @@ public sealed class FlockMovementController : MonoBehaviour
     private float temporarySpeedLimit;
     private float temporarySpeedLimitExpiresAt;
     private float speedMultiplier = 1f;
-    private float actionSpeedScale = 1f;
     private bool externalMovementActive;
 
     /// <summary>随羊群规模 / 镜头放大整体提速；速度上限和加速度一起乘。</summary>
@@ -43,7 +42,6 @@ public sealed class FlockMovementController : MonoBehaviour
     }
 
     public float SpeedMultiplier => speedMultiplier;
-    public float ActionSpeedScale => actionSpeedScale;
     public bool ControlEnabled => controlEnabled;
 
     public Vector2 LastMoveDirection { get; private set; } = Vector2.right;
@@ -57,7 +55,7 @@ public sealed class FlockMovementController : MonoBehaviour
     public float UnmodifiedCurrentSpeedLimit => (HasTemporarySpeedLimit
         ? Mathf.Max(normalSpeedLimit, temporarySpeedLimit)
         : normalSpeedLimit) * speedMultiplier;
-    public float CurrentSpeedLimit => UnmodifiedCurrentSpeedLimit * actionSpeedScale;
+    public float CurrentSpeedLimit => UnmodifiedCurrentSpeedLimit;
 
     private bool HasTemporarySpeedLimit =>
         temporarySpeedLimit > normalSpeedLimit &&
@@ -190,14 +188,6 @@ public sealed class FlockMovementController : MonoBehaviour
         temporarySpeedLimit = 0f;
         temporarySpeedLimitExpiresAt = 0f;
         velocity = Vector2.ClampMagnitude(velocity, CurrentSpeedLimit);
-    }
-
-    /// <summary>为收拢状态提供平滑移速倍率，不改变阶段提供的基础速度倍率。</summary>
-    public void SetActionSpeedScale(float scale)
-    {
-        actionSpeedScale = Mathf.Clamp(scale, 0.05f, 1f);
-        if (!externalMovementActive)
-            velocity = Vector2.ClampMagnitude(velocity, CurrentSpeedLimit);
     }
 
     public void BeginExternalMovement()

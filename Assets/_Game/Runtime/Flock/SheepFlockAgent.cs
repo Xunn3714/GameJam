@@ -80,7 +80,6 @@ public sealed class SheepFlockAgent : MonoBehaviour
     private bool idleWasAllowed;
     private bool hasCachedSteering;
     private bool wasControllerMoving;
-    private bool wasHuddling;
     private float shapeRadiusBias;
     private float facingReactionDelay;
     private float facingReactionCountdown;
@@ -133,7 +132,6 @@ public sealed class SheepFlockAgent : MonoBehaviour
         visualAnimator?.ClearFlockFacingIntent();
         visualAnimator?.SetGroupActionVisual(false);
         wasControllerMoving = owner != null && owner.IsMoving;
-        wasHuddling = owner != null && owner.IsHuddling;
         ResetWander();
         BeginIdleSettling();
         enabled = flock != null;
@@ -170,15 +168,13 @@ public sealed class SheepFlockAgent : MonoBehaviour
         bool flockIsMoving = driveVelocity.sqrMagnitude > 0.0001f;
         float speedScale = flock.MemberSpeedMultiplier;
         bool controllerMovementChanged = wasControllerMoving != flock.IsMoving;
-        bool huddleChanged = wasHuddling != flock.IsHuddling;
         int steeringInterval = flock.GetSteeringUpdateInterval();
         bool shouldUpdateSteering = !hasCachedSteering
             || controllerMovementChanged
-            || huddleChanged
             || flock.ShouldUpdateSteering(simulationSlot);
         if (shouldUpdateSteering)
         {
-            float steeringDeltaTime = (controllerMovementChanged || huddleChanged)
+            float steeringDeltaTime = controllerMovementChanged
                 ? deltaTime
                 : deltaTime * steeringInterval;
             cachedSteeringVelocity = CalculateSteeringVelocity(
@@ -189,7 +185,6 @@ public sealed class SheepFlockAgent : MonoBehaviour
         }
 
         wasControllerMoving = flock.IsMoving;
-        wasHuddling = flock.IsHuddling;
         Vector2 steeringVelocity = cachedSteeringVelocity;
         float response = (flockIsMoving ? acceleration : idleBraking) * speedScale;
         velocity = flock.IsGroupActionActive
@@ -400,8 +395,7 @@ public sealed class SheepFlockAgent : MonoBehaviour
         Vector2 separation = Vector2.zero;
         Vector2 averageNeighborVelocity = Vector2.zero;
         int velocityNeighborCount = 0;
-        // 抱团或手动收拢时允许羊挨得更近，使 Q 的间距变化清晰可见。
-        float activeSeparationRadius = separationRadius * Mathf.Lerp(0.5f, 1f, flock.Compactness);
+        float activeSeparationRadius = separationRadius;
         float separationRadiusSquared = activeSeparationRadius * activeSeparationRadius;
         float activeAlignmentRadius = Mathf.Max(activeSeparationRadius, alignmentRadius);
         float alignmentRadiusSquared = activeAlignmentRadius * activeAlignmentRadius;
@@ -508,9 +502,8 @@ public sealed class SheepFlockAgent : MonoBehaviour
         float sharedOutlineWave =
             Mathf.Sin(angle * 3f + 0.65f) * 0.65f
             + Mathf.Sin(angle * 5f - 1.2f) * 0.35f;
-        float huddleShapeScale = Mathf.Lerp(0.35f, 1f, flock.Compactness);
         float outlineScale = 1f
-            + sharedOutlineWave * outlineIrregularity * shapeStrength * huddleShapeScale
+            + sharedOutlineWave * outlineIrregularity * shapeStrength
             + shapeRadiusBias * individualRadiusVariation;
         outlineScale = Mathf.Max(0.7f, outlineScale);
 
@@ -532,7 +525,6 @@ public sealed class SheepFlockAgent : MonoBehaviour
         float deltaTime)
     {
         bool allowed = !flock.IsMoving
-            && !flock.IsCompressed
             && isInsideComfortableShape
             && flock.CanIdlePace(simulationSlot);
         if (!allowed)
@@ -608,7 +600,7 @@ public sealed class SheepFlockAgent : MonoBehaviour
     private float GetComfortableRadius()
     {
         int others = Mathf.Max(0, flock.MemberCount - 1);
-        return (comfortableRadius + radiusGrowthPerSheep * Mathf.Sqrt(others)) * flock.Compactness;
+        return comfortableRadius + radiusGrowthPerSheep * Mathf.Sqrt(others);
     }
 
     private void UpdateWander(float deltaTime)
