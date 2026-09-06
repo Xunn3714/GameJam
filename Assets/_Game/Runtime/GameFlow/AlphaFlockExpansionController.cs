@@ -79,11 +79,13 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     [Tooltip("左上角开发者调试信息；只在 Inspector 里勾选才显示，正常游玩不要开。")]
     [SerializeField] private bool showDebugHud;
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
     [Header("Special Sheep Debug Shortcut")]
     [Tooltip("同时按住 O + P 多少秒后，在出生羊圈外生成五种品质测试羊。")]
     [SerializeField, Min(0.1f)] private float specialSheepDebugHoldDuration = 5f;
     [SerializeField, Min(0.8f)] private float specialSheepDebugSpacing = 2f;
     [SerializeField, Min(0.8f)] private float specialSheepDebugOutsideOffset = 2.2f;
+#endif
 
     private AlphaProgression progression;
     private AlphaRunStats stats;
@@ -104,8 +106,10 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     private float nextPopulationRefreshTime;
     private float nextImpactFeedbackTime;
     private float runStartTime;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
     private float specialSheepDebugHeldTime;
     private bool specialSheepDebugTriggered;
+#endif
     private readonly List<string> typeScratch = new List<string>();
 
     public int CurrentStageIndex => progression != null ? progression.StageIndex : 0;
@@ -154,7 +158,6 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         if (tutorialPen != null)
         {
             tutorialPen.Opened += HandleTutorialPenOpened;
-            tutorialPen.HintRequested += ShowLatestBanner;
         }
     }
 
@@ -181,7 +184,6 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         if (tutorialPen != null)
         {
             tutorialPen.Opened -= HandleTutorialPenOpened;
-            tutorialPen.HintRequested -= ShowLatestBanner;
         }
     }
 
@@ -253,7 +255,9 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         if (ended)
             return;
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
         UpdateSpecialSheepDebugShortcut();
+#endif
 
         stats.SurvivalSeconds = Time.time - runStartTime;
 
@@ -700,6 +704,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         nextPopulationRefreshTime = Time.unscaledTime + populationRefreshInterval;
     }
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
     private void UpdateSpecialSheepDebugShortcut()
     {
         Keyboard keyboard = Keyboard.current;
@@ -750,6 +755,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
             : Mathf.Min(world.yMax - margin, pen.yMax + specialSheepDebugOutsideOffset);
         return new Vector2(x, y);
     }
+#endif
 
     private void OnGUI()
     {

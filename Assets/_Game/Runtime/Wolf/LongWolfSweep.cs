@@ -28,8 +28,9 @@ public sealed class LongWolfSweep : MonoBehaviour
 
     private readonly List<SheepMember> candidates = new List<SheepMember>();
     private float runtimeLength;
+    private float runtimeWidthMultiplier = 1f;
     public float BodyLength => runtimeLength > 0f ? runtimeLength : bodyLength;
-    public float BodyWidth => bodyWidth;
+    public float BodyWidth => bodyWidth * runtimeWidthMultiplier;
     public int CapturedCount { get; private set; }
     public float CoverageSeconds { get; private set; }
     public float ClearTravelDistance { get; private set; }
@@ -43,6 +44,7 @@ public sealed class LongWolfSweep : MonoBehaviour
             skinRenderer.sprite = skins[SelectedSkinIndex];
         }
         runtimeLength = 0f;
+        runtimeWidthMultiplier = 1f;
         ClearTravelDistance = 0f;
         CoverageSeconds = Random.Range(minCoverageSeconds, maxCoverageSeconds);
         if (coverageCamera == null) coverageCamera = Camera.main;
@@ -54,8 +56,14 @@ public sealed class LongWolfSweep : MonoBehaviour
             return;
 
         runtimeLength = CalculateCoverageLength(max - min, speed, CoverageSeconds);
-        ClearTravelDistance = Mathf.Max(0f, max) + runtimeLength + bodyWidth;
+        ClearTravelDistance = Mathf.Max(0f, max) + runtimeLength + BodyWidth;
         SetDirection(direction);
+    }
+
+    /// <summary>仅影响本次出场的身体宽度，不修改 Prefab 配置。</summary>
+    public void SetRuntimeWidthMultiplier(float multiplier)
+    {
+        runtimeWidthMultiplier = Mathf.Max(0.1f, multiplier);
     }
 
     // Visual only: extend both ends beyond the viewport without changing the attack duration.
@@ -98,7 +106,7 @@ public sealed class LongWolfSweep : MonoBehaviour
             if (bodyVisual != null) bodyVisual.gameObject.SetActive(false);
             if (headVisual != null) headVisual.gameObject.SetActive(false);
             float height = skinRenderer.sprite.rect.height / skinRenderer.sprite.pixelsPerUnit;
-            float scale = bodyWidth / Mathf.Max(0.001f, height);
+            float scale = BodyWidth / Mathf.Max(0.001f, height);
             skinRenderer.transform.localRotation = rotation;
             skinRenderer.transform.localPosition = (Vector3)(-direction.normalized * BodyLength * 0.5f);
             skinRenderer.transform.localScale = Vector3.one * scale;
@@ -112,13 +120,13 @@ public sealed class LongWolfSweep : MonoBehaviour
         if (bodyVisual != null)
         {
             bodyVisual.localRotation = rotation;
-            bodyVisual.localScale = new Vector3(BodyLength, bodyWidth, 1f);
+            bodyVisual.localScale = new Vector3(BodyLength, BodyWidth, 1f);
         }
         if (headVisual != null)
         {
             headVisual.localRotation = rotation;
             // Keep the original head proportions relative to the narrower body.
-            headVisual.localScale = Vector3.one * (bodyWidth / 1.3f);
+            headVisual.localScale = Vector3.one * (BodyWidth / 1.3f);
         }
     }
 
@@ -141,7 +149,7 @@ public sealed class LongWolfSweep : MonoBehaviour
             Vector2 center = collider.transform.TransformPoint(collider.offset);
             Vector3 scale = collider.transform.lossyScale;
             float radius = collider.radius * Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.y));
-            if (!TouchesSweep(center, radius, previousHead, nextHead, direction, BodyLength, bodyWidth))
+            if (!TouchesSweep(center, radius, previousHead, nextHead, direction, BodyLength, BodyWidth))
                 continue;
 
             wolf.CaptureAlongPath(sheep, CapturedCount++);

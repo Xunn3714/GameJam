@@ -32,12 +32,15 @@ public class MainMenuController : MonoBehaviour
         if (Keyboard.current == null)
             return;
 
-
-        if (!Keyboard.current.escapeKey.wasPressedThisFrame)
+        if (!Keyboard.current
+            .escapeKey
+            .wasPressedThisFrame)
+        {
             return;
+        }
 
 
-        // 制作人员页面打开时：
+        // 制作人员页面打开时
         // ESC 返回主菜单
         if (developersPanel != null &&
             developersPanel.activeSelf)
@@ -200,7 +203,10 @@ public class MainMenuController : MonoBehaviour
     {
         if (SceneLoader.Instance != null)
         {
-            SceneLoader.Instance.LoadGameplayScene();
+            // 不再直接进入 Gameplay
+            // 先进入插画 Intro
+            SceneLoader.Instance
+                .LoadIllustrationIntro();
         }
         else
         {
@@ -219,7 +225,8 @@ public class MainMenuController : MonoBehaviour
     public void QuitGame()
     {
 #if UNITY_EDITOR
-        UnityEditor.EditorApplication.isPlaying = false;
+        UnityEditor.EditorApplication
+            .isPlaying = false;
 #else
         Application.Quit();
 #endif

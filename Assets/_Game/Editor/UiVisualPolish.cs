@@ -15,7 +15,7 @@ using UnityEngine.UI;
 public static class UiVisualPolish
 {
     private const string MainMenuScenePath = "Assets/_Game/Scenes/MainMenu.unity";
-    private const string MainMenuBgmPath = "Assets/_Game/Content/Audio/BGM/SheepMvp/sheep-coming(city).wav";
+    private const string MainMenuBgmPath = "Assets/_Game/Content/Audio/BGM/sheep-coming(city).wav";
     private const string SettingPrefabPath = "Assets/_Game/Content/Perfabs/UI/SettingPanel.prefab";
     private const string CollectionPrefabPath = "Assets/_Game/Content/Perfabs/UI/CollectionPanel.prefab";
     private const string SheepCardPrefabPath = "Assets/_Game/Content/Perfabs/UI/SheepCard.prefab";
@@ -239,30 +239,30 @@ public static class UiVisualPolish
             if (title != null)
             {
                 title.text = "设置";
-                SetRect(title.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0f, 205f), new Vector2(420f, 66f));
-                StyleText(title, 44f, Ink, TextAlignmentOptions.Center, FontStyles.Bold);
+                SetRect(title.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0f, 190f), new Vector2(300f, 70f));
+                StyleText(title, 48f, Ink, TextAlignmentOptions.Center, FontStyles.Bold);
             }
 
             string[] labels = { "Main_Label", "Music_Label", "Sheep_Label" };
-            string[] values = { "主音量", "音乐音量", "羊叫音量" };
+            string[] values = { "总音量", "音乐音量", "音效音量" };
             string[] sliders = { "Main_Slider", "Music_Slider", "Sheep_Slider" };
-            float[] y = { 75f, -20f, -115f };
+            float[] y = { 70f, -20f, -110f };
             for (int index = 0; index < labels.Length; index++)
             {
                 TMP_Text label = FindComponent<TMP_Text>(root, labels[index]);
                 if (label != null)
                 {
                     label.text = values[index];
-                    SetRect(label.gameObject, new Vector2(0.5f, 0.5f), new Vector2(-235f, y[index]), new Vector2(180f, 48f));
-                    StyleText(label, 24f, Ink, TextAlignmentOptions.Right, FontStyles.Bold);
+                    SetRect(label.gameObject, new Vector2(0.5f, 0.5f), new Vector2(-235f, y[index]), new Vector2(160f, 50f));
+                    StyleText(label, 32f, Ink, TextAlignmentOptions.Right, FontStyles.Bold);
                 }
 
                 GameObject sliderObject = Find(root, sliders[index]);
-                SetRect(sliderObject, new Vector2(0.5f, 0.5f), new Vector2(85f, y[index]), new Vector2(430f, 34f));
+                SetRect(sliderObject, new Vector2(0.5f, 0.5f), new Vector2(110f, y[index]), new Vector2(480f, 40f));
                 StyleSlider(sliderObject);
             }
 
-            StyleButton(Find(root, "Btn_Back"), ExitButtonPath, "返回", new Vector2(-128f, -94f), new Vector2(178f, 68f), 22f, new Vector2(1f, 1f));
+            StyleButton(Find(root, "Btn_Back"), ExitButtonPath, "返回", new Vector2(-215f, -135f), new Vector2(180f, 70f), 22f, new Vector2(1f, 1f));
         });
     }
 
@@ -335,7 +335,7 @@ public static class UiVisualPolish
             Image sentenceGraphic = FindComponent<Image>(detail, "Sheep_Sentence");
             if (sentenceGraphic != null && sentenceGraphic.sprite == null)
                 sentenceGraphic.enabled = false;
-            SetRect(sheepImage, new Vector2(0.5f, 1f), new Vector2(0f, -132f), new Vector2(190f, 190f));
+            SetRect(sheepImage, new Vector2(0.5f, 1f), new Vector2(0f, -132f), new Vector2(220f, 190f));
             PlaceDetailText(sheepName, new Vector2(0f, -245f), new Vector2(400f, 48f), 30f, FontStyles.Bold);
             PlaceDetailText(count, new Vector2(0f, -287f), new Vector2(400f, 34f), 18f);
             PlaceDetailText(description, new Vector2(0f, -354f), new Vector2(392f, 82f), 19f);

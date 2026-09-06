@@ -21,10 +21,24 @@ public sealed class AlphaUiIntegrationTests
         "Assets/_Game/Scenes/MainMenu.unity";
     private const string ResultPanelPrefabPath =
         "Assets/_Game/Content/Perfabs/UI/ResultPanel.prefab";
+    private const string SettingPanelPrefabPath =
+        "Assets/_Game/Content/Perfabs/UI/SettingPanel.prefab";
+    private const string CollectionPanelPrefabPath =
+        "Assets/_Game/Content/Perfabs/UI/CollectionPanel.prefab";
     private const string FenceSpritePath =
         "Assets/Art/Debris/obstacle_fence_256x128.png";
     private const string CatalogPath =
         "Assets/_Game/Content/Data/Sheep/SpecialSheepCatalog.asset";
+    private static readonly string[] SheepRecruitClipPaths =
+    {
+        "Assets/_Game/Content/Audio/SFX/sheep/sheep (1).wav",
+        "Assets/_Game/Content/Audio/SFX/sheep/sheep (2).wav",
+        "Assets/_Game/Content/Audio/SFX/sheep/sheep (3).wav",
+        "Assets/_Game/Content/Audio/SFX/sheep/sheep (4).wav",
+        "Assets/_Game/Content/Audio/SFX/sheep/sheep (5).wav",
+        "Assets/_Game/Content/Audio/SFX/sheep/sheep (7).wav",
+        "Assets/_Game/Content/Audio/SFX/sheep/sheep (9).wav"
+    };
 
     [Test]
     public void PauseSystemPrefabHasOneConfiguredManager()
@@ -141,6 +155,26 @@ public sealed class AlphaUiIntegrationTests
                 Has.Length.EqualTo(1));
             Assert.That(objects.SelectMany(item => item.GetComponents<TutorialPen>()).ToArray(),
                 Has.Length.EqualTo(1));
+            SheepRecruitAudio[] recruitAudio = objects
+                .SelectMany(item => item.GetComponents<SheepRecruitAudio>())
+                .ToArray();
+            Assert.That(recruitAudio, Has.Length.EqualTo(1));
+            SerializedObject recruitAudioData = new SerializedObject(recruitAudio[0]);
+            Assert.That(
+                recruitAudioData.FindProperty("tutorialPen").objectReferenceValue,
+                Is.Not.Null);
+            SerializedProperty sheepClips = recruitAudioData.FindProperty("sheepClips");
+            Assert.That(sheepClips.arraySize, Is.EqualTo(7));
+            for (int index = 0; index < sheepClips.arraySize; index++)
+            {
+                Assert.That(
+                    sheepClips.GetArrayElementAtIndex(index).objectReferenceValue,
+                    Is.SameAs(AssetDatabase.LoadAssetAtPath<AudioClip>(SheepRecruitClipPaths[index])),
+                    $"SheepRecruitAudio clip {index + 1} differs from main.");
+            }
+            Assert.That(
+                recruitAudioData.FindProperty("recruitBleatChance").floatValue,
+                Is.EqualTo(0.5f).Within(0.001f));
             Assert.That(objects.SelectMany(item => item.GetComponents<TaskPanelToggle>()).ToArray(),
                 Has.Length.EqualTo(1));
 
@@ -235,6 +269,39 @@ public sealed class AlphaUiIntegrationTests
         {
             EditorSceneManager.CloseScene(scene, true);
         }
+    }
+
+    [Test]
+    public void PolishedUiPreservesMainAudioLabelsAndCollectionImageSize()
+    {
+        GameObject settings = AssetDatabase.LoadAssetAtPath<GameObject>(SettingPanelPrefabPath);
+        Assert.That(settings, Is.Not.Null);
+
+        string[] labelNames = { "Main_Label", "Music_Label", "Sheep_Label" };
+        string[] expectedLabels = { "总音量", "音乐音量", "音效音量" };
+        string[] sliderNames = { "Main_Slider", "Music_Slider", "Sheep_Slider" };
+        string[] expectedCallbacks = { "SetMasterVolume", "SetBGMVolume", "SetSheepVolume" };
+        for (int index = 0; index < labelNames.Length; index++)
+        {
+            TMP_Text label = settings.GetComponentsInChildren<TMP_Text>(true)
+                .Single(item => item.gameObject.name == labelNames[index]);
+            Assert.That(label.text, Is.EqualTo(expectedLabels[index]));
+            Assert.That(label.rectTransform.sizeDelta, Is.EqualTo(new Vector2(160f, 50f)));
+
+            Slider slider = settings.GetComponentsInChildren<Slider>(true)
+                .Single(item => item.gameObject.name == sliderNames[index]);
+            Assert.That(slider.GetComponent<RectTransform>().sizeDelta,
+                Is.EqualTo(new Vector2(480f, 40f)));
+            Assert.That(slider.onValueChanged.GetPersistentEventCount(), Is.EqualTo(1));
+            Assert.That(slider.onValueChanged.GetPersistentMethodName(0),
+                Is.EqualTo(expectedCallbacks[index]));
+        }
+
+        GameObject collection = AssetDatabase.LoadAssetAtPath<GameObject>(CollectionPanelPrefabPath);
+        Assert.That(collection, Is.Not.Null);
+        RectTransform sheepImage = collection.GetComponentsInChildren<RectTransform>(true)
+            .Single(item => item.gameObject.name == "SheepImage");
+        Assert.That(sheepImage.sizeDelta, Is.EqualTo(new Vector2(220f, 190f)));
     }
 
     [Test]
