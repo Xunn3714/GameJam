@@ -42,6 +42,14 @@ public sealed class WolfSpawner : MonoBehaviour
 
     public FlockController Flock => flock;
     public Wolf WolfPrefab => wolfPrefab;
+
+    /// <summary>之后生成的每只狼都会乘这个速度倍率（随羊群规模增长，由节奏控制器设置）。</summary>
+    public float SpeedScale { get; private set; } = 1f;
+
+    public void SetSpeedScale(float scale)
+    {
+        SpeedScale = Mathf.Max(0.1f, scale);
+    }
     public bool IsSpawning { get; private set; } = true;
     public int AliveCount => aliveWolves.Count;
     public int SpawnedCount { get; private set; }
@@ -123,6 +131,13 @@ public sealed class WolfSpawner : MonoBehaviour
 
     public Wolf SpawnWolf()
     {
+        return SpawnWolf(true, false);
+    }
+
+    /// <param name="allowPrediction">false = 只会直线攻击的狼。</param>
+    /// <param name="scared">true = 被吓跑的狼：露面后掉头逃跑，碰到羊群会被踹飞。</param>
+    public Wolf SpawnWolf(bool allowPrediction, bool scared)
+    {
         if (wolfPrefab == null || flock == null)
             return null;
 
@@ -134,7 +149,10 @@ public sealed class WolfSpawner : MonoBehaviour
 
         Vector2 position = flock.Center + direction * GetSpawnDistance(flock.Center, direction);
         Wolf wolf = Register(Instantiate(wolfPrefab, position, Quaternion.identity));
-        wolf.Launch(flock, DodgeMemory);
+        if (scared)
+            wolf.LaunchScared(flock, DodgeMemory);
+        else
+            wolf.Launch(flock, DodgeMemory, allowPrediction);
         WolfSpawned?.Invoke(wolf);
         return wolf;
     }
@@ -164,6 +182,7 @@ public sealed class WolfSpawner : MonoBehaviour
     private Wolf Register(Wolf wolf)
     {
         wolf.name = $"Wolf_{SpawnedCount + 1:00}";
+        wolf.SetSpeedScale(SpeedScale);
         wolf.Finished += HandleWolfFinished;
         aliveWolves.Add(wolf);
         SpawnedCount++;

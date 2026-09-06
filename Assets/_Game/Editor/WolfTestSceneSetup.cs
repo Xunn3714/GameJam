@@ -693,6 +693,7 @@ public static class WolfTestSceneSetup
             serialized.FindProperty("warningRenderer").objectReferenceValue = warningRenderer;
             serialized.ApplyModifiedPropertiesWithoutUndo();
 
+            WolfArtSetup.ApplyTo(root);
             return PrefabUtility.SaveAsPrefabAsset(root, WolfPrefabPath);
         }
         finally

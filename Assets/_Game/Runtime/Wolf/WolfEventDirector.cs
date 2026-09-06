@@ -63,6 +63,12 @@ public sealed class WolfEventDirector : MonoBehaviour
     [Tooltip("可选的编队列表。每轮攻击时在满足回合 / 羊数门槛的条目里按权重抽一个；没有可用条目就放一只狼。")]
     [SerializeField] private WolfFormationEntry[] formations = Array.Empty<WolfFormationEntry>();
 
+    [Header("Attack Schedule (正式节奏表)")]
+    [Tooltip("指定后每次攻击按阶段表抽取（一只狼 / 多只狼 / 本场损失最多的攻击），忽略上面的 formations 列表。")]
+    [SerializeField] private WolfAttackSchedule schedule;
+    [Tooltip("节奏表动态生成编队时用的参数模板：普通狼 / 长狼 prefab、间距、时长等；type 字段会被覆盖。")]
+    [SerializeField] private WolfFormation formationTemplate = new WolfFormation();
+
     [Header("Control")]
     [SerializeField] private bool runOnStart = true;
 
@@ -71,6 +77,10 @@ public sealed class WolfEventDirector : MonoBehaviour
     private Wolf activeWolf;
     private bool isRunning;
     private bool formationActive;
+    private readonly WolfLossTracker lossTracker = new WolfLossTracker();
+    private WolfAttackType? queuedAttack;
+    private int lastStageIndex = -1;
+    private bool pentagramTriggered;
 
     public WolfEventPhase Phase { get; private set; } = WolfEventPhase.Dormant;
     public int RoundIndex { get; private set; }
@@ -79,6 +89,14 @@ public sealed class WolfEventDirector : MonoBehaviour
     public int CurrentMemberCount => flock != null ? flock.MemberCount : 0;
     /// <summary>这一轮攻击的名字（独狼 / 编队名），攻击阶段之外为空。</summary>
     public string CurrentAttackName { get; private set; } = string.Empty;
+    /// <summary>按节奏表抽到的攻击方式；没用节奏表或攻击阶段之外为 null。</summary>
+    public WolfAttackType? CurrentAttackType { get; private set; }
+    /// <summary>本局按攻击方式统计的损失（节奏表模式下维护）。</summary>
+    public WolfLossTracker LossTracker => lossTracker;
+    public WolfAttackSchedule Schedule => schedule;
+    public AudioClip HowlClip => howlClip;
+    /// <summary>当前羊数对应的节奏表阶段下标；没用节奏表为 -1。</summary>
+    public int CurrentStageIndex => schedule != null ? schedule.GetStageIndex(CurrentMemberCount) : -1;
 
     /// <summary>当前阶段剩余秒数；攻击 / 蛰伏阶段返回 -1（没有倒计时）。</summary>
     public float PhaseTimeRemaining =>
@@ -94,6 +112,12 @@ public sealed class WolfEventDirector : MonoBehaviour
 
     public event Action<WolfEventPhase> PhaseChanged;
     public event Action<Wolf> WolfReleased;
+    /// <summary>节奏表抽到攻击方式时触发（在放狼之前）。</summary>
+    public event Action<WolfAttackType> AttackChosen;
+    /// <summary>吓跑模式的狼掉头逃跑时触发。</summary>
+    public event Action<Wolf> WolfScared;
+    /// <summary>吓跑的狼被羊群踹飞时触发。</summary>
+    public event Action<Wolf> WolfKicked;
 
     private void Awake()
     {
@@ -146,6 +170,10 @@ public sealed class WolfEventDirector : MonoBehaviour
 
         isRunning = true;
         RoundIndex = 0;
+        lossTracker.Clear();
+        queuedAttack = null;
+        pentagramTriggered = false;
+        lastStageIndex = CurrentStageIndex;
         EnterPhase(HasReachedStartCondition() ? WolfEventPhase.Calm : WolfEventPhase.Dormant);
     }
 
@@ -165,6 +193,7 @@ public sealed class WolfEventDirector : MonoBehaviour
         }
         formationActive = false;
         CurrentAttackName = string.Empty;
+        CurrentAttackType = null;
     }
 
     private bool HasReachedStartCondition()
@@ -186,6 +215,7 @@ public sealed class WolfEventDirector : MonoBehaviour
             return;
 
         phaseTimer += Time.deltaTime;
+        UpdateStageTransitions();
 
         switch (Phase)
         {
@@ -268,10 +298,35 @@ public sealed class WolfEventDirector : MonoBehaviour
                 }
                 formationActive = false;
                 CurrentAttackName = string.Empty;
+                CurrentAttackType = null;
                 break;
         }
 
         PhaseChanged?.Invoke(phase);
+    }
+
+    /// <summary>阶段变化：进入指定阶段时立刻安排一次五角星围猎（空挡阶段直接跳到狼嚎）。</summary>
+    private void UpdateStageTransitions()
+    {
+        if (schedule == null)
+            return;
+
+        int stageIndex = CurrentStageIndex;
+        if (stageIndex == lastStageIndex)
+            return;
+
+        lastStageIndex = stageIndex;
+        if (!pentagramTriggered
+            && schedule.PentagramOnEnterStage >= 0
+            && stageIndex >= schedule.PentagramOnEnterStage)
+        {
+            pentagramTriggered = true;
+            queuedAttack = WolfAttackType.Pentagram;
+            if (Phase == WolfEventPhase.Calm || Phase == WolfEventPhase.Dormant)
+            {
+                EnterPhase(WolfEventPhase.Howl);
+            }
+        }
     }
 
     private bool IsAttackFinished()
@@ -286,6 +341,12 @@ public sealed class WolfEventDirector : MonoBehaviour
         if (spawner == null)
         {
             Debug.LogWarning("WolfEventDirector has no WolfSpawner; skipping attack.", this);
+            return;
+        }
+
+        if (schedule != null)
+        {
+            ReleaseScheduledAttack();
             return;
         }
 
@@ -305,6 +366,89 @@ public sealed class WolfEventDirector : MonoBehaviour
             activeWolf.Finished += HandleWolfFinished;
             WolfReleased?.Invoke(activeWolf);
         }
+    }
+
+    /// <summary>
+    /// 节奏表模式：先按阶段抽大类（一只狼 / 多只狼 / 本场损失最多），再抽具体攻击方式。
+    /// 普通狼在羊数超过 ScareThreshold 后只会露面吓跑；长狼 / 编队走 WolfFormationRunner。
+    /// </summary>
+    private void ReleaseScheduledAttack()
+    {
+        int members = CurrentMemberCount;
+        WolfAttackSchedule.Stage stage = schedule.GetStage(members);
+        WolfAttackType? picked = queuedAttack ?? WolfAttackPlanner.Pick(stage, lossTracker.MostLossType, () => UnityEngine.Random.value);
+        queuedAttack = null;
+
+        if (!picked.HasValue)
+        {
+            // 这个阶段不放狼（例如教学阶段）：攻击阶段会立刻结束。
+            CurrentAttackName = string.Empty;
+            CurrentAttackType = null;
+            return;
+        }
+
+        WolfAttackType type = picked.Value;
+        CurrentAttackType = type;
+        CurrentAttackName = WolfAttackTypes.DisplayName(type);
+        AttackChosen?.Invoke(type);
+
+        // 狼的速度跟着羊群倍率涨，但涨得更快。
+        float flockScale = flock != null ? flock.SpeedMultiplier : 1f;
+        spawner.SetSpeedScale(Mathf.Pow(Mathf.Max(0.1f, flockScale), schedule.WolfSpeedExponent));
+
+        if (type == WolfAttackType.StraightWolf || type == WolfAttackType.SmartWolf)
+        {
+            bool scared = members > schedule.ScareThreshold;
+            activeWolf = spawner.SpawnWolf(type == WolfAttackType.SmartWolf, scared);
+            if (activeWolf != null)
+            {
+                activeWolf.AttackType = type;
+                activeWolf.Finished += HandleWolfFinished;
+                activeWolf.Attacked += HandleWolfAttackedForStats;
+                activeWolf.Scared += HandleWolfScared;
+                activeWolf.Kicked += HandleWolfKicked;
+                WolfReleased?.Invoke(activeWolf);
+            }
+            return;
+        }
+
+        if (formationRunner == null)
+        {
+            Debug.LogWarning("WolfEventDirector has no WolfFormationRunner; falling back to a single wolf.", this);
+            activeWolf = spawner.SpawnWolf();
+            if (activeWolf != null)
+            {
+                activeWolf.AttackType = type;
+                activeWolf.Finished += HandleWolfFinished;
+                activeWolf.Attacked += HandleWolfAttackedForStats;
+                WolfReleased?.Invoke(activeWolf);
+            }
+            return;
+        }
+
+        WolfFormation formation = formationTemplate.CloneAs(WolfAttackTypes.ToFormationType(type));
+        if (formation.wolfPrefab == null)
+            formation.wolfPrefab = spawner.WolfPrefab;
+        formationActive = true;
+        formationRunner.Play(formation);
+    }
+
+    private void HandleWolfAttackedForStats(Wolf wolf, WolfAttackResult result)
+    {
+        if (wolf == null || result.CapturedSheep == null)
+            return;
+
+        lossTracker.RecordTaken(wolf.AttackType, wolf.IsLongWolf);
+    }
+
+    private void HandleWolfScared(Wolf wolf)
+    {
+        WolfScared?.Invoke(wolf);
+    }
+
+    private void HandleWolfKicked(Wolf wolf)
+    {
+        WolfKicked?.Invoke(wolf);
     }
 
     /// <summary>在满足回合 / 羊数门槛的编队里按权重抽一个；没有就返回 null（放一只狼）。</summary>
@@ -345,6 +489,11 @@ public sealed class WolfEventDirector : MonoBehaviour
 
     private void HandleFormationWolfLaunched(Wolf wolf)
     {
+        if (wolf != null && CurrentAttackType.HasValue)
+        {
+            wolf.AttackType = CurrentAttackType.Value;
+            wolf.Attacked += HandleWolfAttackedForStats;
+        }
         WolfReleased?.Invoke(wolf);
     }
 

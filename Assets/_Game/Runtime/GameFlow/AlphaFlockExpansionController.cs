@@ -37,7 +37,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     [SerializeField] private FlockGrowthStage[] stages =
     {
         new("孤羊", 1, 1, 1, 5f),
-        new("小群", 5, 2, 3, 7f),
+        new("小群", 12, 2, 3, 7f),
         new("狼群来袭", 20, 5, 7, 10f),
         new("暴力扩张", 50, 10, 15, 14f),
         new("羊潮", 90, 20, 30, 18f)
@@ -45,7 +45,9 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     [Tooltip("镜头放大时整体提速：倍率 = (当前相机尺寸 / 第一阶段相机尺寸) ^ 指数。0 = 不提速。")]
     [SerializeField, Range(0f, 1.5f)] private float speedScaleExponent = 0.75f;
     [Tooltip("没有 WolfEventDirector 时，旧式狼生成器在这个羊数后启动。有 Director 时以 Director 的 Required Member Count 为准。")]
-    [SerializeField, Min(1)] private int wolfUnlockFlockSize = 6;
+    [SerializeField, Min(1)] private int wolfUnlockFlockSize = 20;
+    [Tooltip("羊数第一次达到这个值时弹出「狼群闻讯而来」的提示。")]
+    [SerializeField, Min(1)] private int wolfPackWarningFlockSize = 80;
     [SerializeField, Min(0.1f)] private float failedSpawnRetryDelay = 1.5f;
 
     [Header("Impact Feedback")]
@@ -80,15 +82,18 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     private AlphaProgression progression;
     private AlphaRunStats stats;
     private AlphaResultView resultView;
+    private SheepDiscoveryToastView discoveryToastView;
     private bool wolvesUnlocked;
+    private bool wolfPackWarningShown;
+    private bool scaredWolfHintShown;
     private bool wolvesAnnounced;
     private bool initialized;
     private bool ended;
-    private bool showStatsOverlay;
     private bool penOpened;
     private bool borderBroken;
     private bool escaped;
-    private int specialRecruits;
+    private bool firstWolfEventCompleted;
+    private int newRecruitCount;
     private readonly List<MvpObjectiveSnapshot> objectiveScratch = new List<MvpObjectiveSnapshot>();
     private float nextPopulationRefreshTime;
     private float nextImpactFeedbackTime;
@@ -104,6 +109,13 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
 
     private void Awake()
     {
+        // Alpha 不再显示屏幕顶部的狼群阶段 / 倒计时提示；狼群玩法本身保持不变。
+        WolfEventHudView wolfHud = uiCanvas != null
+            ? uiCanvas.GetComponentInChildren<WolfEventHudView>(true)
+            : null;
+        if (wolfHud != null)
+            wolfHud.gameObject.SetActive(false);
+
         if (flock != null && flockMovement == null)
             flockMovement = flock.GetComponent<FlockMovementController>();
         if (flock != null && flockActions == null)
@@ -117,6 +129,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         {
             flock.MemberCountChanged += HandleMemberCountChanged;
             flock.SheepRecruited += HandleSheepRecruited;
+            flock.MembersSeparated += HandleMembersSeparated;
             flock.FenceChargeImpact += HandleFenceChargeImpact;
         }
 
@@ -124,6 +137,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         {
             wolfDirector.PhaseChanged += HandleWolfPhaseChanged;
             wolfDirector.WolfReleased += HandleWolfReleased;
+            wolfDirector.WolfScared += HandleWolfScared;
         }
 
         if (borderRing != null)
@@ -142,6 +156,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         {
             flock.MemberCountChanged -= HandleMemberCountChanged;
             flock.SheepRecruited -= HandleSheepRecruited;
+            flock.MembersSeparated -= HandleMembersSeparated;
             flock.FenceChargeImpact -= HandleFenceChargeImpact;
         }
 
@@ -149,6 +164,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         {
             wolfDirector.PhaseChanged -= HandleWolfPhaseChanged;
             wolfDirector.WolfReleased -= HandleWolfReleased;
+            wolfDirector.WolfScared -= HandleWolfScared;
         }
 
         if (borderRing != null)
@@ -170,11 +186,28 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
             return;
         }
 
+        if (flock.Members.Count > 0 && flock.Members[0] != null)
+        {
+            SheepVisualAnimator initialAnimator =
+                flock.Members[0].GetComponent<SheepVisualAnimator>();
+            initialAnimator?.SetFacingImmediately(true);
+        }
+
+        if (joinToastView != null)
+        {
+            UnityEngine.UI.Image bannerBackground = bannerView != null
+                ? bannerView.GetComponent<UnityEngine.UI.Image>() : null;
+            Sprite notificationSprite = bannerBackground != null ? bannerBackground.sprite : null;
+            joinToastView.ConfigureStack(notificationSprite);
+            discoveryToastView = SheepDiscoveryToastView.Create(joinToastView.transform.parent, notificationSprite);
+            discoveryToastView.transform.SetSiblingIndex(joinToastView.transform.GetSiblingIndex() + 1);
+        }
+
         runStartTime = Time.time;
         stats = new AlphaRunStats();
         progression = new AlphaProgression(stages, exitUnlockFlockSize, Mathf.Max(1, flock.MemberCount));
 
-        // 有节奏控制器时狼由它管（含 6 只门槛、狼嚎抱团）；否则退回旧的定时生成器。
+        // 有节奏控制器时狼由它管（含阶段门槛、狼嚎抱团）；否则退回旧的定时生成器。
         if (wolfDirector == null)
             wolfSpawner?.StopSpawning();
 
@@ -208,11 +241,6 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     {
         if (!initialized)
             return;
-
-        // Tab：切换左下角的按类型统计面板（游玩中的统计入口）。
-        Keyboard keyboard = Keyboard.current;
-        if (keyboard != null && keyboard.tabKey.wasPressedThisFrame)
-            showStatsOverlay = !showStatsOverlay;
 
         if (ended)
             return;
@@ -257,6 +285,12 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         if (change.ExitJustUnlocked)
             UnlockExit();
 
+        if (!wolfPackWarningShown && progression.HighestFlockSize >= wolfPackWarningFlockSize)
+        {
+            wolfPackWarningShown = true;
+            ShowBanner("羊群逐渐长大，狼群闻讯而来");
+        }
+
         if (wolfDirector == null && !wolvesUnlocked && progression.HighestFlockSize >= wolfUnlockFlockSize)
         {
             wolvesUnlocked = true;
@@ -275,6 +309,8 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         if (scattered != null && scattered.IsScattered)
             return;
 
+        newRecruitCount++;
+
         SheepIdentity identity = sheep.GetComponent<SheepIdentity>();
         string typeId = identity != null ? identity.SheepTypeId : MvpSheepCatalog.DefaultTypeId;
         stats.RecordRecruit(typeId);
@@ -283,21 +319,30 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         if (joinToastView != null && !string.IsNullOrEmpty(sheepName))
             joinToastView.Show(sheepName);
 
-        if (!string.Equals(typeId, MvpSheepCatalog.DefaultTypeId, System.StringComparison.Ordinal))
+        // FlockController records EncounterSheep after SheepRecruited returns, so this
+        // reads the existing cross-run unlock state before this recruitment unlocks it.
+        SheepCollectionManager collection = SheepCollectionManager.Instance;
+        if (discoveryToastView != null && collection != null && !collection.IsUnlocked(typeId))
         {
-            specialRecruits++;
-            SpriteRenderer spriteRenderer = sheep.GetComponent<SpriteRenderer>();
-            if (spriteRenderer == null)
-                spriteRenderer = sheep.GetComponentInChildren<SpriteRenderer>(true);
-
-            string message =
-                $"特殊羊加入：{sheepSpawner.GetTypeDisplayName(typeId)} {sheepName}".TrimEnd();
-            ShowBanner(message, spriteRenderer != null ? spriteRenderer.sprite : null);
-            RefreshObjectives();
+            SheepCollectionEntry entry = collection.GetSheepData(typeId);
+            SpecialSheepMarker marker = sheep.GetComponent<SpecialSheepMarker>();
+            if (entry != null)
+                discoveryToastView.Show(typeId, entry.displayName,
+                    marker != null ? marker.Quality : SheepQuality.Common);
         }
+
+        RefreshObjectives();
 
         if (sheepSpawner.MarkRecruited(sheep))
             MaintainNearbyPopulation();
+    }
+
+    private void HandleMembersSeparated(int count)
+    {
+        if (!initialized || ended || count <= 0)
+            return;
+
+        ShowLatestBanner(count == 1 ? "一只羊脱队了！" : $"有 {count} 只羊脱队了！");
     }
 
     private void HandleFenceChargeImpact(bool hardImpact)
@@ -336,6 +381,12 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
 
     private void HandleWolfPhaseChanged(WolfEventPhase phase)
     {
+        if (phase == WolfEventPhase.Retreat && !firstWolfEventCompleted)
+        {
+            firstWolfEventCompleted = true;
+            RefreshObjectives();
+        }
+
         if (phase == WolfEventPhase.Dormant)
             return;
 
@@ -352,7 +403,10 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
             return;
 
         wolvesAnnounced = true;
-        ShowBanner("狼群盯上了你的羊群……听到狼嚎就抱紧！");
+        ShowBanner(
+            "狼群盯上了你的羊群……听到狼嚎就抱紧！",
+            null,
+            wolfDirector != null ? wolfDirector.HowlClip : null);
         Debug.Log("狼开始进攻。", this);
     }
 
@@ -360,6 +414,15 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     {
         if (wolf != null)
             wolf.Attacked += HandleWolfAttacked;
+    }
+
+    private void HandleWolfScared(Wolf wolf)
+    {
+        if (scaredWolfHintShown)
+            return;
+
+        scaredWolfHintShown = true;
+        ShowBanner("羊群已经足够庞大，面对一只弱小的狼，也许……？");
     }
 
     private void HandleWolfAttacked(Wolf wolf, WolfAttackResult result)
@@ -434,33 +497,40 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         RefreshObjectives();
     }
 
-    /// <summary>把 Alpha 的进度翻译成 Level_01 任务列表 HUD 能显示的条目。</summary>
+    /// <summary>把 Alpha 的进度翻译成任务栏当前唯一显示的条目。</summary>
     private void RefreshObjectives()
     {
         if (hudView == null || progression == null)
             return;
 
         int members = flock != null ? flock.MemberCount : 0;
-        int penNeed = wolfDirector != null ? Mathf.Max(1, wolfDirector.RequiredMemberCount) : wolfUnlockFlockSize;
+        int wolfStageTarget = StageMinimum(2, 20);
+        int armyTarget = StageMinimum(3, 50);
+        int sheepTideTarget = StageMinimum(4, 90);
 
         objectiveScratch.Clear();
-        objectiveScratch.Add(new MvpObjectiveSnapshot(
-            "alpha.pen", "凑够羊，按 E 整群冲刺撞开羊圈", true, false, penOpened,
-            Mathf.Min(members, penNeed), penNeed));
-        objectiveScratch.Add(new MvpObjectiveSnapshot(
-            "alpha.exit_unlock", $"羊群壮大到 {exitUnlockFlockSize} 只", true, false, progression.ExitUnlocked,
-            Mathf.Min(progression.HighestFlockSize, exitUnlockFlockSize), exitUnlockFlockSize));
-        string escapeObjective = progression.ExitUnlocked && !borderBroken && members < exitUnlockFlockSize
-            ? $"当前羊群恢复到 {exitUnlockFlockSize} 只后撞开外围围栏"
-            : "撞开外围围栏，冲出草原";
-        objectiveScratch.Add(new MvpObjectiveSnapshot(
-            "alpha.escape", escapeObjective, true, progression.ExitUnlocked && !borderBroken, escaped,
-            borderBroken ? 1 : 0, 1));
-        objectiveScratch.Add(new MvpObjectiveSnapshot(
-            "alpha.special", "招募一只特殊羊", false, false, specialRecruits > 0,
-            Mathf.Min(specialRecruits, 1), 1));
+        objectiveScratch.Add(AlphaTaskSequence.Current(
+            newRecruitCount,
+            penOpened,
+            progression.HighestFlockSize,
+            firstWolfEventCompleted || wolfDirector == null,
+            borderBroken,
+            escaped,
+            members,
+            5,
+            wolfStageTarget,
+            armyTarget,
+            sheepTideTarget,
+            exitUnlockFlockSize));
 
         hudView.UpdateObjectives(objectiveScratch, members);
+    }
+
+    private int StageMinimum(int index, int fallback)
+    {
+        return stages != null && index >= 0 && index < stages.Length && stages[index] != null
+            ? stages[index].MinimumFlockSize
+            : fallback;
     }
 
     // ---------------------------------------------------------------- end of run
@@ -492,6 +562,10 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         yield return null;
         RefreshComposition();
 
+        if (wolfDirector != null)
+            stats.SetWolfBreakdown(wolfDirector.LossTracker.TakenByLongWolves, wolfDirector.LossTracker.TakenBySingleWolves);
+        if (GameStatsManager.Instance != null)
+            GameStatsManager.Instance.RecordRunResult(stats, victory);
         string report = stats.BuildReport(sheepSpawner.GetTypeDisplayName);
         string description = victory
             ? $"羊群带着 {flock.MemberCount} 只羊冲出了草原（历史最高 {stats.HighestFlockSize} 只）"
@@ -571,6 +645,12 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
             bannerView.Show(message, icon);
     }
 
+    private void ShowBanner(string message, Sprite icon, AudioClip sound)
+    {
+        if (bannerView != null)
+            bannerView.Show(message, icon, sound);
+    }
+
     private void ShowLatestBanner(string message)
     {
         if (bannerView != null)
@@ -614,9 +694,6 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     {
         if (progression == null)
             return;
-
-        if (showStatsOverlay && stats != null)
-            DrawStatsOverlay();
 
         if (!showDebugHud)
             return;
@@ -669,7 +746,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
                 labelStyle);
         }
         GUILayout.Label(exitLine, labelStyle);
-        GUILayout.Label("WASD 移动 · E 整群后退蓄势冲刺 · Q 收拢 · Tab 统计", labelStyle);
+        GUILayout.Label("WASD 移动 · E 整群后退蓄势冲刺 · Q 收拢", labelStyle);
         GUILayout.EndArea();
     }
 

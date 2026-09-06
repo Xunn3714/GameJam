@@ -20,6 +20,11 @@ public sealed class LongWolfSweep : MonoBehaviour
     [Tooltip("Unit body: local X from -1 to 0, local Y from -0.5 to 0.5.")]
     [SerializeField] private Transform bodyVisual;
     [SerializeField] private Transform headVisual;
+    [Header("Skins")]
+    [Tooltip("美术配置的长狼皮肤；每次出场等概率选一个，运行时不修改配置。")]
+    [SerializeField] private Sprite[] skins = System.Array.Empty<Sprite>();
+    [SerializeField] private SpriteRenderer skinRenderer;
+    public int SelectedSkinIndex { get; private set; } = -1;
 
     private readonly List<SheepMember> candidates = new List<SheepMember>();
     private float runtimeLength;
@@ -31,6 +36,12 @@ public sealed class LongWolfSweep : MonoBehaviour
 
     public void Prepare()
     {
+        SelectedSkinIndex = -1;
+        if (skinRenderer != null && skins != null && skins.Length > 0)
+        {
+            SelectedSkinIndex = Random.Range(0, skins.Length);
+            skinRenderer.sprite = skins[SelectedSkinIndex];
+        }
         runtimeLength = 0f;
         ClearTravelDistance = 0f;
         CoverageSeconds = Random.Range(minCoverageSeconds, maxCoverageSeconds);
@@ -82,6 +93,22 @@ public sealed class LongWolfSweep : MonoBehaviour
     public void SetDirection(Vector2 direction)
     {
         Quaternion rotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg);
+        if (skinRenderer != null && skinRenderer.sprite != null)
+        {
+            if (bodyVisual != null) bodyVisual.gameObject.SetActive(false);
+            if (headVisual != null) headVisual.gameObject.SetActive(false);
+            float height = skinRenderer.sprite.rect.height / skinRenderer.sprite.pixelsPerUnit;
+            float scale = bodyWidth / Mathf.Max(0.001f, height);
+            skinRenderer.transform.localRotation = rotation;
+            skinRenderer.transform.localPosition = (Vector3)(-direction.normalized * BodyLength * 0.5f);
+            skinRenderer.transform.localScale = Vector3.one * scale;
+            skinRenderer.drawMode = SpriteDrawMode.Tiled;
+            skinRenderer.tileMode = SpriteTileMode.Continuous;
+            skinRenderer.size = new Vector2(BodyLength / scale, height);
+            // Keep paws below the body when the attack comes from the right.
+            skinRenderer.flipY = direction.x < 0f;
+            return;
+        }
         if (bodyVisual != null)
         {
             bodyVisual.localRotation = rotation;
@@ -141,6 +168,5 @@ public sealed class LongWolfSweep : MonoBehaviour
         bodyWidth = Mathf.Max(0.1f, bodyWidth);
         minCoverageSeconds = Mathf.Max(0f, minCoverageSeconds);
         maxCoverageSeconds = Mathf.Max(minCoverageSeconds, maxCoverageSeconds);
-        SetDirection(Vector2.right);
     }
 }

@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 368099056571905456}
   - component: {fileID: 434104012170865989}
   - component: {fileID: 5351901029364210476}
+  - component: {fileID: 8505142170539963848}
   m_Layer: 3
   m_Name: Obstacle_RiceField
   m_TagString: Untagged
@@ -211,3 +212,20 @@ MonoBehaviour:
   spriteRenderer: {fileID: 7044073043106877910}
   animator: {fileID: 0}
   breakTriggerName: Break
+--- !u!114 &8505142170539963848
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8428475946545878596}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d587e570eb2d0a94b80a067f26ca425a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BreakableObstacleVFX
+  breakParticlesPrefab: {fileID: 0}
+  fragmentPrefab: {fileID: 4741890322465624849, guid: 678c660daa1c9e44fa8a98f2826c1872, type: 3}
+  fragmentCount: 8
+  spawnOffset: {x: 0, y: 0}
+  fragmentSpawnRadius: 0

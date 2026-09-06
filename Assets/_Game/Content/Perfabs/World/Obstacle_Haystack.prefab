@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 729070240457943534}
   - component: {fileID: 6381558062094350589}
   - component: {fileID: 7431094316754766715}
+  - component: {fileID: -5138041951001247204}
   m_Layer: 3
   m_Name: Obstacle_Haystack
   m_TagString: Untagged
@@ -211,3 +212,20 @@ MonoBehaviour:
   spriteRenderer: {fileID: 2867571627769476718}
   animator: {fileID: 0}
   breakTriggerName: Break
+--- !u!114 &-5138041951001247204
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6772962434580481586}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d587e570eb2d0a94b80a067f26ca425a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BreakableObstacleVFX
+  breakParticlesPrefab: {fileID: 0}
+  fragmentPrefab: {fileID: 4741890322465624849, guid: 678c660daa1c9e44fa8a98f2826c1872, type: 3}
+  fragmentCount: 8
+  spawnOffset: {x: 0, y: 0}
+  fragmentSpawnRadius: 0

@@ -77,6 +77,12 @@ public sealed class WolfFormationRunner : MonoBehaviour
             case WolfFormationType.PerpendicularChain:
                 yield return RunPerpendicularChain(formation);
                 break;
+            case WolfFormationType.SingleLong:
+            {
+                Wolf longPrefab = formation.longWolfPrefab != null ? formation.longWolfPrefab : formation.wolfPrefab;
+                Track(SpawnLane(longPrefab, RandomDirection(), 0f));
+                break;
+            }
             default:
                 Track(spawner.SpawnWolf());
                 break;

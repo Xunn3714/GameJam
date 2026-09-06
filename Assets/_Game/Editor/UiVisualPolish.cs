@@ -15,6 +15,7 @@ using UnityEngine.UI;
 public static class UiVisualPolish
 {
     private const string MainMenuScenePath = "Assets/_Game/Scenes/MainMenu.unity";
+    private const string MainMenuBgmPath = "Assets/_Game/Content/Audio/BGM/SheepMvp/sheep-coming(city).wav";
     private const string SettingPrefabPath = "Assets/_Game/Content/Perfabs/UI/SettingPanel.prefab";
     private const string CollectionPrefabPath = "Assets/_Game/Content/Perfabs/UI/CollectionPanel.prefab";
     private const string SheepCardPrefabPath = "Assets/_Game/Content/Perfabs/UI/SheepCard.prefab";
@@ -69,6 +70,11 @@ public static class UiVisualPolish
         StylePausePrefab();
     }
 
+    public static void ApplyTaskPrefab()
+    {
+        StyleTaskPrefab();
+    }
+
     public static void ApplyMainMenuScene()
     {
         Scene scene = SceneManager.GetSceneByPath(MainMenuScenePath);
@@ -84,6 +90,22 @@ public static class UiVisualPolish
         }
         foreach (GameObject sceneRoot in scene.GetRootGameObjects())
             RemoveMissingScripts(sceneRoot);
+
+        GameObject sceneAudio = Find(scene, "SceneAudio");
+        if (sceneAudio == null)
+        {
+            sceneAudio = new GameObject("SceneAudio");
+            SceneManager.MoveGameObjectToScene(sceneAudio, scene);
+        }
+
+        SceneBGM sceneBgm = sceneAudio.GetComponent<SceneBGM>();
+        if (sceneBgm == null)
+            sceneBgm = sceneAudio.AddComponent<SceneBGM>();
+        AudioClip mainMenuBgm = AssetDatabase.LoadAssetAtPath<AudioClip>(MainMenuBgmPath);
+        if (mainMenuBgm == null)
+            throw new System.InvalidOperationException($"Missing main menu BGM at {MainMenuBgmPath}.");
+        sceneBgm.Configure(mainMenuBgm);
+        EditorUtility.SetDirty(sceneBgm);
 
         CanvasScaler scaler = canvasObject.GetComponent<CanvasScaler>();
         if (scaler != null)
@@ -456,7 +478,7 @@ public static class UiVisualPolish
         {
             SetStretch(root);
             GameObject panel = Find(root, "TaskPanel");
-            SetRect(panel, new Vector2(0f, 1f), new Vector2(24f, -24f), new Vector2(410f, 520f), new Vector2(0f, 1f));
+            SetRect(panel, new Vector2(0f, 1f), new Vector2(24f, -24f), new Vector2(440f, 220f), new Vector2(0f, 1f));
             SetImage(panel, TaskPanelPath, Color.white);
             Transform duplicateIcon = panel != null ? panel.transform.Find("Image") : null;
             if (duplicateIcon != null)
@@ -466,48 +488,82 @@ public static class UiVisualPolish
             if (title != null)
             {
                 title.text = "任务";
-                SetRect(title.gameObject, new Vector2(0f, 1f), new Vector2(52f, -72f), new Vector2(150f, 46f), new Vector2(0f, 1f));
-                StyleText(title, 30f, Ink, TextAlignmentOptions.Left, FontStyles.Bold);
+                SetRect(title.gameObject, new Vector2(0f, 1f), new Vector2(42f, -60f), new Vector2(150f, 48f), new Vector2(0f, 1f));
+                StyleText(title, 32f, Ink, TextAlignmentOptions.Left, FontStyles.Bold);
+                title.enableWordWrapping = false;
             }
             TMP_Text count = FindComponent<TMP_Text>(panel, "GroupCountText");
             if (count != null)
             {
                 count.text = "羊群：1";
-                SetRect(count.gameObject, new Vector2(1f, 1f), new Vector2(-58f, -75f), new Vector2(170f, 40f), new Vector2(1f, 1f));
-                StyleText(count, 21f, Ink, TextAlignmentOptions.Right, FontStyles.Bold);
+                SetRect(count.gameObject, new Vector2(1f, 1f), new Vector2(-62f, -60f), new Vector2(190f, 48f), new Vector2(1f, 1f));
+                StyleText(count, 22f, Ink, TextAlignmentOptions.Right, FontStyles.Bold);
+                count.enableWordWrapping = false;
             }
+
+            GameObject divider = EnsureImage(panel.transform, "TaskDivider");
+            SetRect(divider, new Vector2(0.5f, 1f), new Vector2(0f, -108f), new Vector2(370f, 2f), new Vector2(0.5f, 0.5f));
+            Image dividerImage = divider.GetComponent<Image>();
+            dividerImage.sprite = null;
+            dividerImage.color = new Color32(92, 82, 54, 85);
+            dividerImage.raycastTarget = false;
 
             string[] rowNames = { "TaskRow_01", "TaskRow_02", "TaskRow_03", "TaskRow_04" };
             string[] labelNames = { "Txt_Task_01", "Txt_Task_02", "Txt_Task_03", "Txt_Task_04" };
             string[] progressNames = { "Progress_01", "Progress_02", "Progress_03", "Progress_04" };
-            string[] labels = { "撞开出生羊圈", "壮大羊群并解锁出口", "撞开外围围栏并逃离", "招募一只特殊羊" };
-            string[] defaultProgress = { "0/1", "0/6", "0/1", "0/1" };
-            float[] y = { -132f, -222f, -312f, -402f };
+            string[] labels = { "去触碰另一只羊！", string.Empty, string.Empty, string.Empty };
+            string[] defaultProgress = { "0/1", string.Empty, string.Empty, string.Empty };
+            float[] y = { -158f, -240f, -322f, -404f };
             for (int index = 0; index < rowNames.Length; index++)
             {
                 GameObject row = Find(panel, rowNames[index]);
-                SetRect(row, new Vector2(0.5f, 1f), new Vector2(0f, y[index]), new Vector2(348f, 74f));
+                if (row != null)
+                    row.SetActive(index == 0);
+                SetRect(row, new Vector2(0.5f, 1f), new Vector2(0f, y[index]), new Vector2(376f, 84f));
                 TMP_Text label = FindComponent<TMP_Text>(row, labelNames[index]);
                 if (label != null)
                 {
                     label.text = labels[index];
-                    SetRect(label.gameObject, new Vector2(0f, 0.5f), new Vector2(50f, 10f), new Vector2(245f, 36f), new Vector2(0f, 0.5f));
-                    StyleText(label, 21f, Ink, TextAlignmentOptions.Left, FontStyles.Bold);
+                    SetRect(label.gameObject, new Vector2(0f, 0.5f), new Vector2(52f, 7f), new Vector2(250f, 42f), new Vector2(0f, 0.5f));
+                    StyleText(label, 26f, Ink, TextAlignmentOptions.Left, FontStyles.Bold);
+                    label.enableWordWrapping = false;
                 }
                 TMP_Text progress = FindComponent<TMP_Text>(row, progressNames[index]);
                 if (progress != null)
                 {
                     progress.text = defaultProgress[index];
-                    SetRect(progress.gameObject, new Vector2(1f, 0.5f), new Vector2(-8f, -22f), new Vector2(145f, 28f), new Vector2(1f, 0.5f));
-                    StyleText(progress, 19f, Ink, TextAlignmentOptions.Right, FontStyles.Bold);
+                    SetRect(progress.gameObject, new Vector2(1f, 0.5f), new Vector2(-12f, 7f), new Vector2(72f, 42f), new Vector2(1f, 0.5f));
+                    StyleText(progress, 22f, Ink, TextAlignmentOptions.Right, FontStyles.Bold);
+                    progress.enableWordWrapping = false;
                 }
                 Image check = row != null ? row.GetComponentsInChildren<Image>(true)
                     .FirstOrDefault(image => image.gameObject.name.StartsWith("Check_ICon")) : null;
                 if (check != null)
-                    SetRect(check.gameObject, new Vector2(0f, 0.5f), new Vector2(22f, 0f), new Vector2(40f, 40f), new Vector2(0f, 0.5f));
+                    SetRect(check.gameObject, new Vector2(0f, 0.5f), new Vector2(20f, 7f), new Vector2(34f, 34f), new Vector2(0f, 0.5f));
+
+                if (index == 0 && row != null)
+                {
+                    GameObject track = EnsureImage(row.transform, "TaskProgressTrack");
+                    SetRect(track, new Vector2(0f, 0.5f), new Vector2(52f, -28f), new Vector2(312f, 8f), new Vector2(0f, 0.5f));
+                    Image trackImage = track.GetComponent<Image>();
+                    trackImage.sprite = null;
+                    trackImage.color = new Color32(92, 82, 54, 55);
+                    trackImage.raycastTarget = false;
+
+                    GameObject fill = EnsureImage(track.transform, "TaskProgressFill");
+                    SetStretch(fill);
+                    Image fillImage = fill.GetComponent<Image>();
+                    fillImage.sprite = null;
+                    fillImage.color = new Color32(111, 126, 53, 220);
+                    fillImage.type = Image.Type.Filled;
+                    fillImage.fillMethod = Image.FillMethod.Horizontal;
+                    fillImage.fillOrigin = 0;
+                    fillImage.fillAmount = 0f;
+                    fillImage.raycastTarget = false;
+                }
             }
 
-            StyleButton(Find(panel, "Btn_Close"), ExitButtonPath, "X", new Vector2(-27f, -27f), new Vector2(52f, 52f), 24f, new Vector2(1f, 1f));
+            StyleButton(Find(panel, "Btn_Close"), ExitButtonPath, "X", new Vector2(-25f, -25f), new Vector2(46f, 46f), 22f, new Vector2(1f, 1f));
             StyleIconButton(Find(root, "Btn_TaskIcon"), TaskIconPath, new Vector2(0f, 1f), new Vector2(64f, -66f), new Vector2(84f, 84f));
             if (panel != null) panel.SetActive(false);
             GameObject icon = Find(root, "Btn_TaskIcon");
@@ -790,6 +846,10 @@ public static class UiVisualPolish
         if (text == null)
             return;
         text.fontSize = size;
+        text.enableAutoSizing = false;
+        text.characterSpacing = 0f;
+        text.lineSpacing = 0f;
+        text.extraPadding = true;
         text.color = color;
         text.alignment = alignment;
         text.fontStyle = style;

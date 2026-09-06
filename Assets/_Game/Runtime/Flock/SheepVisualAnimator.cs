@@ -68,6 +68,15 @@ public sealed class SheepVisualAnimator : MonoBehaviour
         hasFlockFacingIntent = false;
     }
 
+    public void SetFacingImmediately(bool facingLeft)
+    {
+        currentFacingLeft = facingLeft;
+        requestedFacingLeft = facingLeft;
+        flipAge = -1f;
+        if (sourceRenderer != null && animatedRenderer != null)
+            CopyRendererState();
+    }
+
     /// <summary>主动动作期间保留伸缩反馈，但禁止 Sprite 绕 Z 轴摇摆。</summary>
     public void SetGroupActionVisual(bool active)
     {

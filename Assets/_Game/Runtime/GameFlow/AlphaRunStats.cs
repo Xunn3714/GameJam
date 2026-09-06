@@ -18,6 +18,16 @@ public sealed class AlphaRunStats
     public int TotalTaken { get; private set; }
     public float SurvivalSeconds { get; set; }
     public int CurrentFlockSize { get; private set; }
+    /// <summary>被长条狼叼走的数量（由狼群节奏控制器统计后写入）。</summary>
+    public int TakenByLongWolves { get; private set; }
+    /// <summary>被单只普通狼叼走的数量。</summary>
+    public int TakenBySingleWolves { get; private set; }
+
+    public void SetWolfBreakdown(int byLongWolves, int bySingleWolves)
+    {
+        TakenByLongWolves = Math.Max(0, byLongWolves);
+        TakenBySingleWolves = Math.Max(0, bySingleWolves);
+    }
 
     public IReadOnlyDictionary<string, int> RecruitedByType => recruitedByType;
     public IReadOnlyDictionary<string, int> TakenByType => takenByType;
@@ -68,6 +78,7 @@ public sealed class AlphaRunStats
         builder.AppendLine($"当前羊群（{CurrentFlockSize}）：{Describe(currentComposition, displayName)}");
         builder.AppendLine($"累计招募（{TotalRecruited}）：{Describe(recruitedByType, displayName)}");
         builder.AppendLine($"被狼抓走（{TotalTaken}）：{Describe(takenByType, displayName)}");
+        builder.AppendLine($"　其中长条狼叼走 {TakenByLongWolves} 只，单只狼叼走 {TakenBySingleWolves} 只");
         builder.Append($"峰值构成（{HighestFlockSize}）：{Describe(peakComposition, displayName)}");
         return builder.ToString();
     }
