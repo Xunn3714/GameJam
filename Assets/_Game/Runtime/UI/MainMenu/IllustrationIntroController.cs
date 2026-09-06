@@ -95,6 +95,10 @@ public class IllustrationIntroController : MonoBehaviour
             return;
         }
 
+        // 插画播放完毕后停在确认画面，等待玩家主动进入游戏。
+        if (canEnterGame)
+            return;
+
         autoAdvanceTimer += Time.unscaledDeltaTime;
 
         if (autoAdvanceTimer >= autoAdvanceDelay)
