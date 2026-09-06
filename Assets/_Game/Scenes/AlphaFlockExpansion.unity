@@ -11464,8 +11464,6 @@ MonoBehaviour:
   redChestColliderSize: {x: 2.2, y: 2.2}
   redChestColliderOffset: {x: 0.06, y: 0.36}
   redChestClearance: 6
-  rewardSheepMinimum: 3
-  rewardSheepMaximum: 5
   houseScale: 1.25
   houseColliderSize: {x: 2.8, y: 3}
   houseColliderOffset: {x: -0.02, y: 0.13}
