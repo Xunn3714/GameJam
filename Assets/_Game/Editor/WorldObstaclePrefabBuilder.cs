@@ -24,7 +24,6 @@ public static class WorldObstaclePrefabBuilder
     };
     private const string VfxFolder = PrefabFolder + "/VFX";
 
-    public const string BreakParticlesPrefabPath = VfxFolder + "/BreakParticles.prefab";
     public const string WoodFragmentPrefabPath = VfxFolder + "/WoodFragment.prefab";
     public const string RockFragmentPrefabPath = VfxFolder + "/RockFragment.prefab";
     public const string GreenFragmentPrefabPath = VfxFolder + "/GreenFragment.prefab";
@@ -106,7 +105,6 @@ public static class WorldObstaclePrefabBuilder
         Sprite fenceBroken = LoadSprite("obstacle_fence_broken_256x128");
         Sprite redChestBroken = LoadBuildingSprite("红箱子-坏");
         Sprite houseBroken = LoadBuildingSprite("房子--坏");
-        ParticleSystem breakParticlesPrefab = LoadParticleSystemPrefab(BreakParticlesPrefabPath);
 
         ObstacleDefinition fenceDefinition = GetOrCreateDefinition(
             FenceDefinitionPath, "obstacle.fence", "围栏", ObstacleSizeCategory.Medium,
@@ -133,7 +131,6 @@ public static class WorldObstaclePrefabBuilder
             FencePrefabPath,
             fence,
             fenceDefinition,
-            breakParticlesPrefab,
             LoadGameObjectPrefab(WoodFragmentPrefabPath),
             8,
             Vector2.zero,
@@ -172,7 +169,6 @@ public static class WorldObstaclePrefabBuilder
                 spec.SolidOffset,
                 spec.Scale,
                 spec.SortingOrder,
-                breakParticlesPrefab,
                 LoadGameObjectPrefab(spec.FragmentPrefabPath),
                 spec.FragmentCount,
                 spec.FragmentSpawnOffset,
@@ -291,7 +287,6 @@ public static class WorldObstaclePrefabBuilder
         string path,
         Sprite sprite,
         ObstacleDefinition definition,
-        ParticleSystem breakParticlesPrefab,
         GameObject fragmentPrefab,
         int fragmentCount,
         Vector2 fragmentSpawnOffset,
@@ -332,7 +327,6 @@ public static class WorldObstaclePrefabBuilder
 
             ConfigureBreakVfx(
                 root,
-                breakParticlesPrefab,
                 fragmentPrefab,
                 fragmentCount,
                 fragmentSpawnOffset,
@@ -375,7 +369,6 @@ public static class WorldObstaclePrefabBuilder
         Vector2 solidOffset,
         float scale,
         int sortingOrder,
-        ParticleSystem breakParticlesPrefab,
         GameObject fragmentPrefab,
         int fragmentCount,
         Vector2 fragmentSpawnOffset,
@@ -437,7 +430,6 @@ public static class WorldObstaclePrefabBuilder
 
             ConfigureBreakVfx(
                 root,
-                breakParticlesPrefab,
                 fragmentPrefab,
                 fragmentCount,
                 fragmentSpawnOffset,
@@ -462,7 +454,6 @@ public static class WorldObstaclePrefabBuilder
 
     private static void ConfigureBreakVfx(
         GameObject root,
-        ParticleSystem breakParticlesPrefab,
         GameObject fragmentPrefab,
         int fragmentCount,
         Vector2 fragmentSpawnOffset,
@@ -473,7 +464,6 @@ public static class WorldObstaclePrefabBuilder
             vfx = root.AddComponent<BreakableObstacleVFX>();
 
         vfx.Configure(
-            breakParticlesPrefab,
             fragmentPrefab,
             fragmentCount,
             fragmentSpawnOffset,
@@ -590,15 +580,6 @@ public static class WorldObstaclePrefabBuilder
         if (prefab == null)
             Debug.LogWarning($"Prefab not found: {path}");
         return prefab;
-    }
-
-    private static ParticleSystem LoadParticleSystemPrefab(string path)
-    {
-        GameObject prefab = LoadGameObjectPrefab(path);
-        ParticleSystem particles = prefab != null ? prefab.GetComponent<ParticleSystem>() : null;
-        if (prefab != null && particles == null)
-            Debug.LogWarning($"ParticleSystem not found on prefab root: {path}");
-        return particles;
     }
 
     public static void EnsureFolder(string path)
