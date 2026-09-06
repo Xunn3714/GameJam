@@ -70,6 +70,34 @@ public sealed class AlphaRunStats
         }
     }
 
+    // ---- 真结局：踩出来的大洞和找到的洪山菜薹 ----
+    /// <summary>踩出来的洞：每只羊 2 平方米。</summary>
+    public const float HoleSquareMetersPerSheep = 2f;
+    public const float SquareMetersPerMu = 2000f / 3f;
+    public const float CaitaiJinPerMu = 300f;
+    /// <summary>每只羊对应的菜薹：2 平方米 × 300 斤/亩 ÷ (2000/3 平方米/亩) = 0.9 斤。</summary>
+    public const float CaitaiJinPerSheep = HoleSquareMetersPerSheep * CaitaiJinPerMu / SquareMetersPerMu;
+
+    /// <summary>大于 0 表示这局走的是真结局；数值是踩塌宝通寺时的羊数。</summary>
+    public int TrueEndingFlockSize { get; private set; }
+    public bool IsTrueEnding => TrueEndingFlockSize > 0;
+
+    public void RecordTrueEnding(int flockSize)
+    {
+        TrueEndingFlockSize = Math.Max(0, flockSize);
+    }
+
+    public string BuildTrueEndingHighlights()
+    {
+        if (!IsTrueEnding)
+            return string.Empty;
+
+        float holeSquareMeters = TrueEndingFlockSize * HoleSquareMetersPerSheep;
+        float caitaiJin = TrueEndingFlockSize * CaitaiJinPerSheep;
+        return $"踩出了 {holeSquareMeters:0.#} 平方米的大洞\n" +
+               $"找到了 {caitaiJin:0.#} 斤的美味洪山菜薹";
+    }
+
     public string BuildReport(Func<string, string> displayName)
     {
         displayName ??= id => id;

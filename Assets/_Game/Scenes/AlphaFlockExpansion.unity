@@ -2974,6 +2974,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2736790044803158881, guid: 55b0603c305b500469dac0835036ae46, type: 3}
+      propertyPath: m_fontColor32.rgba
+      value: 4280760641
+      objectReference: {fileID: 0}
     - target: {fileID: 7821663572842543197, guid: 55b0603c305b500469dac0835036ae46, type: 3}
       propertyPath: m_Name
       value: AlphaBanner
@@ -3175,7 +3179,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 4279510057
   m_fontColor: {r: 0.16, g: 0.14, b: 0.08, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -3188,7 +3192,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -4967,7 +4971,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 4279510057
   m_fontColor: {r: 0.16, g: 0.14, b: 0.08, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -4980,7 +4984,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -5321,7 +5325,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -11443,6 +11447,8 @@ MonoBehaviour:
   houseDefinition: {fileID: 11400000, guid: 03c877cb40c85e44a9b3cc0753c52a6d, type: 2}
   redChestSprite: {fileID: 21300000, guid: 637264717e1c90c4890311d51c4ae6ad, type: 3}
   houseSprite: {fileID: 21300000, guid: 2449cef440db62545b6ad9022e25c126, type: 3}
+  pagodaDefinition: {fileID: 11400000, guid: 168809870d234fc4944fb563db3ba7c2, type: 2}
+  pagodaSprite: {fileID: 21300000, guid: 438840a8fdf8a404dbd29612d4e6de55, type: 3}
   area:
     serializedVersion: 2
     x: -120
@@ -11464,6 +11470,10 @@ MonoBehaviour:
   redChestColliderSize: {x: 2.2, y: 2.2}
   redChestColliderOffset: {x: 0.06, y: 0.36}
   redChestClearance: 6
+  pagodaScale: 0.6
+  pagodaColliderSize: {x: 4.2, y: 2.4}
+  pagodaColliderOffset: {x: 0.23, y: -2.91}
+  pagodaClearance: 14
   houseScale: 1.25
   houseColliderSize: {x: 2.8, y: 3}
   houseColliderOffset: {x: -0.02, y: 0.13}
@@ -19920,7 +19930,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 4279510057
   m_fontColor: {r: 0.16, g: 0.14, b: 0.08, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -19933,7 +19943,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -25067,7 +25077,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 4279510057
   m_fontColor: {r: 0.16, g: 0.14, b: 0.08, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -25080,7 +25090,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -27352,6 +27362,10 @@ MonoBehaviour:
   hudView: {fileID: 1949297464}
   joinToastView: {fileID: 454660975}
   pauseManager: {fileID: 103318004}
+  taskPanelToggle: {fileID: 2007158257}
+  trueEndingSequence: {fileID: 0}
+  holeFirstJumpSprite: {fileID: 21300000, guid: f484ded61092a63489fb2492ad8dcf5d, type: 3}
+  holeSecondJumpSprite: {fileID: 21300000, guid: aa0cdfaa0b05ff44687dea4b43930be8, type: 3}
   resultPanelPrefab: {fileID: 3088816046812421370, guid: 4174f917a49478048a58f688d2b83f0c, type: 3}
   stages:
   - displayName: "\u5B64\u7F8A"
@@ -27819,7 +27833,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 4279510057
   m_fontColor: {r: 0.16, g: 0.14, b: 0.08, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -27832,7 +27846,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -28081,7 +28095,7 @@ Canvas:
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
   m_UseReflectionProbes: 0
-  m_AdditionalShaderChannelsFlag: 0
+  m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
   m_SortingOrder: 10

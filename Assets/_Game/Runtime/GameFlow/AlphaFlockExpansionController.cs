@@ -30,6 +30,14 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     [Tooltip("“xx 加入了族群”提示。")]
     [SerializeField] private JoinToastView joinToastView;
     [SerializeField] private PauseManager pauseManager;
+    [Tooltip("右上角可折叠的任务页；宝通寺撞不动时会自动展开它。留空会自己去场景里找。")]
+    [SerializeField] private TaskPanelToggle taskPanelToggle;
+
+    [Header("True Ending (洪山宝通寺)")]
+    [Tooltip("真结局演出；留空会自动挂一个。")]
+    [SerializeField] private TrueEndingSequence trueEndingSequence;
+    [SerializeField] private Sprite holeFirstJumpSprite;
+    [SerializeField] private Sprite holeSecondJumpSprite;
     [Tooltip("仓库里的 ResultPanel 预制体；留空则用 Alpha 自己的占位结算页。")]
     [SerializeField] private ResultPanelView resultPanelPrefab;
 
@@ -92,6 +100,10 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     private bool penOpened;
     private bool borderBroken;
     private bool escaped;
+    private bool pagodaTaskUnlocked;
+    private bool trueEndingRunning;
+    private ScreenFlashView screenFlashView;
+    private PagodaLandmark hookedPagoda;
     private bool firstWolfEventCompleted;
     private int newRecruitCount;
     private readonly List<MvpObjectiveSnapshot> objectiveScratch = new List<MvpObjectiveSnapshot>();
@@ -233,6 +245,14 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         if (uiCanvas != null && resultPanelPrefab == null)
             resultView = AlphaResultView.Create(uiCanvas.transform);
 
+        if (uiCanvas != null)
+            screenFlashView = ScreenFlashView.Create(uiCanvas.transform);
+        if (taskPanelToggle == null)
+            taskPanelToggle = FindFirstObjectByType<TaskPanelToggle>(FindObjectsInactive.Include);
+        if (trueEndingSequence == null)
+            trueEndingSequence = gameObject.AddComponent<TrueEndingSequence>();
+        trueEndingSequence.Configure(flock, cameraFollow, screenFlashView, holeFirstJumpSprite, holeSecondJumpSprite);
+
         ApplyStage(true);
         RefreshComposition();
         MaintainNearbyPopulation();
@@ -253,6 +273,8 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
             return;
 
         stats.SurvivalSeconds = Time.time - runStartTime;
+
+        HookPagoda();
 
         if (CheckEscaped())
             return;
@@ -470,6 +492,51 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         RefreshObjectives();
     }
 
+    // ---------------------------------------------------------------- 洪山宝通寺
+
+    /// <summary>地标是 WorldLandmarkSpawner 在 Start 里生成的，这里等它出现再挂事件。</summary>
+    private void HookPagoda()
+    {
+        PagodaLandmark pagoda = PagodaLandmark.Current;
+        if (pagoda == null || pagoda == hookedPagoda)
+            return;
+
+        hookedPagoda = pagoda;
+        pagoda.AttemptRejected += HandlePagodaAttemptRejected;
+        pagoda.Smashed += HandlePagodaSmashed;
+    }
+
+    /// <summary>羊不够却来撞塔：展开任务页，把「寻找？？」加进任务列表。</summary>
+    private void HandlePagodaAttemptRejected(PagodaLandmark pagoda)
+    {
+        if (pagodaTaskUnlocked)
+            return;
+
+        pagodaTaskUnlocked = true;
+        taskPanelToggle?.OpenTaskPanel();
+        RefreshObjectives();
+        ShowBanner($"这塔里好像有点什么……得凑够 {pagoda.RequiredFlockCount} 只羊才撞得动");
+    }
+
+    private void HandlePagodaSmashed(PagodaLandmark pagoda)
+    {
+        if (trueEndingRunning || ended)
+            return;
+
+        trueEndingRunning = true;
+        pagodaTaskUnlocked = true;
+        RefreshObjectives();
+
+        flockActions?.SetControlEnabled(false);
+        flockMovement?.SetControlEnabled(false);
+        wolfDirector?.Stop();
+        wolfSpawner?.StopSpawning();
+        ShowBanner("宝通寺塌了！羊群踩穿了洪山……");
+
+        stats.RecordTrueEnding(flock != null ? flock.MemberCount : 0);
+        trueEndingSequence.Play(pagoda.gameObject, () => EndRun(true));
+    }
+
     private bool CheckEscaped()
     {
         if (!ExitUnlocked || borderRing == null || !borderRing.AnyBroken)
@@ -528,6 +595,15 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
             sheepTideTarget,
             exitUnlockFlockSize));
 
+        // 撞过宝通寺但羊不够时解锁的支线，排在主线下面一行。
+        if (pagodaTaskUnlocked)
+        {
+            objectiveScratch.Add(AlphaTaskSequence.Pagoda(
+                members,
+                hookedPagoda != null ? hookedPagoda.RequiredFlockCount : 150,
+                hookedPagoda != null && hookedPagoda.IsSmashed));
+        }
+
         hudView.UpdateObjectives(objectiveScratch, members);
     }
 
@@ -572,9 +648,14 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         if (GameStatsManager.Instance != null)
             GameStatsManager.Instance.RecordRunResult(stats, victory);
         string report = stats.BuildReport(sheepSpawner.GetTypeDisplayName);
-        string description = victory
-            ? $"羊群带着 {flock.MemberCount} 只羊冲出了草原（历史最高 {stats.HighestFlockSize} 只）"
-            : "最后一只羊也没了……";
+        string description = !victory
+            ? "最后一只羊也没了……"
+            : stats.IsTrueEnding
+                ? $"{stats.TrueEndingFlockSize} 只羊踩塌了洪山宝通寺，也踩穿了整座洪山"
+                : $"羊群带着 {flock.MemberCount} 只羊冲出了草原（历史最高 {stats.HighestFlockSize} 只）";
+        if (stats.IsTrueEnding)
+            description += "\n\n" + stats.BuildTrueEndingHighlights();
+        string victoryTitle = stats.IsTrueEnding ? "寻得美食" : "冲出草原！";
 
         Debug.Log((victory ? "胜利：" : "失败：") + description + "\n" + report, this);
 
@@ -585,14 +666,14 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
             panel.ReturnTitleRequested += ReturnToTitle;
             string panelDescription = description + "\n" + report + "\n按 R 再来一局";
             if (victory)
-                panel.ShowVictory(panelDescription, flock.MemberCount, stats.HighestFlockSize, stats.TotalRecruited, stats.TotalTaken, stats.SurvivalSeconds);
+                panel.ShowVictory(panelDescription, flock.MemberCount, stats.HighestFlockSize, stats.TotalRecruited, stats.TotalTaken, stats.SurvivalSeconds, victoryTitle);
             else
                 panel.ShowDefeat(panelDescription, 0, stats.HighestFlockSize, stats.TotalRecruited, stats.TotalTaken, stats.SurvivalSeconds);
             resultPanelShown = true;
         }
         else if (resultView != null)
         {
-            if (victory) resultView.ShowVictory(description, report);
+            if (victory) resultView.ShowVictory(description, report, victoryTitle);
             else resultView.ShowDefeat(description, report);
         }
     }

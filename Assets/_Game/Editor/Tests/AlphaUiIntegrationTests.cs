@@ -405,6 +405,44 @@ public sealed class AlphaUiIntegrationTests
     }
 
     [Test]
+    public void SideTaskExpandsPanelAndStaysInsideItsBackground()
+    {
+        GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(TaskSystemPrefabPath);
+        GameObject instance = Object.Instantiate(prefab);
+        try
+        {
+            TaskChecklistView checklist = instance.GetComponentInChildren<TaskChecklistView>(true);
+            RectTransform taskPanel = instance.GetComponentsInChildren<RectTransform>(true)
+                .Single(item => item.name == "TaskPanel");
+            float originalHeight = taskPanel.sizeDelta.y;
+
+            checklist.ApplyObjectives(new[]
+            {
+                new MvpObjectiveSnapshot("alpha.grow", "壮大羊群！", true, false, false, 17, 20),
+                new MvpObjectiveSnapshot("alpha.pagoda", "寻找？？", false, true, false, 30, 150)
+            }, 17);
+
+            RectTransform sideTask = taskPanel.GetComponentsInChildren<RectTransform>(true)
+                .Single(item => item.name == "TaskRow_02");
+            Assert.That(sideTask.gameObject.activeSelf, Is.True);
+            Assert.That(taskPanel.sizeDelta.y, Is.GreaterThan(originalHeight));
+            float rowBottomFromPanelTop = -sideTask.anchoredPosition.y + sideTask.rect.height * 0.5f;
+            Assert.That(rowBottomFromPanelTop, Is.LessThanOrEqualTo(taskPanel.rect.height));
+            Assert.That(sideTask.GetComponentsInChildren<TMP_Text>(true)
+                .Single(item => item.name == "Txt_Task_02").text, Is.EqualTo("寻找？？"));
+            TMP_Text counter = sideTask.GetComponentsInChildren<TMP_Text>(true)
+                .Single(item => item.name == "Progress_02");
+            Assert.That(counter.text, Is.EqualTo("30/150"));
+            Assert.That(counter.rectTransform.sizeDelta.x, Is.GreaterThanOrEqualTo(96f));
+            Assert.That(counter.overflowMode, Is.EqualTo(TextOverflowModes.Overflow));
+        }
+        finally
+        {
+            Object.DestroyImmediate(instance);
+        }
+    }
+
+    [Test]
     public void ResultPanelUsesChineseRuntimeLabels()
     {
         GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(ResultPanelPrefabPath);
@@ -420,6 +458,26 @@ public sealed class AlphaUiIntegrationTests
             Assert.That(texts.First(text => text.gameObject.name == "RecruitCountLabel").text, Is.EqualTo("成功招募：11"));
             Assert.That(texts.First(text => text.gameObject.name == "LostCountLabel").text, Is.EqualTo("损失羊数：2"));
             Assert.That(texts.First(text => text.gameObject.name == "TimeLabel").text, Is.EqualTo("游戏用时：01:23"));
+        }
+        finally
+        {
+            Object.DestroyImmediate(instance);
+        }
+    }
+
+    [Test]
+    public void ResultPanelAcceptsTrueEndingTitle()
+    {
+        GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(ResultPanelPrefabPath);
+        GameObject instance = Object.Instantiate(prefab);
+        try
+        {
+            ResultPanelView view = instance.GetComponent<ResultPanelView>();
+            view.ShowVictory("结算说明", 150, 150, 149, 0, 83f, "寻得美食");
+
+            TMP_Text title = instance.GetComponentsInChildren<TMP_Text>(true)
+                .First(text => text.gameObject.name == "ResultTitle");
+            Assert.That(title.text, Is.EqualTo("寻得美食"));
         }
         finally
         {

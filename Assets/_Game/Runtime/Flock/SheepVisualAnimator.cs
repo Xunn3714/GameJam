@@ -115,6 +115,18 @@ public sealed class SheepVisualAnimator : MonoBehaviour
         idleCountdown = IdleAnimationDuration;
     }
 
+    private float jumpAge = -1f;
+    private float jumpHeight;
+    private float jumpDuration = 0.55f;
+
+    /// <summary>真结局用的整群起跳：把 offsetY 抬起来再落下，走的是和走路弹跳同一条通道。</summary>
+    public void PlayJump(float height = 1.6f, float duration = 0.55f)
+    {
+        jumpHeight = Mathf.Max(0f, height);
+        jumpDuration = Mathf.Max(0.05f, duration);
+        jumpAge = 0f;
+    }
+
     public static SheepVisualAnimator Ensure(GameObject sheep)
     {
         if (sheep == null || sheep.GetComponent<SpriteRenderer>() == null)
@@ -335,7 +347,22 @@ public sealed class SheepVisualAnimator : MonoBehaviour
         }
 
         visualTransform.localScale = new Vector3(scaleX * flipFold, scaleY, 1f);
-        visualTransform.localPosition = new Vector3(impactOffset.x, offsetY + impactOffset.y, 0f);
+        // 跳跃：半个正弦当抛物线，叠在原有的弹跳偏移上。
+        float jumpOffset = 0f;
+        if (jumpAge >= 0f)
+        {
+            jumpAge += Time.unscaledDeltaTime;
+            if (jumpAge >= jumpDuration)
+            {
+                jumpAge = -1f;
+            }
+            else
+            {
+                jumpOffset = Mathf.Sin(Mathf.Clamp01(jumpAge / jumpDuration) * Mathf.PI) * jumpHeight;
+            }
+        }
+
+        visualTransform.localPosition = new Vector3(impactOffset.x, offsetY + impactOffset.y + jumpOffset, 0f);
         visualTransform.localRotation = Quaternion.Euler(
             0f,
             0f,

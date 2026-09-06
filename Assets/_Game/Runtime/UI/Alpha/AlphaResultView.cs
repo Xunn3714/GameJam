@@ -55,9 +55,9 @@ public sealed class AlphaResultView : MonoBehaviour
         MvpUiFactory.Anchor(title.image.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(150f, -200f), new Vector2(260f, 64f));
     }
 
-    public void ShowVictory(string description, string stats)
+    public void ShowVictory(string description, string stats, string title = "冲出草原！")
     {
-        Show("冲出草原！", VictoryColor, description, stats);
+        Show(title, VictoryColor, description, stats);
     }
 
     public void ShowDefeat(string description, string stats)
