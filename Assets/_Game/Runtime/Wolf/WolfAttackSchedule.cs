@@ -119,6 +119,16 @@ public sealed class WolfAttackSchedule : ScriptableObject
         return stageIndex >= 4 ? 1.5f : stageIndex >= 3 ? 1.35f : 1f;
     }
 
+    /// <summary>
+    /// 在阶段倍率之外补偿正交镜头拉远，保证长狼不会因为视野变大而在屏幕上变细。
+    /// 阶段倍率仍会让后期长狼在屏幕上逐步变得更粗。
+    /// </summary>
+    public float GetLongWolfWidthMultiplier(int memberCount, float cameraSize, float baseCameraSize)
+    {
+        float zoomCompensation = Mathf.Max(1f, cameraSize / Mathf.Max(0.1f, baseCameraSize));
+        return GetLongWolfWidthMultiplier(memberCount) * zoomCompensation;
+    }
+
     public static Stage[] CreateDefaultStages()
     {
         return new[]

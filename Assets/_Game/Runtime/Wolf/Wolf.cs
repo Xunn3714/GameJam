@@ -162,6 +162,18 @@ public sealed class Wolf : MonoBehaviour
     {
         speedScale = Mathf.Max(0.1f, scale);
     }
+
+    /// <summary>同步更新长狼的视觉、预警范围和实际捕获宽度。</summary>
+    public void SetLongWolfWidthMultiplier(float multiplier)
+    {
+        if (longSweep == null)
+            return;
+
+        longSweep.SetRuntimeWidthMultiplier(multiplier);
+        if (chargeDirection.sqrMagnitude > 0.0001f)
+            longSweep.SetDirection(chargeDirection);
+        UpdateWarningShape();
+    }
     /// <summary>冲锋阶段已经冲出的距离（不在冲锋时为 0）。</summary>
     public float ChargeTravelled => state == State.Charging ? chargeTravelled : 0f;
 

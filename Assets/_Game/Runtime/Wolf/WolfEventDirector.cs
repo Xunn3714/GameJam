@@ -63,6 +63,12 @@ public sealed class WolfEventDirector : MonoBehaviour
     [Tooltip("节奏表动态生成编队时用的参数模板：普通狼 / 长狼 prefab、间距、时长等；type 字段会被覆盖。")]
     [SerializeField] private WolfFormation formationTemplate = new WolfFormation();
 
+    [Header("Long Wolf Camera Scaling")]
+    [Tooltip("用于补偿长狼在镜头拉远后的屏幕粗细；留空时使用 Main Camera。")]
+    [SerializeField] private Camera longWolfScaleCamera;
+    [Tooltip("第一阶段的正交镜头尺寸。当前玩法初始值为 5。")]
+    [SerializeField, Min(0.1f)] private float baseLongWolfCameraSize = 5f;
+
     [Header("Control")]
     [SerializeField] private bool runOnStart = true;
 
@@ -495,7 +501,17 @@ public sealed class WolfEventDirector : MonoBehaviour
 
         LongWolfSweep sweep = wolf.GetComponent<LongWolfSweep>();
         if (sweep != null)
-            sweep.SetRuntimeWidthMultiplier(schedule.GetLongWolfWidthMultiplier(CurrentMemberCount));
+        {
+            Camera camera = longWolfScaleCamera != null ? longWolfScaleCamera : Camera.main;
+            float cameraSize = camera != null && camera.orthographic
+                ? camera.orthographicSize
+                : baseLongWolfCameraSize;
+            float multiplier = schedule.GetLongWolfWidthMultiplier(
+                CurrentMemberCount,
+                cameraSize,
+                baseLongWolfCameraSize);
+            wolf.SetLongWolfWidthMultiplier(multiplier);
+        }
     }
 
     private void HandleWolfFinished(Wolf wolf)

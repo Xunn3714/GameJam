@@ -78,6 +78,28 @@ public sealed class WolfAttackPlannerTests
     }
 
     [Test]
+    public void LongWolfWidthCompensatesForCameraZoomAndStillGrowsByStage()
+    {
+        WolfAttackSchedule schedule = ScriptableObject.CreateInstance<WolfAttackSchedule>();
+        try
+        {
+            float stageTwo = schedule.GetLongWolfWidthMultiplier(20, 10f, 5f);
+            float stageThree = schedule.GetLongWolfWidthMultiplier(50, 14f, 5f);
+            float stageFour = schedule.GetLongWolfWidthMultiplier(90, 18f, 5f);
+
+            Assert.AreEqual(2f, stageTwo, 0.0001f);
+            Assert.AreEqual(3.78f, stageThree, 0.0001f);
+            Assert.AreEqual(5.4f, stageFour, 0.0001f);
+            Assert.Greater(stageThree / 14f, stageTwo / 10f);
+            Assert.Greater(stageFour / 18f, stageThree / 14f);
+        }
+        finally
+        {
+            UnityEngine.Object.DestroyImmediate(schedule);
+        }
+    }
+
+    [Test]
     public void TutorialStageNeverAttacks()
     {
         WolfAttackSchedule.Stage stage = Stages()[0];
