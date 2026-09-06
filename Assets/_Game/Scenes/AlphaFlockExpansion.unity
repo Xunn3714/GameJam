@@ -13043,7 +13043,6 @@ MonoBehaviour:
     width: 18
     height: 10
   signFadeDuration: 1.5
-  readyHint: "\u7F8A\u7FA4\u591F\u4E86\uFF01\u6309 E \u540E\u9000\u84C4\u52BF\uFF0C\u6574\u7FA4\u51B2\u523A\u649E\u5F00\u6805\u680F"
 --- !u!4 &1069232735
 Transform:
   m_ObjectHideFlags: 0
