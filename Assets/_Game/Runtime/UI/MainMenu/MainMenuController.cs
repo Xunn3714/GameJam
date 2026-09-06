@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -21,6 +22,10 @@ public class MainMenuController : MonoBehaviour
     public GameObject developersButton;
 
 
+    private bool developersCanCloseByClick = false;
+    private Coroutine developersClickGuardCoroutine;
+
+
     private void Start()
     {
         ShowMenu();
@@ -29,21 +34,37 @@ public class MainMenuController : MonoBehaviour
 
     private void Update()
     {
-        if (Keyboard.current == null)
-            return;
-
-        if (!Keyboard.current
-            .escapeKey
-            .wasPressedThisFrame)
+        // 只有制作人员页面打开时，
+        // 才处理 ESC / 左键返回。
+        if (developersPanel == null ||
+            !developersPanel.activeSelf)
         {
             return;
         }
 
 
-        // 制作人员页面打开时
-        // ESC 返回主菜单
-        if (developersPanel != null &&
-            developersPanel.activeSelf)
+        // ========================================================
+        // ESC 返回
+        // ========================================================
+
+        if (Keyboard.current != null &&
+            Keyboard.current.escapeKey.wasPressedThisFrame)
+        {
+            ShowMenu();
+            return;
+        }
+
+
+        // ========================================================
+        // 鼠标左键返回
+        // ========================================================
+
+        if (!developersCanCloseByClick)
+            return;
+
+
+        if (Mouse.current != null &&
+            Mouse.current.leftButton.wasPressedThisFrame)
         {
             ShowMenu();
         }
@@ -56,6 +77,15 @@ public class MainMenuController : MonoBehaviour
 
     public void ShowMenu()
     {
+        developersCanCloseByClick = false;
+
+        if (developersClickGuardCoroutine != null)
+        {
+            StopCoroutine(developersClickGuardCoroutine);
+            developersClickGuardCoroutine = null;
+        }
+
+
         if (menuPanel != null)
             menuPanel.SetActive(true);
 
@@ -147,6 +177,50 @@ public class MainMenuController : MonoBehaviour
 
         if (developersPanel != null)
             developersPanel.SetActive(true);
+
+
+        // 防止点击“制作人员”按钮的这一击
+        // 同时又被识别成“左键返回”。
+        developersCanCloseByClick = false;
+
+
+        if (developersClickGuardCoroutine != null)
+        {
+            StopCoroutine(developersClickGuardCoroutine);
+        }
+
+
+        developersClickGuardCoroutine =
+            StartCoroutine(
+                EnableDevelopersClickAfterMouseRelease()
+            );
+    }
+
+
+    private IEnumerator EnableDevelopersClickAfterMouseRelease()
+    {
+        // 等待进入页面时按下的左键完全松开。
+        if (Mouse.current != null)
+        {
+            while (Mouse.current.leftButton.isPressed)
+            {
+                yield return null;
+            }
+        }
+
+
+        // 再等一帧，防止同一帧输入残留。
+        yield return null;
+
+
+        if (developersPanel != null &&
+            developersPanel.activeSelf)
+        {
+            developersCanCloseByClick = true;
+        }
+
+
+        developersClickGuardCoroutine = null;
     }
 
 
@@ -166,6 +240,9 @@ public class MainMenuController : MonoBehaviour
 
     private void HideMainMenu()
     {
+        developersCanCloseByClick = false;
+
+
         if (menuPanel != null)
             menuPanel.SetActive(false);
 
@@ -203,10 +280,7 @@ public class MainMenuController : MonoBehaviour
     {
         if (SceneLoader.Instance != null)
         {
-            // 不再直接进入 Gameplay
-            // 先进入插画 Intro
-            SceneLoader.Instance
-                .LoadIllustrationIntro();
+            SceneLoader.Instance.LoadIllustrationIntro();
         }
         else
         {
@@ -225,8 +299,7 @@ public class MainMenuController : MonoBehaviour
     public void QuitGame()
     {
 #if UNITY_EDITOR
-        UnityEditor.EditorApplication
-            .isPlaying = false;
+        UnityEditor.EditorApplication.isPlaying = false;
 #else
         Application.Quit();
 #endif
