@@ -25,6 +25,7 @@ public class StatisticsPanelController : MonoBehaviour
     // Cosmetic choices must not advance the gameplay random sequence.
     private readonly System.Random decorationRandom = new System.Random();
     private ScrollRect scrollRect;
+    private Image scrollbarSheepIcon;
     private Image companionImage;
     private TMP_Text companionName;
     private TMP_Text companionNote;
@@ -41,6 +42,7 @@ public class StatisticsPanelController : MonoBehaviour
             return;
 
         EnsureLayout();
+        EnsureScrollbarSheepIcon();
         ClearRows();
         List<GameStatEntry> stats = GameStatsManager.Instance != null
             ? GameStatsManager.Instance.GetAllStats() : new List<GameStatEntry>();
@@ -102,6 +104,25 @@ public class StatisticsPanelController : MonoBehaviour
         MvpTmpUiFont.Apply(label);
     }
 
+    private void EnsureScrollbarSheepIcon()
+    {
+        if (scrollbarSheepIcon != null || scrollRect == null || scrollRect.verticalScrollbar == null)
+            return;
+        RectTransform handle = scrollRect.verticalScrollbar.handleRect;
+        if (handle == null)
+            return;
+        Sprite sheepSprite = Resources.Load<Sprite>("SheepScrollbarThumb");
+        if (sheepSprite == null)
+            return;
+
+        scrollbarSheepIcon = MvpUiFactory.CreateImage("SheepScrollbarIcon", handle, Color.white);
+        scrollbarSheepIcon.gameObject.layer = handle.gameObject.layer;
+        Place(scrollbarSheepIcon.rectTransform, Vector2.zero, new Vector2(80f, 60f));
+        scrollbarSheepIcon.sprite = sheepSprite;
+        scrollbarSheepIcon.preserveAspect = true;
+        scrollbarSheepIcon.raycastTarget = false;
+    }
+
     private void EnsureLayout()
     {
         if (companionImage != null)
@@ -138,7 +159,7 @@ public class StatisticsPanelController : MonoBehaviour
         Image panel = MvpUiFactory.CreateImage("StatisticsCompanion", window,
             new Color32(238, 229, 195, 150));
         panel.raycastTarget = false;
-        Place(panel.rectTransform, new Vector2(465f, -58f), new Vector2(470f, 570f));
+        Place(panel.rectTransform, new Vector2(410f, -73f), new Vector2(580f, 600f));
         Outline border = panel.gameObject.AddComponent<Outline>();
         border.effectColor = new Color32(101, 88, 59, 55);
         border.effectDistance = new Vector2(1f, -1f);
@@ -146,28 +167,32 @@ public class StatisticsPanelController : MonoBehaviour
         CreateLabel(panel.transform, "CompanionHeading", "一路同行", -32f, 22f, 35f).color = MutedInk;
         Image quotePaper = MvpUiFactory.CreateImage("QuotePaper", panel.transform,
             new Color32(249, 237, 198, 255));
-        Place(quotePaper.rectTransform, new Vector2(0f, 137f), new Vector2(414f, 142f));
+        Place(quotePaper.rectTransform, new Vector2(0f, 125f), new Vector2(520f, 176f));
         quotePaper.raycastTarget = false;
         Outline quoteBorder = quotePaper.gameObject.AddComponent<Outline>();
         quoteBorder.effectColor = new Color32(181, 143, 68, 160);
         quoteBorder.effectDistance = new Vector2(1.5f, -1.5f);
         encouragement = MvpUiFactory.CreateText("Encouragement", quotePaper.transform,
             string.Empty, 27f, TextAlignmentOptions.Center);
-        MvpUiFactory.Stretch(encouragement.rectTransform, 16f);
+        MvpUiFactory.Stretch(encouragement.rectTransform, 20f);
         encouragement.color = Ink;
         encouragement.enableAutoSizing = true;
         encouragement.fontSizeMin = 22f;
         encouragement.fontSizeMax = 27f;
+        encouragement.lineSpacing = 6f;
 
         companionImage = MvpUiFactory.CreateImage("CollectedSheep", panel.transform, Color.white);
-        Place(companionImage.rectTransform, new Vector2(0f, -37f), new Vector2(260f, 205f));
+        Place(companionImage.rectTransform, new Vector2(0f, -62f), new Vector2(260f, 180f));
         companionImage.preserveAspect = true;
         companionImage.raycastTarget = false;
-        companionName = CreateLabel(panel.transform, "SheepName", string.Empty, -437f, 29f, 43f);
+        companionName = CreateLabel(panel.transform, "SheepName", string.Empty, -460f, 29f, 38f);
         companionName.fontStyle = FontStyles.Bold;
-        companionNote = CreateLabel(panel.transform, "SheepNote", string.Empty, -480f, 20f, 32f);
+        companionName.enableAutoSizing = true;
+        companionName.fontSizeMin = 22f;
+        companionName.fontSizeMax = 29f;
+        companionNote = CreateLabel(panel.transform, "SheepNote", string.Empty, -510f, 20f, 28f);
         companionNote.color = MutedInk;
-        CreateLabel(panel.transform, "ClosingWords", "继续让更多的羊，加入你的故事吧。", -523f, 20f, 35f);
+        CreateLabel(panel.transform, "ClosingWords", "继续让更多的羊，加入你的故事吧。", -554f, 20f, 30f);
 
         TMP_Text scope = MvpUiFactory.CreateText("StatisticsScope", window,
             "旅程纪录在结算后更新 · 收集数量实时累计", 18f, TextAlignmentOptions.Center);
@@ -179,7 +204,7 @@ public class StatisticsPanelController : MonoBehaviour
     {
         TMP_Text label = MvpUiFactory.CreateText(name, parent, text, size, TextAlignmentOptions.Center);
         MvpUiFactory.Anchor(label.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
-            new Vector2(0f, y), new Vector2(420f, height));
+            new Vector2(0f, y), new Vector2(524f, height));
         label.color = Ink;
         return label;
     }
