@@ -4,28 +4,41 @@ using UnityEngine.UI;
 [RequireComponent(typeof(CanvasRenderer))]
 public sealed class IllustrationFragmentGraphic : MaskableGraphic
 {
+    private const float DiagonalOffset = 0.06f;
+    private const float SplitIntersectionX = 0.53f;
+    private const float SecondSplitBottomX = 0.65f;
+
     private static readonly Vector2[][] FragmentPolygons =
     {
+        // 第一块：主对角线以上。
         new[]
         {
+            new Vector2(DiagonalOffset, 0f),
             new Vector2(0f, 0f),
             new Vector2(0f, 1f),
-            new Vector2(0.4f, 1f),
-            new Vector2(0.516129f, 0.516129f)
-        },
-        new[]
-        {
-            new Vector2(0f, 0f),
-            new Vector2(0.516129f, 0.516129f),
-            new Vector2(0.64f, 0f)
-        },
-        new[]
-        {
-            new Vector2(0.64f, 0f),
-            new Vector2(0.516129f, 0.516129f),
-            new Vector2(0.4f, 1f),
             new Vector2(1f, 1f),
-            new Vector2(1f, 0f)
+            new Vector2(1f, 1f - DiagonalOffset)
+        },
+
+        // 第二块：主对角线与右下分割线之间。
+        new[]
+        {
+            new Vector2(DiagonalOffset, 0f),
+            new Vector2(SecondSplitBottomX, 0f),
+            new Vector2(
+                SplitIntersectionX,
+                SplitIntersectionX - DiagonalOffset)
+        },
+
+        // 第三块：剩余的右下区域。
+        new[]
+        {
+            new Vector2(SecondSplitBottomX, 0f),
+            new Vector2(1f, 0f),
+            new Vector2(1f, 1f - DiagonalOffset),
+            new Vector2(
+                SplitIntersectionX,
+                SplitIntersectionX - DiagonalOffset)
         }
     };
 
