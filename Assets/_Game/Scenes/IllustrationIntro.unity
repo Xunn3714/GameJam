@@ -1375,7 +1375,7 @@ MonoBehaviour:
   fragment02: {fileID: 957950622}
   fragment03: {fileID: 1817701136}
   illustrationResourcePath: IllustrationIntro/StoryTriptych
-  illustrationScale: 0.6
+  illustrationScale: 0.65
   continueHint: {fileID: 0}
   continueButton: {fileID: 584955318}
   fadeImage: {fileID: 1852959031}
