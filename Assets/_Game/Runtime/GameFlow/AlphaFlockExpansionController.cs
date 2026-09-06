@@ -535,6 +535,8 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
 
         if (wolfDirector != null)
             stats.SetWolfBreakdown(wolfDirector.LossTracker.TakenByLongWolves, wolfDirector.LossTracker.TakenBySingleWolves);
+        if (GameStatsManager.Instance != null)
+            GameStatsManager.Instance.RecordRunResult(stats, victory);
         string report = stats.BuildReport(sheepSpawner.GetTypeDisplayName);
         string description = victory
             ? $"羊群带着 {flock.MemberCount} 只羊冲出了草原（历史最高 {stats.HighestFlockSize} 只）"

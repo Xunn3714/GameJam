@@ -76,6 +76,8 @@ public class GameStatsManager : MonoBehaviour
     [SerializeField]
     private List<GameStatEntry> stats = new List<GameStatEntry>();
 
+    private AlphaRunStats lastRecordedRun;
+
 
     private void Awake()
     {
@@ -90,6 +92,60 @@ public class GameStatsManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
 
         LoadStats();
+        RegisterAlphaStats();
+    }
+
+    private void RegisterAlphaStats()
+    {
+        RegisterStat("wins", "成功冲出草原", suffix: " 次", order: 0);
+        RegisterStat("fastest_win", "最快通关时间", StatValueType.TimeSeconds, order: 1);
+        RegisterStat("slowest_win", "最慢通关时间", StatValueType.TimeSeconds, order: 2);
+        RegisterStat("largest_win_flock", "通关时最多羊数", suffix: " 只", order: 3);
+        RegisterStat("smallest_win_flock", "通关时最少羊数", suffix: " 只", order: 4);
+        RegisterStat("sheep_collected", "累计收集的羊", suffix: " 只", order: 10);
+        RegisterStat("largest_flock", "单局最大羊群", suffix: " 只", order: 20);
+        RegisterStat("most_recruits", "单局最多招募", suffix: " 只", order: 21);
+        RegisterStat("sheep_taken", "累计被狼叼走", suffix: " 只", order: 30);
+        RegisterStat("long_wolf_taken", "其中：长条狼叼走", suffix: " 只", order: 31);
+        RegisterStat("other_wolf_taken", "其中：其他狼叼走", suffix: " 只", order: 32);
+        RegisterStat("runs_completed", "已结算的旅程", suffix: " 局", order: 40);
+        RegisterStat("runs_lost", "未能逃出的旅程", suffix: " 局", order: 41);
+        RegisterStat("finished_play_time", "累计游玩时间（已结算）", StatValueType.TimeSeconds, order: 42);
+    }
+
+    // Called after the final frame's loss/composition events have completed.
+    // Recruitment already accumulates in FlockController, so it is not added again here.
+    public void RecordRunResult(AlphaRunStats run, bool victory)
+    {
+        if (run == null || ReferenceEquals(lastRecordedRun, run))
+            return;
+
+        RegisterAlphaStats();
+        float duration = Mathf.Max(0f, run.SurvivalSeconds);
+        AddStat("runs_completed");
+        AddStat("finished_play_time", duration);
+        UpdateMaxStat("largest_flock", run.HighestFlockSize);
+        UpdateMaxStat("most_recruits", run.TotalRecruited);
+        AddStat("sheep_taken", run.TotalTaken);
+        int longWolfLosses = Mathf.Clamp(run.TakenByLongWolves, 0, run.TotalTaken);
+        AddStat("long_wolf_taken", longWolfLosses);
+        AddStat("other_wolf_taken", run.TotalTaken - longWolfLosses);
+
+        if (victory)
+        {
+            AddStat("wins");
+            UpdateMinStat("fastest_win", duration);
+            UpdateMaxStat("slowest_win", duration);
+            UpdateMaxStat("largest_win_flock", run.CurrentFlockSize);
+            UpdateMinStat("smallest_win_flock", run.CurrentFlockSize);
+        }
+        else
+        {
+            AddStat("runs_lost");
+        }
+
+        lastRecordedRun = run;
+        SaveStats();
     }
 
 
@@ -264,6 +320,8 @@ public class GameStatsManager : MonoBehaviour
     public void ResetAllStats()
     {
         stats.Clear();
+        lastRecordedRun = null;
+        RegisterAlphaStats();
 
         PlayerPrefs.DeleteKey(SAVE_KEY);
         PlayerPrefs.Save();
