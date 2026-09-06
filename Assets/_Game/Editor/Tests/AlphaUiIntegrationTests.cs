@@ -25,6 +25,16 @@ public sealed class AlphaUiIntegrationTests
         "Assets/Art/Debris/obstacle_fence_256x128.png";
     private const string CatalogPath =
         "Assets/_Game/Content/Data/Sheep/SpecialSheepCatalog.asset";
+    private static readonly string[] SheepRecruitClipPaths =
+    {
+        "Assets/_Game/Content/Audio/SFX/sheep/sheep (1).wav",
+        "Assets/_Game/Content/Audio/SFX/sheep/sheep (2).wav",
+        "Assets/_Game/Content/Audio/SFX/sheep/sheep (3).wav",
+        "Assets/_Game/Content/Audio/SFX/sheep/sheep (4).wav",
+        "Assets/_Game/Content/Audio/SFX/sheep/sheep (5).wav",
+        "Assets/_Game/Content/Audio/SFX/sheep/sheep (7).wav",
+        "Assets/_Game/Content/Audio/SFX/sheep/sheep (9).wav"
+    };
 
     [Test]
     public void PauseSystemPrefabHasOneConfiguredManager()
@@ -155,8 +165,8 @@ public sealed class AlphaUiIntegrationTests
             {
                 Assert.That(
                     sheepClips.GetArrayElementAtIndex(index).objectReferenceValue,
-                    Is.Not.Null,
-                    $"SheepRecruitAudio clip {index + 1} is missing.");
+                    Is.SameAs(AssetDatabase.LoadAssetAtPath<AudioClip>(SheepRecruitClipPaths[index])),
+                    $"SheepRecruitAudio clip {index + 1} differs from main.");
             }
             Assert.That(
                 recruitAudioData.FindProperty("recruitBleatChance").floatValue,

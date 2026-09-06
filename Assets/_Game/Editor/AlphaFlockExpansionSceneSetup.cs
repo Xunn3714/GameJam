@@ -43,8 +43,8 @@ public static class AlphaFlockExpansionSceneSetup
         "Assets/_Game/Content/Audio/SFX/sheep/sheep (3).wav",
         "Assets/_Game/Content/Audio/SFX/sheep/sheep (4).wav",
         "Assets/_Game/Content/Audio/SFX/sheep/sheep (5).wav",
-        "Assets/_Game/Content/Audio/SFX/sheep/sheep (6).wav",
-        "Assets/_Game/Content/Audio/SFX/sheep/sheep (7).wav"
+        "Assets/_Game/Content/Audio/SFX/sheep/sheep (7).wav",
+        "Assets/_Game/Content/Audio/SFX/sheep/sheep (9).wav"
     };
 
     private static readonly string[] GrassFootstepPaths =
