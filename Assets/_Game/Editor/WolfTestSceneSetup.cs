@@ -326,7 +326,7 @@ public static class WolfTestSceneSetup
         EditorSceneManager.SaveScene(scene);
         AssetDatabase.SaveAssets();
         Debug.Log("Wolves integrated into Level_01: WolfSystem (spawner + rhythm director + defeat handler) and WolfEventHud under GameCanvas. " +
-                  "Countdown starts once the flock reaches 6 sheep; the flock huddles during the howl warning.");
+                  "Countdown starts once the flock reaches 6 sheep; the howl warns of the incoming attack.");
     }
 
     [MenuItem("Game Jam/Wolf Test/Open TestWolf Scene")]
