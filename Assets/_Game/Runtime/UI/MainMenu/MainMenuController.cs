@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class MainMenuController : MonoBehaviour
 {
@@ -11,6 +12,9 @@ public class MainMenuController : MonoBehaviour
     public GameObject statisticsPanel;
     public GameObject creditsPanel;
 
+    [Header("Developers")]
+    public GameObject developersPanel;
+
     [Header("Independent Main Menu UI")]
     public GameObject gameTitle;
     public GameObject settingButton;
@@ -22,6 +26,30 @@ public class MainMenuController : MonoBehaviour
         ShowMenu();
     }
 
+
+    private void Update()
+    {
+        if (Keyboard.current == null)
+            return;
+
+
+        if (!Keyboard.current.escapeKey.wasPressedThisFrame)
+            return;
+
+
+        // 制作人员页面打开时：
+        // ESC 返回主菜单
+        if (developersPanel != null &&
+            developersPanel.activeSelf)
+        {
+            ShowMenu();
+        }
+    }
+
+
+    // ============================================================
+    // MAIN MENU
+    // ============================================================
 
     public void ShowMenu()
     {
@@ -40,6 +68,9 @@ public class MainMenuController : MonoBehaviour
         if (creditsPanel != null)
             creditsPanel.SetActive(false);
 
+        if (developersPanel != null)
+            developersPanel.SetActive(false);
+
         if (gameTitle != null)
             gameTitle.SetActive(true);
 
@@ -51,6 +82,10 @@ public class MainMenuController : MonoBehaviour
     }
 
 
+    // ============================================================
+    // SETTINGS
+    // ============================================================
+
     public void ShowSettings()
     {
         HideMainMenu();
@@ -59,6 +94,10 @@ public class MainMenuController : MonoBehaviour
             settingPanel.SetActive(true);
     }
 
+
+    // ============================================================
+    // COLLECTION
+    // ============================================================
 
     public void ShowCollection()
     {
@@ -69,6 +108,10 @@ public class MainMenuController : MonoBehaviour
     }
 
 
+    // ============================================================
+    // STATISTICS
+    // ============================================================
+
     public void ShowStatistics()
     {
         HideMainMenu();
@@ -77,6 +120,10 @@ public class MainMenuController : MonoBehaviour
             statisticsPanel.SetActive(true);
     }
 
+
+    // ============================================================
+    // CREDITS
+    // ============================================================
 
     public void ShowCredits()
     {
@@ -87,11 +134,32 @@ public class MainMenuController : MonoBehaviour
     }
 
 
+    // ============================================================
+    // DEVELOPERS
+    // ============================================================
+
+    public void ShowDevelopers()
+    {
+        HideMainMenu();
+
+        if (developersPanel != null)
+            developersPanel.SetActive(true);
+    }
+
+
+    // ============================================================
+    // BACK
+    // ============================================================
+
     public void BackToMenu()
     {
         ShowMenu();
     }
 
+
+    // ============================================================
+    // HIDE MAIN MENU
+    // ============================================================
 
     private void HideMainMenu()
     {
@@ -110,6 +178,9 @@ public class MainMenuController : MonoBehaviour
         if (creditsPanel != null)
             creditsPanel.SetActive(false);
 
+        if (developersPanel != null)
+            developersPanel.SetActive(false);
+
         if (gameTitle != null)
             gameTitle.SetActive(false);
 
@@ -121,6 +192,10 @@ public class MainMenuController : MonoBehaviour
     }
 
 
+    // ============================================================
+    // START GAME
+    // ============================================================
+
     public void StartGame()
     {
         if (SceneLoader.Instance != null)
@@ -129,10 +204,17 @@ public class MainMenuController : MonoBehaviour
         }
         else
         {
-            Debug.LogError("SceneLoader Instance not found.");
+            Debug.LogError(
+                "MainMenuController: SceneLoader Instance not found.",
+                this
+            );
         }
     }
 
+
+    // ============================================================
+    // QUIT GAME
+    // ============================================================
 
     public void QuitGame()
     {
