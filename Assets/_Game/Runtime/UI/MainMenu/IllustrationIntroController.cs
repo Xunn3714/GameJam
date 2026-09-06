@@ -6,10 +6,16 @@ using UnityEngine.UI;
 
 public class IllustrationIntroController : MonoBehaviour
 {
+    private const string ArtworkChildName = "Artwork";
+
     [Header("Fragments")]
     [SerializeField] private GameObject fragment01;
     [SerializeField] private GameObject fragment02;
     [SerializeField] private GameObject fragment03;
+
+    [Header("Illustration")]
+    [SerializeField]
+    private string illustrationResourcePath = "IllustrationIntro/StoryTriptych";
 
     [Header("Continue UI")]
     [SerializeField] private GameObject continueHint;
@@ -32,6 +38,21 @@ public class IllustrationIntroController : MonoBehaviour
 
     private void Awake()
     {
+        Texture2D illustration = Resources.Load<Texture2D>(illustrationResourcePath);
+
+        if (illustration == null)
+        {
+            Debug.LogError(
+                $"IllustrationIntroController: illustration not found at Resources/{illustrationResourcePath}.",
+                this);
+        }
+        else
+        {
+            ConfigureFragmentVisual(fragment01, illustration, 0);
+            ConfigureFragmentVisual(fragment02, illustration, 1);
+            ConfigureFragmentVisual(fragment03, illustration, 2);
+        }
+
         // 初始隐藏三个碎片
         SetFragmentInitialState(fragment01);
         SetFragmentInitialState(fragment02);
@@ -287,11 +308,17 @@ public class IllustrationIntroController : MonoBehaviour
             yield break;
         }
 
+        const string fallbackSceneName = "AlphaFlockExpansion";
+
+        if (Application.CanStreamedLevelBeLoaded(fallbackSceneName))
+        {
+            SceneManager.LoadScene(fallbackSceneName);
+            yield break;
+        }
 
         Debug.LogError(
-            "IllustrationIntroController: SceneLoader Instance not found.",
-            this
-        );
+            $"IllustrationIntroController: SceneLoader is missing and fallback scene {fallbackSceneName} cannot be loaded.",
+            this);
 
         isLoadingGame = false;
     }
@@ -300,6 +327,47 @@ public class IllustrationIntroController : MonoBehaviour
     // ============================================================
     // HELPERS
     // ============================================================
+
+    private void ConfigureFragmentVisual(
+        GameObject fragment,
+        Texture illustration,
+        int fragmentIndex)
+    {
+        if (fragment == null)
+            return;
+
+        Image placeholder = fragment.GetComponent<Image>();
+
+        if (placeholder != null)
+            placeholder.enabled = false;
+
+        Transform artworkTransform = fragment.transform.Find(ArtworkChildName);
+        GameObject artwork;
+
+        if (artworkTransform == null)
+        {
+            artwork = new GameObject(
+                ArtworkChildName,
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(IllustrationFragmentGraphic));
+            artwork.transform.SetParent(fragment.transform, false);
+        }
+        else
+        {
+            artwork = artworkTransform.gameObject;
+        }
+
+        RectTransform artworkRect = artwork.GetComponent<RectTransform>();
+        artworkRect.anchorMin = Vector2.zero;
+        artworkRect.anchorMax = Vector2.one;
+        artworkRect.anchoredPosition = Vector2.zero;
+        artworkRect.sizeDelta = Vector2.zero;
+
+        IllustrationFragmentGraphic graphic =
+            artwork.GetComponent<IllustrationFragmentGraphic>();
+        graphic.Configure(illustration, fragmentIndex);
+    }
 
     private void SetFragmentInitialState(
         GameObject fragment)
