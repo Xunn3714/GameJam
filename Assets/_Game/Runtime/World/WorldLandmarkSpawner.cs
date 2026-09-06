@@ -43,9 +43,9 @@ public sealed class WorldLandmarkSpawner : MonoBehaviour
     [SerializeField] private Vector2 redChestColliderOffset = new(0.06f, 0.36f);
     [Tooltip("摆放红箱子时与其他地标 / 已有碰撞体的最小间距。")]
     [SerializeField, Min(0.5f)] private float redChestClearance = 6f;
-    [Tooltip("本局唯一奖励箱摔碎后掉落的彩色、紫色或金色羊的最少数量。")]
+    [Tooltip("每个奖励箱摔碎后掉落的彩色、紫色或金色羊的最少数量。")]
     [SerializeField, Min(1)] private int rewardSheepMinimum = 3;
-    [Tooltip("本局唯一奖励箱摔碎后掉落的彩色、紫色或金色羊的最多数量。")]
+    [Tooltip("每个奖励箱摔碎后掉落的彩色、紫色或金色羊的最多数量。")]
     [SerializeField, Min(1)] private int rewardSheepMaximum = 5;
 
     [Header("House")]
@@ -87,23 +87,36 @@ public sealed class WorldLandmarkSpawner : MonoBehaviour
         {
             Debug.LogWarning($"红箱子只放下了 {createdChests.Count}/{redChestCount} 个，地图可能太挤或排除区太大。", this);
         }
-        // 用同一世界种子从本局箱子中固定选一个，并立即预留奖励羊类型。
-        // 其他箱子只有破坏反馈，不会额外抬高稀有羊产量。
+        // 每个红箱子都立即预留一个不同的奖励羊类型，确保撞碎任意箱子都会掉羊。
         SheepCollectionManager collection = SheepCollectionManager.Instance;
         Func<string, bool> isDiscovered = collection != null ? collection.IsUnlocked : null;
-        if (createdChests.Count > 0
-            && sheepSpawner != null
-            && sheepSpawner.TryReserveRewardSpecialGroup(
-                isDiscovered,
-                out ProgressiveSheepSpawner.RewardSpecialGroupReservation reservation))
+        int configuredRewardChests = 0;
+        if (sheepSpawner != null)
         {
-            GameObject rewardChest = createdChests[random.Next(createdChests.Count)];
-            LandmarkChestReward reward = rewardChest.AddComponent<LandmarkChestReward>();
-            reward.Configure(
-                sheepSpawner,
-                reservation,
-                rewardSheepMinimum,
-                rewardSheepMaximum);
+            foreach (GameObject rewardChest in createdChests)
+            {
+                if (!sheepSpawner.TryReserveRewardSpecialGroup(
+                        isDiscovered,
+                        out ProgressiveSheepSpawner.RewardSpecialGroupReservation reservation))
+                {
+                    break;
+                }
+
+                LandmarkChestReward reward = rewardChest.AddComponent<LandmarkChestReward>();
+                reward.Configure(
+                    sheepSpawner,
+                    reservation,
+                    rewardSheepMinimum,
+                    rewardSheepMaximum);
+                configuredRewardChests++;
+            }
+        }
+
+        if (configuredRewardChests < createdChests.Count)
+        {
+            Debug.LogWarning(
+                $"只有 {configuredRewardChests}/{createdChests.Count} 个红箱子成功预留奖励羊，请检查彩色、紫色和金色羊池。",
+                this);
         }
 
         int houseCount = random.Next(
@@ -335,17 +348,30 @@ public sealed class LandmarkChestReward : MonoBehaviour
         reservation = rewardReservation;
         minimumCount = Mathf.Max(1, minimum);
         maximumCount = Mathf.Max(minimumCount, maximum);
+        EnsureObstacleSubscription();
     }
 
     private void Awake()
     {
-        obstacle = GetComponent<BreakableObstacle>();
-        obstacle.Broken += HandleBroken;
+        EnsureObstacleSubscription();
     }
 
     private void OnDestroy()
     {
         if (obstacle != null) obstacle.Broken -= HandleBroken;
+    }
+
+    private void EnsureObstacleSubscription()
+    {
+        BreakableObstacle current = GetComponent<BreakableObstacle>();
+        if (current == obstacle)
+            return;
+
+        if (obstacle != null)
+            obstacle.Broken -= HandleBroken;
+        obstacle = current;
+        if (obstacle != null)
+            obstacle.Broken += HandleBroken;
     }
 
     private void HandleBroken(BreakableObstacle broken)

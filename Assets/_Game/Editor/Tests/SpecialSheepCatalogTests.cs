@@ -325,6 +325,41 @@ public sealed class ProgressiveSheepSpawnerGroupTests
     }
 
     [Test]
+    public void BreakingConfiguredRewardChestSpawnsReservedSheepGroup()
+    {
+        GameObject spawnerObject = new("TestChestRewardSpawner");
+        GameObject chestObject = new("TestRewardChest");
+        SpecialSheepCatalog runtimeCatalog = UnityEngine.Object.Instantiate(
+            SpecialSheepCatalogEditorUtility.LoadOrCreateAndSynchronize());
+
+        try
+        {
+            ProgressiveSheepSpawner spawner = spawnerObject.AddComponent<ProgressiveSheepSpawner>();
+            SerializedObject serialized = new(spawner);
+            serialized.FindProperty("specialSheepCatalog").objectReferenceValue = runtimeCatalog;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            Assert.IsTrue(spawner.TryReserveRewardSpecialGroup(
+                _ => true,
+                out ProgressiveSheepSpawner.RewardSpecialGroupReservation reservation));
+
+            chestObject.AddComponent<BoxCollider2D>();
+            BreakableObstacle obstacle = chestObject.AddComponent<BreakableObstacle>();
+            obstacle.Configure(null, null);
+            LandmarkChestReward reward = chestObject.AddComponent<LandmarkChestReward>();
+            reward.Configure(spawner, reservation, 3, 3);
+
+            Assert.IsTrue(obstacle.Break());
+            Assert.AreEqual(3, spawner.TotalSpawned);
+        }
+        finally
+        {
+            UnityEngine.Object.DestroyImmediate(chestObject);
+            UnityEngine.Object.DestroyImmediate(spawnerObject);
+            UnityEngine.Object.DestroyImmediate(runtimeCatalog);
+        }
+    }
+
+    [Test]
     public void OneRollAppliesOneSpecialTypeToTheWholeGroupAndNextGroupUsesAnotherType()
     {
         GameObject flockObject = new("TestFlock");
