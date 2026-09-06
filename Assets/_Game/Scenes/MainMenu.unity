@@ -4903,6 +4903,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fad986c596de14d428c6df5135af908a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SceneLoader
+  illustrationIntroSceneName: IllustrationIntro
   gameplaySceneName: AlphaFlockExpansion
 --- !u!4 &1340102967
 Transform:
@@ -7356,7 +7357,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: b11b2ecf7ddf45268dbbe8f541e149aa, type: 3}
+  m_Sprite: {fileID: 4832765071241054722, guid: 2c435b80816107644a5213a2c303fff2, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -7920,7 +7921,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 37547591881767895, guid: 04d5c16ecd67d5a48ae3d9e92745e9ea, type: 3}
       propertyPath: m_SizeDelta.y
-      value: 700
+      value: 850.93
       objectReference: {fileID: 0}
     - target: {fileID: 37547591881767895, guid: 04d5c16ecd67d5a48ae3d9e92745e9ea, type: 3}
       propertyPath: m_LocalPosition.x
@@ -7952,11 +7953,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 37547591881767895, guid: 04d5c16ecd67d5a48ae3d9e92745e9ea, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 0
+      value: -1.3203512
       objectReference: {fileID: 0}
     - target: {fileID: 37547591881767895, guid: 04d5c16ecd67d5a48ae3d9e92745e9ea, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 0
+      value: -14.504196
       objectReference: {fileID: 0}
     - target: {fileID: 37547591881767895, guid: 04d5c16ecd67d5a48ae3d9e92745e9ea, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
