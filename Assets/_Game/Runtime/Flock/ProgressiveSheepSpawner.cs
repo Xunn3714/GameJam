@@ -7,6 +7,14 @@ using Random = UnityEngine.Random;
 public sealed class ProgressiveSheepSpawner : MonoBehaviour
 {
     private const float GoldenAngle = 2.39996323f;
+    private static readonly SheepQuality[] DebugQualityOrder =
+    {
+        SheepQuality.Green,
+        SheepQuality.Blue,
+        SheepQuality.Purple,
+        SheepQuality.Gold,
+        SheepQuality.EasterEgg,
+    };
 
     [Header("References")]
     [SerializeField] private FlockController flock;
@@ -225,6 +233,86 @@ public sealed class ProgressiveSheepSpawner : MonoBehaviour
             $"累计刷新 {TotalSpawned} 只。",
             this);
         return true;
+    }
+
+    /// <summary>
+    /// 调试用：在指定中心横向生成绿色、蓝色、紫色、金色和彩蛋羊各一只。
+    /// 首次触发时仍登记单局唯一状态；重复调试触发允许生成样本，但不会污染正式候选状态。
+    /// </summary>
+    public int SpawnDebugQualitySamples(Vector2 sampleCenter, float spacing = 2f)
+    {
+        if (!initialized)
+            Initialize();
+
+        RecruitableSheep prefab = specialSheepCatalog != null
+            ? specialSheepCatalog.BaseSheepPrefab
+            : null;
+        if (flock == null || prefab == null || random == null)
+        {
+            Debug.LogWarning("无法生成品质调试羊：刷新器缺少 Flock、Catalog 或基础羊 Prefab。", this);
+            return 0;
+        }
+
+        spacing = Mathf.Max(0.8f, spacing);
+        int spawned = 0;
+        for (int index = 0; index < DebugQualityOrder.Length; index++)
+        {
+            SheepQuality debugQuality = DebugQualityOrder[index];
+            if (!specialSheepCatalog.TryPickAvailable(
+                    debugQuality,
+                    random,
+                    specialRunState.IsAvailable,
+                    out SpecialSheepCatalog.Entry entry)
+                && !specialSheepCatalog.TryPickAvailable(
+                    debugQuality,
+                    random,
+                    null,
+                    out entry))
+            {
+                Debug.LogWarning($"品质 {debugQuality} 没有可生成的调试羊。", this);
+                continue;
+            }
+
+            groupSequence++;
+            Vector2 position = sampleCenter
+                + Vector2.right * ((index - (DebugQualityOrder.Length - 1) * 0.5f) * spacing);
+            List<RecruitableSheep> created = new(1);
+            if (!TryCreateGroupInstances(
+                    prefab,
+                    1,
+                    position,
+                    groupSequence,
+                    entry.TypeId,
+                    entry,
+                    debugQuality,
+                    created))
+            {
+                continue;
+            }
+
+            ActiveSpecialGroup activeGroup = null;
+            if (specialRunState.TryActivate(entry.TypeId))
+                activeGroup = new ActiveSpecialGroup(entry.TypeId);
+
+            foreach (RecruitableSheep sheep in created)
+            {
+                sheep.name = $"DebugSpecialSheep_{debugQuality}";
+                TotalSpawned++;
+                activeBatch.Add(sheep);
+                if (activeGroup != null)
+                {
+                    activeGroup.WildMembers.Add(sheep);
+                    specialGroupBySheep[sheep] = activeGroup;
+                }
+
+                SheepIdentity identity = sheep.GetComponent<SheepIdentity>();
+                SheepSpawned?.Invoke(identity.SheepTypeId, sheep);
+                spawned++;
+            }
+        }
+
+        Debug.Log($"品质调试生成完成：{spawned}/{DebugQualityOrder.Length} 只。", this);
+        return spawned;
     }
 
     private bool TryCreateGroupInstances(

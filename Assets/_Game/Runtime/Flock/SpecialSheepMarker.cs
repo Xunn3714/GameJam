@@ -42,13 +42,49 @@ public sealed class SpecialSheepMarker : MonoBehaviour
         identity ??= gameObject.AddComponent<SheepIdentity>();
         identity.AssignType(sheepTypeId);
 
+        // 特效初始化不能阻断特殊羊生成。这里只挂载轻量组件；粒子在获得时才创建。
+        try
+        {
+            SpecialSheepAcquisitionVfx.Ensure(gameObject);
+        }
+        catch (System.Exception exception)
+        {
+            Debug.LogException(exception, this);
+        }
+
         foreach (MonoBehaviour component in GetComponents<MonoBehaviour>())
-            if (component is ISpecialSheepFeature feature) feature.OnSpecialSheepSpawned(this);
+        {
+            if (component is not ISpecialSheepFeature feature)
+                continue;
+
+            try
+            {
+                feature.OnSpecialSheepSpawned(this);
+            }
+            catch (System.Exception exception)
+            {
+                // 单个表现或未来技能失效时，羊本身仍必须正常生成。
+                Debug.LogException(exception, component);
+            }
+        }
     }
 
     internal void NotifyRecruited(FlockController flock)
     {
         foreach (MonoBehaviour component in GetComponents<MonoBehaviour>())
-            if (component is ISpecialSheepFeature feature) feature.OnSpecialSheepRecruited(this, flock);
+        {
+            if (component is not ISpecialSheepFeature feature)
+                continue;
+
+            try
+            {
+                feature.OnSpecialSheepRecruited(this, flock);
+            }
+            catch (System.Exception exception)
+            {
+                // 招募已经提交，不允许表现层异常留下半完成的羊群状态。
+                Debug.LogException(exception, component);
+            }
+        }
     }
 }
