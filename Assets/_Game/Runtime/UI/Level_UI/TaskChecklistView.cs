@@ -19,6 +19,8 @@ public class TaskChecklistView : MonoBehaviour
     [SerializeField] private GameObject taskRow02;
     [SerializeField] private Image checkIcon02;
     [SerializeField] private TMP_Text progress02;
+    [Tooltip("留空会自动从 taskRow02 的子物体里找（除 progress02 外的第一个文本）。")]
+    [SerializeField] private TMP_Text taskTitle02;
 
     [SerializeField] private GameObject taskRow03;
     [SerializeField] private Image checkIcon03;
@@ -35,11 +37,25 @@ public class TaskChecklistView : MonoBehaviour
     [SerializeField] private Sprite uncheckedSprite;
     [SerializeField] private Sprite checkedSprite;
 
+    private const float AdditionalTaskRowHeight = 82f;
+    private const float MinimumProgressTextWidth = 96f;
+    private RectTransform panelRect;
+    private float singleTaskPanelHeight;
+
     private void Awake()
     {
+        panelRect = transform as RectTransform;
+        if (panelRect != null)
+            singleTaskPanelHeight = panelRect.sizeDelta.y;
+
         ApplyClearTypography(taskHeaderText);
         ApplyClearTypography(taskTitle01);
+        ApplyClearTypography(taskTitle02);
         ApplyClearTypography(progress01);
+        EnsureCounterIsFullyVisible(progress01);
+        EnsureCounterIsFullyVisible(progress02);
+        EnsureCounterIsFullyVisible(progress03);
+        EnsureCounterIsFullyVisible(progress04);
         ApplyClearTypography(groupCountText);
     }
 
@@ -56,6 +72,7 @@ public class TaskChecklistView : MonoBehaviour
         SetRowActive(taskRow02, checkIcon02, false);
         SetRowActive(taskRow03, checkIcon03, false);
         SetRowActive(taskRow04, checkIcon04, false);
+        ResizePanelForTaskCount(objectives != null ? objectives.Count : 0);
 
         if (taskTitle01 != null)
             taskTitle01.text = string.Empty;
@@ -79,6 +96,63 @@ public class TaskChecklistView : MonoBehaviour
             current.Target > 0
                 ? (float)current.Progress / current.Target
                 : current.IsComplete ? 1f : 0f);
+
+        // 第二行留给支线任务（例如宝通寺的「寻找？？」）。
+        if (objectives.Count < 2)
+            return;
+
+        MvpObjectiveSnapshot extra = objectives[1];
+        SetRowActive(taskRow02, checkIcon02, true);
+        ResolveTitle02();
+        if (taskTitle02 != null)
+            taskTitle02.text = extra.Title;
+        ApplyTask(checkIcon02, progress02, extra);
+    }
+
+    private void ResizePanelForTaskCount(int taskCount)
+    {
+        if (panelRect == null)
+            panelRect = transform as RectTransform;
+        if (panelRect == null)
+            return;
+
+        if (singleTaskPanelHeight <= 0f)
+            singleTaskPanelHeight = panelRect.sizeDelta.y;
+
+        int visibleTaskCount = Mathf.Clamp(taskCount, 1, 4);
+        Vector2 size = panelRect.sizeDelta;
+        size.y = singleTaskPanelHeight + AdditionalTaskRowHeight * (visibleTaskCount - 1);
+        panelRect.sizeDelta = size;
+    }
+
+    /// <summary>第二行的标题文本没在 Inspector 里连的话，自己从行里找一个。</summary>
+    private void ResolveTitle02()
+    {
+        if (taskTitle02 != null || taskRow02 == null)
+            return;
+
+        foreach (TMP_Text candidate in taskRow02.GetComponentsInChildren<TMP_Text>(true))
+        {
+            if (candidate == progress02)
+                continue;
+
+            taskTitle02 = candidate;
+            ApplyClearTypography(taskTitle02);
+            return;
+        }
+    }
+
+    private static void EnsureCounterIsFullyVisible(TMP_Text counter)
+    {
+        if (counter == null)
+            return;
+
+        RectTransform rect = counter.rectTransform;
+        Vector2 size = rect.sizeDelta;
+        size.x = Mathf.Max(size.x, MinimumProgressTextWidth);
+        rect.sizeDelta = size;
+        counter.enableWordWrapping = false;
+        counter.overflowMode = TextOverflowModes.Overflow;
     }
 
 

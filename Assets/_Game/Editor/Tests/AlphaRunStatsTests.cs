@@ -71,4 +71,15 @@ public sealed class AlphaRunStatsTests
         StringAssert.Contains("普通羊 1", report);
         StringAssert.Contains("被狼抓走（0）：无", report);
     }
+
+    [Test]
+    public void TrueEndingHighlightsUseHoleAreaAndMuYieldFormula()
+    {
+        AlphaRunStats stats = new AlphaRunStats();
+        stats.RecordTrueEnding(150);
+
+        Assert.That(AlphaRunStats.CaitaiJinPerSheep, Is.EqualTo(0.9f).Within(0.0001f));
+        Assert.That(stats.BuildTrueEndingHighlights(), Is.EqualTo(
+            "踩出了 300 平方米的大洞\n找到了 135 斤的美味洪山菜薹"));
+    }
 }

@@ -43,10 +43,11 @@ public class ResultPanelView : MonoBehaviour
         int score,
         int recruited,
         int lost,
-        float elapsedSeconds)
+        float elapsedSeconds,
+        string title = "冲出草原！")
     {
         ShowResult(
-            "冲出草原！",
+            title,
             description,
             currentSheep,
             score,
