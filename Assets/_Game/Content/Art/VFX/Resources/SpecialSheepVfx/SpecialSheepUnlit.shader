@@ -18,7 +18,7 @@ Shader "GameJam/SpecialSheepUnlit"
         Pass
         {
             Name "SpecialSheepUnlit"
-            Tags { "LightMode" = "UniversalForward" }
+            Tags { "LightMode" = "Universal2D" }
             Blend SrcAlpha OneMinusSrcAlpha
             Cull Off
             ZWrite Off
