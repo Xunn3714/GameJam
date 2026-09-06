@@ -620,6 +620,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         if (stage == null)
             return;
 
+        sheepSpawner?.SetCurrentBatchRange(stage.MinimumBatchSize, stage.MaximumBatchSize);
         cameraFollow?.SetOrthographicSize(stage.CameraSize, immediateCamera);
 
         float baseCameraSize = stages[0] != null ? stages[0].CameraSize : stage.CameraSize;

@@ -325,7 +325,7 @@ public sealed class ProgressiveSheepSpawnerGroupTests
     }
 
     [Test]
-    public void BreakingConfiguredRewardChestSpawnsReservedSheepGroup()
+    public void BreakingConfiguredRewardChestUsesCurrentSpawnBatchRange()
     {
         GameObject spawnerObject = new("TestChestRewardSpawner");
         GameObject chestObject = new("TestRewardChest");
@@ -341,15 +341,16 @@ public sealed class ProgressiveSheepSpawnerGroupTests
             Assert.IsTrue(spawner.TryReserveRewardSpecialGroup(
                 _ => true,
                 out ProgressiveSheepSpawner.RewardSpecialGroupReservation reservation));
+            spawner.SetCurrentBatchRange(6, 6);
 
             chestObject.AddComponent<BoxCollider2D>();
             BreakableObstacle obstacle = chestObject.AddComponent<BreakableObstacle>();
             obstacle.Configure(null, null);
             LandmarkChestReward reward = chestObject.AddComponent<LandmarkChestReward>();
-            reward.Configure(spawner, reservation, 3, 3);
+            reward.Configure(spawner, reservation);
 
             Assert.IsTrue(obstacle.Break());
-            Assert.AreEqual(3, spawner.TotalSpawned);
+            Assert.AreEqual(6, spawner.TotalSpawned);
         }
         finally
         {

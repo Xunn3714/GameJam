@@ -43,10 +43,6 @@ public sealed class WorldLandmarkSpawner : MonoBehaviour
     [SerializeField] private Vector2 redChestColliderOffset = new(0.06f, 0.36f);
     [Tooltip("摆放红箱子时与其他地标 / 已有碰撞体的最小间距。")]
     [SerializeField, Min(0.5f)] private float redChestClearance = 6f;
-    [Tooltip("每个奖励箱摔碎后掉落的彩色、紫色或金色羊的最少数量。")]
-    [SerializeField, Min(1)] private int rewardSheepMinimum = 3;
-    [Tooltip("每个奖励箱摔碎后掉落的彩色、紫色或金色羊的最多数量。")]
-    [SerializeField, Min(1)] private int rewardSheepMaximum = 5;
 
     [Header("House")]
     [SerializeField, Min(0.001f)] private float houseScale = 1.25f;
@@ -103,11 +99,7 @@ public sealed class WorldLandmarkSpawner : MonoBehaviour
                 }
 
                 LandmarkChestReward reward = rewardChest.AddComponent<LandmarkChestReward>();
-                reward.Configure(
-                    sheepSpawner,
-                    reservation,
-                    rewardSheepMinimum,
-                    rewardSheepMaximum);
+                reward.Configure(sheepSpawner, reservation);
                 configuredRewardChests++;
             }
         }
@@ -335,19 +327,13 @@ public sealed class LandmarkChestReward : MonoBehaviour
     private ProgressiveSheepSpawner.RewardSpecialGroupReservation reservation;
     private BreakableObstacle obstacle;
     private bool rewarded;
-    private int minimumCount = 3;
-    private int maximumCount = 5;
 
     public void Configure(
         ProgressiveSheepSpawner spawner,
-        ProgressiveSheepSpawner.RewardSpecialGroupReservation rewardReservation,
-        int minimum,
-        int maximum)
+        ProgressiveSheepSpawner.RewardSpecialGroupReservation rewardReservation)
     {
         sheepSpawner = spawner;
         reservation = rewardReservation;
-        minimumCount = Mathf.Max(1, minimum);
-        maximumCount = Mathf.Max(minimumCount, maximum);
         EnsureObstacleSubscription();
     }
 
@@ -379,11 +365,9 @@ public sealed class LandmarkChestReward : MonoBehaviour
         if (rewarded || broken != obstacle)
             return;
         rewarded = true;
-        // 3~5 只同一种彩色、紫色或金色羊，成簇落在箱子旁边。
+        // 同一种彩色、紫色或金色羊，数量沿用撞碎时当前成长阶段的普通刷新批次范围。
         sheepSpawner?.TrySpawnRewardSpecialGroup(
             reservation,
-            (Vector2)transform.position + Vector2.right * 2f,
-            minimumCount,
-            maximumCount);
+            (Vector2)transform.position + Vector2.right * 2f);
     }
 }

@@ -43,6 +43,8 @@ public sealed class ProgressiveSheepSpawner : MonoBehaviour
     private System.Random random;
     private int fallbackNameIndex = 1;
     private int groupSequence;
+    private int currentMinimumBatchSize = 1;
+    private int currentMaximumBatchSize = 1;
     private float spawnAngleOffset;
     private bool initialized;
 
@@ -126,6 +128,13 @@ public sealed class ProgressiveSheepSpawner : MonoBehaviour
         spawnAreaSize = area.size;
     }
 
+    /// <summary>同步当前成长阶段的普通刷新批次范围，奖励刷新也复用这一策略。</summary>
+    public void SetCurrentBatchRange(int minimumCount, int maximumCount)
+    {
+        currentMinimumBatchSize = Mathf.Max(1, minimumCount);
+        currentMaximumBatchSize = Mathf.Max(currentMinimumBatchSize, maximumCount);
+    }
+
     public void Initialize()
     {
         if (initialized)
@@ -149,6 +158,8 @@ public sealed class ProgressiveSheepSpawner : MonoBehaviour
         if (!initialized)
             Initialize();
 
+        SetCurrentBatchRange(minimumCount, maximumCount);
+
         RecruitableSheep prefab = specialSheepCatalog != null
             ? specialSheepCatalog.BaseSheepPrefab
             : null;
@@ -158,9 +169,7 @@ public sealed class ProgressiveSheepSpawner : MonoBehaviour
             return false;
         }
 
-        minimumCount = Mathf.Max(1, minimumCount);
-        maximumCount = Mathf.Max(minimumCount, maximumCount);
-        int count = random.Next(minimumCount, maximumCount + 1);
+        int count = RollCurrentBatchSize();
 
         if (!TryFindClusterCenter(count, out Vector2 clusterCenter))
         {
@@ -330,12 +339,10 @@ public sealed class ProgressiveSheepSpawner : MonoBehaviour
         return false;
     }
 
-    /// <summary>在指定位置生成已经预留的特殊羊组。每份预留只能消费一次。</summary>
+    /// <summary>按当前普通刷新批次范围，在指定位置生成已经预留的特殊羊组。每份预留只能消费一次。</summary>
     public bool TrySpawnRewardSpecialGroup(
         RewardSpecialGroupReservation reservation,
-        Vector2 center,
-        int minimumCount = 1,
-        int maximumCount = 3)
+        Vector2 center)
     {
         if (!initialized)
             Initialize();
@@ -350,7 +357,7 @@ public sealed class ProgressiveSheepSpawner : MonoBehaviour
         reservation.Consumed = true;
         SpecialSheepCatalog.Entry entry = reservation.CatalogEntry;
 
-        int count = random.Next(Mathf.Max(1, minimumCount), Mathf.Max(minimumCount, maximumCount) + 1);
+        int count = RollCurrentBatchSize();
         groupSequence++;
         List<RecruitableSheep> created = new(count);
         if (!TryCreateGroupInstances(
@@ -381,6 +388,11 @@ public sealed class ProgressiveSheepSpawner : MonoBehaviour
 
         Debug.Log($"红箱子奖励了 {count} 只{entry.DisplayName}。", this);
         return true;
+    }
+
+    private int RollCurrentBatchSize()
+    {
+        return random.Next(currentMinimumBatchSize, currentMaximumBatchSize + 1);
     }
 
     private bool TryCreateGroupInstances(
