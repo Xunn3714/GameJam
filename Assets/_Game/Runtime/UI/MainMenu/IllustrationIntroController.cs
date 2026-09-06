@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -16,6 +17,9 @@ public class IllustrationIntroController : MonoBehaviour
     [Header("Illustration")]
     [SerializeField]
     private string illustrationResourcePath = "IllustrationIntro/StoryTriptych";
+
+    [SerializeField, Range(0.5f, 1f)]
+    private float illustrationScale = 0.82f;
 
     [Header("Continue UI")]
     [SerializeField] private GameObject continueHint;
@@ -64,16 +68,17 @@ public class IllustrationIntroController : MonoBehaviour
         if (continueButton != null)
             continueButton.SetActive(false);
 
-        if (fadeImage != null)
-        {
-            fadeImage.gameObject.SetActive(true);
+        PrepareFadeOverlay();
+    }
 
-            Color color = fadeImage.color;
-            color.a = 0f;
-            fadeImage.color = color;
 
-            fadeImage.raycastTarget = false;
-        }
+    private IEnumerator Start()
+    {
+        if (fadeImage == null)
+            yield break;
+
+        yield return FadeImageAlpha(fadeImage, 1f, 0f, sceneFadeDuration);
+        SetInputLocked(false);
     }
 
 
@@ -172,7 +177,7 @@ public class IllustrationIntroController : MonoBehaviour
         if (fragment == null)
             yield break;
 
-        isAnimating = true;
+        SetInputLocked(true);
 
         fragment.SetActive(true);
 
@@ -181,25 +186,13 @@ public class IllustrationIntroController : MonoBehaviour
 
         canvasGroup.alpha = 0f;
 
-        float timer = 0f;
+        yield return FadeCanvasGroup(
+            canvasGroup,
+            0f,
+            1f,
+            fragmentFadeDuration);
 
-        while (timer < fragmentFadeDuration)
-        {
-            timer += Time.unscaledDeltaTime;
-
-            float t =
-                Mathf.Clamp01(
-                    timer / fragmentFadeDuration
-                );
-
-            canvasGroup.alpha = t;
-
-            yield return null;
-        }
-
-        canvasGroup.alpha = 1f;
-
-        isAnimating = false;
+        SetInputLocked(false);
     }
 
 
@@ -208,7 +201,7 @@ public class IllustrationIntroController : MonoBehaviour
         if (fragment03 == null)
             yield break;
 
-        isAnimating = true;
+        SetInputLocked(true);
 
         fragment03.SetActive(true);
 
@@ -217,28 +210,16 @@ public class IllustrationIntroController : MonoBehaviour
 
         canvasGroup.alpha = 0f;
 
-        float timer = 0f;
-
-        while (timer < fragmentFadeDuration)
-        {
-            timer += Time.unscaledDeltaTime;
-
-            float t =
-                Mathf.Clamp01(
-                    timer / fragmentFadeDuration
-                );
-
-            canvasGroup.alpha = t;
-
-            yield return null;
-        }
-
-        canvasGroup.alpha = 1f;
+        yield return FadeCanvasGroup(
+            canvasGroup,
+            0f,
+            1f,
+            fragmentFadeDuration);
 
 
         // 第三块出现后短暂锁输入，
         // 防止玩家连续点击直接进入游戏。
-        timer = 0f;
+        float timer = 0f;
 
         while (timer < completeLockDuration)
         {
@@ -247,15 +228,30 @@ public class IllustrationIntroController : MonoBehaviour
         }
 
 
-        if (continueHint != null)
-            continueHint.SetActive(true);
+        CanvasGroup hintGroup = ShowForFade(continueHint);
+        CanvasGroup buttonGroup = ShowForFade(continueButton);
 
-        if (continueButton != null)
-            continueButton.SetActive(true);
+        float promptFadeDuration = Mathf.Max(0.15f, fragmentFadeDuration * 0.75f);
+        timer = 0f;
 
+        while (timer < promptFadeDuration)
+        {
+            timer += Time.unscaledDeltaTime;
+            float t = SmoothProgress(timer, promptFadeDuration);
 
+            if (hintGroup != null)
+                hintGroup.alpha = t;
+
+            if (buttonGroup != null)
+                buttonGroup.alpha = t;
+
+            yield return null;
+        }
+
+        SetCanvasGroupReady(hintGroup);
+        SetCanvasGroupReady(buttonGroup);
         canEnterGame = true;
-        isAnimating = false;
+        SetInputLocked(false);
     }
 
 
@@ -269,58 +265,44 @@ public class IllustrationIntroController : MonoBehaviour
             yield break;
 
         isLoadingGame = true;
+        SetInputLocked(true);
 
+        Action loadGame;
 
-        // 淡黑
-        if (fadeImage != null)
-        {
-            fadeImage.raycastTarget = true;
-
-            float timer = 0f;
-
-            Color color =
-                fadeImage.color;
-
-            while (timer < sceneFadeDuration)
-            {
-                timer += Time.unscaledDeltaTime;
-
-                float t =
-                    Mathf.Clamp01(
-                        timer / sceneFadeDuration
-                    );
-
-                color.a = t;
-                fadeImage.color = color;
-
-                yield return null;
-            }
-
-            color.a = 1f;
-            fadeImage.color = color;
-        }
-
-
-        // 使用项目现有 SceneLoader
+        // 使用项目现有 SceneLoader，并让渐变遮罩跨场景保留。
         if (SceneLoader.Instance != null)
-        {
-            SceneLoader.Instance.LoadGameplayScene();
-            yield break;
-        }
+            loadGame = SceneLoader.Instance.LoadGameplayScene;
+        else
+            loadGame = LoadFallbackGameplayScene;
 
+        if (SceneFadeTransition.Begin(loadGame, sceneFadeDuration))
+            yield break;
+
+        Debug.LogError(
+            "IllustrationIntroController: unable to start the gameplay scene transition.",
+            this);
+
+        isLoadingGame = false;
+        SetInputLocked(false);
+    }
+
+
+    private void LoadFallbackGameplayScene()
+    {
         const string fallbackSceneName = "AlphaFlockExpansion";
 
         if (Application.CanStreamedLevelBeLoaded(fallbackSceneName))
         {
             SceneManager.LoadScene(fallbackSceneName);
-            yield break;
+            return;
         }
 
         Debug.LogError(
             $"IllustrationIntroController: SceneLoader is missing and fallback scene {fallbackSceneName} cannot be loaded.",
             this);
 
-        isLoadingGame = false;
+        throw new InvalidOperationException(
+            $"Fallback scene {fallbackSceneName} cannot be loaded.");
     }
 
 
@@ -359,8 +341,10 @@ public class IllustrationIntroController : MonoBehaviour
         }
 
         RectTransform artworkRect = artwork.GetComponent<RectTransform>();
-        artworkRect.anchorMin = Vector2.zero;
-        artworkRect.anchorMax = Vector2.one;
+        float clampedScale = Mathf.Clamp(illustrationScale, 0.5f, 1f);
+        float inset = (1f - clampedScale) * 0.5f;
+        artworkRect.anchorMin = new Vector2(inset, inset);
+        artworkRect.anchorMax = new Vector2(1f - inset, 1f - inset);
         artworkRect.anchoredPosition = Vector2.zero;
         artworkRect.sizeDelta = Vector2.zero;
 
@@ -397,5 +381,107 @@ public class IllustrationIntroController : MonoBehaviour
         }
 
         return canvasGroup;
+    }
+
+
+    private void PrepareFadeOverlay()
+    {
+        if (fadeImage == null)
+            return;
+
+        fadeImage.gameObject.SetActive(true);
+        SetImageAlpha(fadeImage, 1f);
+        SetInputLocked(true);
+    }
+
+
+    private void SetInputLocked(bool locked)
+    {
+        isAnimating = locked;
+
+        if (fadeImage != null)
+            fadeImage.raycastTarget = locked;
+    }
+
+
+    private IEnumerator FadeImageAlpha(
+        Image image,
+        float from,
+        float to,
+        float duration)
+    {
+        float timer = 0f;
+        SetImageAlpha(image, from);
+
+        while (timer < duration)
+        {
+            timer += Time.unscaledDeltaTime;
+            SetImageAlpha(image, Mathf.Lerp(from, to, SmoothProgress(timer, duration)));
+            yield return null;
+        }
+
+        SetImageAlpha(image, to);
+    }
+
+
+    private IEnumerator FadeCanvasGroup(
+        CanvasGroup canvasGroup,
+        float from,
+        float to,
+        float duration)
+    {
+        float timer = 0f;
+        canvasGroup.alpha = from;
+
+        while (timer < duration)
+        {
+            timer += Time.unscaledDeltaTime;
+            canvasGroup.alpha = Mathf.Lerp(from, to, SmoothProgress(timer, duration));
+            yield return null;
+        }
+
+        canvasGroup.alpha = to;
+    }
+
+
+    private CanvasGroup ShowForFade(GameObject target)
+    {
+        if (target == null)
+            return null;
+
+        CanvasGroup canvasGroup = GetOrAddCanvasGroup(target);
+        canvasGroup.alpha = 0f;
+        canvasGroup.interactable = false;
+        canvasGroup.blocksRaycasts = false;
+        target.SetActive(true);
+        return canvasGroup;
+    }
+
+
+    private static void SetCanvasGroupReady(CanvasGroup canvasGroup)
+    {
+        if (canvasGroup == null)
+            return;
+
+        canvasGroup.alpha = 1f;
+        canvasGroup.interactable = true;
+        canvasGroup.blocksRaycasts = true;
+    }
+
+
+    private static float SmoothProgress(float elapsed, float duration)
+    {
+        if (duration <= 0f)
+            return 1f;
+
+        return Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / duration));
+    }
+
+
+    private static void SetImageAlpha(Image image, float alpha)
+    {
+        Color color = image.color;
+        color.a = alpha;
+        image.color = color;
     }
 }
