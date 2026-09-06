@@ -9,7 +9,7 @@ public class TaskPanelToggle : MonoBehaviour
     [SerializeField] private Button closeButton;
 
     [Header("Initial State")]
-    [SerializeField] private bool openOnStart = false;
+    [SerializeField] private bool openOnStart = true;
 
 
     /// 当前任务面板是否打开。
