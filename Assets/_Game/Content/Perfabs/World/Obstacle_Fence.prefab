@@ -279,4 +279,5 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BreakableObstacleAudio
   breakClip: {fileID: 8300000, guid: 6401a012d552b1f46bca0eb0aed4328b, type: 3}
-  volumeScale: 0.35
+  randomBreakClips: []
+  volumeScale: 1

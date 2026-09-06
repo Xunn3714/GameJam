@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 [DisallowMultipleComponent]
@@ -10,8 +11,10 @@ public sealed class RecruitableSheep : MonoBehaviour
     private CircleCollider2D recruitTrigger;
     private WildSheepWander wildWander;
     private float recruitLockedUntil;
+    private bool isReturningRecruit;
 
     public bool IsRecruited { get; private set; }
+    public static event Action<RecruitableSheep, bool> AnyRecruited;
 
     public void ConfigureSprite(Sprite sprite)
     {
@@ -88,6 +91,7 @@ public sealed class RecruitableSheep : MonoBehaviour
     internal void ReleaseForRecruitment(float lockoutSeconds, Color colorOnRecruitment)
     {
         IsRecruited = false;
+        isReturningRecruit = true;
         recruitLockedUntil = Time.time + Mathf.Max(0f, lockoutSeconds);
         recruitedColor = colorOnRecruitment;
         wildWander?.SetRecruited(false);
@@ -108,6 +112,9 @@ public sealed class RecruitableSheep : MonoBehaviour
         wildWander?.SetRecruited(true);
         if (spriteRenderer != null) spriteRenderer.color = recruitedColor;
         GetComponent<SpecialSheepMarker>()?.NotifyRecruited(flock);
+        bool wasReturning = isReturningRecruit;
+        isReturningRecruit = false;
+        AnyRecruited?.Invoke(this, wasReturning);
         Debug.Log($"{name} joined the flock.", this);
     }
 
