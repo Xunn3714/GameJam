@@ -664,11 +664,18 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
             ResultPanelView panel = Instantiate(resultPanelPrefab, uiCanvas.transform);
             panel.transform.SetAsLastSibling();
             panel.ReturnTitleRequested += ReturnToTitle;
-            string panelDescription = description + "\n" + report + "\n按 R 再来一局";
+            string journeyMessage = victory
+                ? $"你带着 {flock.MemberCount} 只羊，\n一起走出了草原。"
+                : "这次的旅程，暂时停在这里。\n下一次，再和伙伴们一起出发。";
+            string panelDescription = "<b>一路同行</b>\n\n" + journeyMessage
+                + $"\n\n招募羊种：{stats.RecruitedByType.Count} 种"
+                + $"\n同行羊种：{stats.CurrentComposition.Count} 种"
+                + "\n\n每一次相遇，都让旅程更有意义。\n<size=80%>按 R 再来一局</size>";
             if (victory)
                 panel.ShowVictory(panelDescription, flock.MemberCount, stats.HighestFlockSize, stats.TotalRecruited, stats.TotalTaken, stats.SurvivalSeconds, victoryTitle);
             else
                 panel.ShowDefeat(panelDescription, 0, stats.HighestFlockSize, stats.TotalRecruited, stats.TotalTaken, stats.SurvivalSeconds);
+            panel.StyleJourneySummary();
             resultPanelShown = true;
         }
         else if (resultView != null)
