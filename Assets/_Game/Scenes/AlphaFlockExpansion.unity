@@ -8217,6 +8217,7 @@ GameObject:
   - component: {fileID: 641395443}
   - component: {fileID: 641395441}
   - component: {fileID: 641395446}
+  - component: {fileID: 641395447}
   m_Layer: 0
   m_Name: SheepFlock
   m_TagString: Untagged
@@ -8393,15 +8394,29 @@ MonoBehaviour:
   - {fileID: 8300000, guid: c599b8292fd981b46a88c83fab0c9e58, type: 3}
   - {fileID: 8300000, guid: f98327f259a53754ba4d0639c59a3c78, type: 3}
   - {fileID: 8300000, guid: a477ebf0420865a4cb4b356901a1adb7, type: 3}
-  sandClips:
-  - {fileID: 8300000, guid: 0ccc4ab642f754a418e5d7fcf10ebf06, type: 3}
-  - {fileID: 8300000, guid: 9c76f77e43fbae14d9a4778cc3eb9665, type: 3}
-  - {fileID: 8300000, guid: 7a8a6ea68d686204499f51b00fbbfbf6, type: 3}
-  - {fileID: 8300000, guid: 394a50978f4d1a942b781f2f111a7cdf, type: 3}
-  - {fileID: 8300000, guid: 4d34a067464494441b37615c16390c65, type: 3}
-  - {fileID: 8300000, guid: 368b45e6c8264944c89c18e8d37ce806, type: 3}
-  grassChance: 0.7
-  playInterval: 0.35
+  playInterval: 0.3
+--- !u!114 &641395447
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 641395439}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7bce1d9e8032a54458867204da18bc02, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SheepRecruitAudio
+  tutorialPen: {fileID: 1630478214}
+  sheepClips:
+  - {fileID: 8300000, guid: b59169a9551b5d24ea194b3aaabb0554, type: 3}
+  - {fileID: 8300000, guid: 39f941faa41f0ac42acc4273452ca7bb, type: 3}
+  - {fileID: 8300000, guid: c868deb329e88b9449830c5061f79c2d, type: 3}
+  - {fileID: 8300000, guid: 0e3b81c678f2fb6429b4f2fd08842cde, type: 3}
+  - {fileID: 8300000, guid: ca00fb9fd9ab50d47817802100e4f583, type: 3}
+  - {fileID: 8300000, guid: b6f119997d3139e439ae29d01617cbbc, type: 3}
+  - {fileID: 8300000, guid: d33e8c21b8ac8234ea8b097d212b1b3b, type: 3}
+  recruitBleatChance: 0.5
 --- !u!1001 &647769144
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -28573,8 +28588,8 @@ MonoBehaviour:
   - {fileID: 8300000, guid: 577465da805ccc944828116cc847d115, type: 3}
   captureClip: {fileID: 8300000, guid: 34662600ad17b494d8c1582a55ae6877, type: 3}
   spawnVolume: 1
-  attackVolume: 1
-  captureVolume: 1
+  attackVolume: 0.75
+  captureVolume: 0.8
 --- !u!1001 &2111189230
 PrefabInstance:
   m_ObjectHideFlags: 0

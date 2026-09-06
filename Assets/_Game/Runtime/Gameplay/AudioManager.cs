@@ -133,6 +133,6 @@ public class AudioManager : MonoBehaviour
             sfxSource.volume = masterVolume * sfxVolume;
 
         if (sheepSource != null)
-            sheepSource.volume = masterVolume * sheepVolume;
+            sheepSource.volume = masterVolume * sfxVolume;
     }
 }

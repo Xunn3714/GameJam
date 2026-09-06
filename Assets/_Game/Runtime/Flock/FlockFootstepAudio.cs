@@ -6,11 +6,9 @@ public sealed class FlockFootstepAudio : MonoBehaviour
 {
     [Header("Footstep Clips")]
     [SerializeField] private AudioClip[] grassClips;
-    [SerializeField] private AudioClip[] sandClips;
 
     [Header("Footstep Settings")]
-    [SerializeField, Range(0f, 1f)] private float grassChance = 0.7f;
-    [SerializeField, Min(0.05f)] private float playInterval = 0.35f;
+    [SerializeField, Min(0.05f)] private float playInterval = 0.3f;
 
     private FlockMovementController movementController;
     private float timer;
@@ -20,11 +18,11 @@ public sealed class FlockFootstepAudio : MonoBehaviour
         movementController = GetComponent<FlockMovementController>();
     }
 
-    public void Configure(AudioClip[] grass, AudioClip[] sand, float grassWeight = 0.7f, float interval = 0.35f)
+    public void Configure(AudioClip[] grass, AudioClip[] sand, float grassWeight = 0.7f, float interval = 0.3f)
     {
+        // Keep the old interface for compatibility with existing setup code.
+        // Sand and grassWeight are no longer used because footsteps are now 100% grass.
         grassClips = grass;
-        sandClips = sand;
-        grassChance = Mathf.Clamp01(grassWeight);
         playInterval = Mathf.Max(0.05f, interval);
     }
 
@@ -44,25 +42,13 @@ public sealed class FlockFootstepAudio : MonoBehaviour
 
     private void PlayRandomFootstep()
     {
-        AudioClip clip;
+        AudioClip clip = GetRandomClip(grassClips);
 
-        if (Random.value < grassChance)
-        {
-            clip = GetRandomClip(grassClips);
-
-            if (clip == null)
-                clip = GetRandomClip(sandClips);
-        }
-        else
-        {
-            clip = GetRandomClip(sandClips);
-
-            if (clip == null)
-                clip = GetRandomClip(grassClips);
-        }
-
+        // Use the project's existing AudioManager and SFX channel.
         if (clip != null && AudioManager.Instance != null)
+        {
             AudioManager.Instance.PlaySFX(clip);
+        }
     }
 
     private static AudioClip GetRandomClip(AudioClip[] clips)
