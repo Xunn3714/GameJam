@@ -475,16 +475,6 @@ public class SheepCollectionManager : MonoBehaviour
                                 ? $"一只独特的{entry.DisplayName}。"
                                 : entry.CodexDescription,
 
-                        abilityName =
-                            string.IsNullOrWhiteSpace(effect)
-                                ? "外观特征"
-                                : "特殊效果",
-
-                        abilityDescription =
-                            string.IsNullOrWhiteSpace(effect)
-                                ? "暂无额外能力说明。"
-                                : effect,
-
                         order =
                             order++
                     }
