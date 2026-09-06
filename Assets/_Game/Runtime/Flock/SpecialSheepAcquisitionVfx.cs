@@ -79,7 +79,8 @@ public sealed class SpecialSheepAcquisitionVfx : MonoBehaviour, ISpecialSheepFea
         qualityColor = GetQualityColor(quality);
         // 野生羊阶段只记录品质，不创建渲染节点。这样特效完全不会影响生成成功与否，
         // 也避免为尚未获得、可能被距离系统回收的羊分配粒子系统与材质。
-        sourceRenderer ??= GetComponent<SpriteRenderer>();
+        if (sourceRenderer == null)
+            sourceRenderer = GetComponent<SpriteRenderer>();
     }
 
     public void OnSpecialSheepRecruited(SpecialSheepMarker sheep, FlockController flock)
@@ -165,20 +166,29 @@ public sealed class SpecialSheepAcquisitionVfx : MonoBehaviour, ISpecialSheepFea
 
     private void EnsureVisuals()
     {
-        sourceRenderer ??= GetComponent<SpriteRenderer>();
-        sourceRenderer ??= GetComponentInChildren<SpriteRenderer>();
+        if (sourceRenderer == null)
+            sourceRenderer = GetComponent<SpriteRenderer>();
+        if (sourceRenderer == null)
+            sourceRenderer = GetComponentInChildren<SpriteRenderer>();
         if (sourceRenderer == null)
             return;
 
-        outerGlow ??= CreateGlowRenderer(OuterGlowName);
-        innerGlow ??= CreateGlowRenderer(InnerGlowName);
+        if (outerGlow == null)
+            outerGlow = CreateGlowRenderer(OuterGlowName);
+        if (innerGlow == null)
+            innerGlow = CreateGlowRenderer(InnerGlowName);
         Material particleMaterial = GetParticleMaterial(out Sprite[] particleSprites);
         float sizeMultiplier = particleSprites != null ? 3.2f : 1f;
-        acquisitionBurstParticles ??= CreateAcquisitionBurstParticles(
-            particleMaterial,
-            particleSprites,
-            sizeMultiplier);
-        trailParticles ??= CreateTrailParticles(particleMaterial, particleSprites, sizeMultiplier);
+        if (acquisitionBurstParticles == null)
+        {
+            acquisitionBurstParticles = CreateAcquisitionBurstParticles(
+                particleMaterial,
+                particleSprites,
+                sizeMultiplier);
+        }
+
+        if (trailParticles == null)
+            trailParticles = CreateTrailParticles(particleMaterial, particleSprites, sizeMultiplier);
 
         if ((quality == SheepQuality.Gold || quality == SheepQuality.EasterEgg)
             && premiumParticles == null)
@@ -198,7 +208,15 @@ public sealed class SpecialSheepAcquisitionVfx : MonoBehaviour, ISpecialSheepFea
         glowObject.transform.SetParent(sourceRenderer.transform, false);
 
         SpriteRenderer renderer = glowObject.GetComponent<SpriteRenderer>();
-        renderer ??= glowObject.AddComponent<SpriteRenderer>();
+        if (renderer == null)
+            renderer = glowObject.AddComponent<SpriteRenderer>();
+        if (renderer == null)
+        {
+            Debug.LogWarning($"无法为 {objectName} 创建 SpriteRenderer。", glowObject);
+            glowObject.SetActive(false);
+            return null;
+        }
+
         renderer.enabled = true;
         glowObject.SetActive(false);
         return renderer;
@@ -348,7 +366,8 @@ public sealed class SpecialSheepAcquisitionVfx : MonoBehaviour, ISpecialSheepFea
         particleObject.transform.SetParent(transform, false);
 
         ParticleSystem particles = particleObject.GetComponent<ParticleSystem>();
-        particles ??= particleObject.AddComponent<ParticleSystem>();
+        if (particles == null)
+            particles = particleObject.AddComponent<ParticleSystem>();
         ParticleSystem.MainModule main = particles.main;
         main.playOnAwake = false;
         main.prewarm = false;
