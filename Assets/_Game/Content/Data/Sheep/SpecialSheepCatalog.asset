@@ -507,6 +507,16 @@ MonoBehaviour:
       gameplayEffectDescription: 
       unlockHint: 
       spawnEnabled: 1
+    - assetGuid: c32e825537e9091478418bf505d47057
+      typeId: sheep.special.c32e825537e9091478418bf505d47057
+      lastImportedFileName: "\u96EA\u5730\u7F8A"
+      displayName: "\u96EA\u5730\u7F8A"
+      sprite: {fileID: 21300000, guid: c32e825537e9091478418bf505d47057, type: 3}
+      codexDescription: "\u4E00\u53EA\u72EC\u7279\u7684\u96EA\u5730\u7F8A\u3002"
+      visualEffectDescription: 
+      gameplayEffectDescription: 
+      unlockHint: 
+      spawnEnabled: 1
     - assetGuid: ec234c28a34f61a49974e6317f014790
       typeId: sheep.special.ec234c28a34f61a49974e6317f014790
       lastImportedFileName: "\u81ED\u81ED\u7F8A"
