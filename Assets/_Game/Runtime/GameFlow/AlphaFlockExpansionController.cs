@@ -89,7 +89,6 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     private bool wolvesAnnounced;
     private bool initialized;
     private bool ended;
-    private bool showStatsOverlay;
     private bool penOpened;
     private bool borderBroken;
     private bool escaped;
@@ -227,11 +226,6 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     {
         if (!initialized)
             return;
-
-        // Tab：切换左下角的按类型统计面板（游玩中的统计入口）。
-        Keyboard keyboard = Keyboard.current;
-        if (keyboard != null && keyboard.tabKey.wasPressedThisFrame)
-            showStatsOverlay = !showStatsOverlay;
 
         if (ended)
             return;
@@ -664,9 +658,6 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         if (progression == null)
             return;
 
-        if (showStatsOverlay && stats != null)
-            DrawStatsOverlay();
-
         if (!showDebugHud)
             return;
 
@@ -718,7 +709,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
                 labelStyle);
         }
         GUILayout.Label(exitLine, labelStyle);
-        GUILayout.Label("WASD 移动 · E 整群后退蓄势冲刺 · Q 收拢 · Tab 统计", labelStyle);
+        GUILayout.Label("WASD 移动 · E 整群后退蓄势冲刺 · Q 收拢", labelStyle);
         GUILayout.EndArea();
     }
 
