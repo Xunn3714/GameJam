@@ -15,7 +15,7 @@ using UnityEngine.UI;
 public static class UiVisualPolish
 {
     private const string MainMenuScenePath = "Assets/_Game/Scenes/MainMenu.unity";
-    private const string MainMenuBgmPath = "Assets/_Game/Content/Audio/BGM/SheepMvp/sheep-coming(city).wav";
+    private const string MainMenuBgmPath = "Assets/_Game/Content/Audio/BGM/sheep-coming(city).wav";
     private const string SettingPrefabPath = "Assets/_Game/Content/Perfabs/UI/SettingPanel.prefab";
     private const string CollectionPrefabPath = "Assets/_Game/Content/Perfabs/UI/CollectionPanel.prefab";
     private const string SheepCardPrefabPath = "Assets/_Game/Content/Perfabs/UI/SheepCard.prefab";

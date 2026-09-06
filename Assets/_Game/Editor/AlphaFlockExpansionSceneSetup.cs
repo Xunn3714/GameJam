@@ -29,29 +29,29 @@ public static class AlphaFlockExpansionSceneSetup
     private const string PauseSystemPrefabPath = "Assets/_Game/Content/Perfabs/UI/PauseSystem.prefab";
     private const string ResultPanelPrefabPath = "Assets/_Game/Content/Perfabs/UI/ResultPanel.prefab";
     private const string TaskSystemPrefabPath = "Assets/_Game/Content/Perfabs/UI/TaskSystem.prefab";
-    private const string GameplayBgmPath = "Assets/_Game/Content/Audio/BGM/SheepMvp/sheep-coming.wav";
-    private const string WolfSpawnClipPath = "Assets/_Game/Content/Audio/BGM/sound efct/woof/woof.wav";
-    private const string WolfAttack1ClipPath = "Assets/_Game/Content/Audio/BGM/sound efct/woof/attact1.wav";
-    private const string WolfAttack2ClipPath = "Assets/_Game/Content/Audio/BGM/sound efct/woof/attack2.wav";
-    private const string WolfAttack3ClipPath = "Assets/_Game/Content/Audio/BGM/sound efct/woof/attack3.wav";
-    private const string WolfCaptureClipPath = "Assets/_Game/Content/Audio/BGM/sound efct/sheep/sheep (8).wav";
+    private const string GameplayBgmPath = "Assets/_Game/Content/Audio/BGM/sheep-coming.wav";
+    private const string WolfSpawnClipPath = "Assets/_Game/Content/Audio/SFX/woof/woof.wav";
+    private const string WolfAttack1ClipPath = "Assets/_Game/Content/Audio/SFX/woof/attact1.wav";
+    private const string WolfAttack2ClipPath = "Assets/_Game/Content/Audio/SFX/woof/attack2.wav";
+    private const string WolfAttack3ClipPath = "Assets/_Game/Content/Audio/SFX/woof/attack3.wav";
+    private const string WolfCaptureClipPath = "Assets/_Game/Content/Audio/SFX/sheep/sheep (8).wav";
 
     private static readonly string[] GrassFootstepPaths =
     {
-        "Assets/_Game/Content/Audio/SFX/Grass1.wav",
-        "Assets/_Game/Content/Audio/SFX/Grass2.wav",
-        "Assets/_Game/Content/Audio/SFX/Grass3.wav",
-        "Assets/_Game/Content/Audio/SFX/Grass4.wav"
+        "Assets/_Game/Content/Audio/SFX/footstep/grass/Grass1.wav",
+        "Assets/_Game/Content/Audio/SFX/footstep/grass/Grass2.wav",
+        "Assets/_Game/Content/Audio/SFX/footstep/grass/Grass3.wav",
+        "Assets/_Game/Content/Audio/SFX/footstep/grass/Grass4.wav"
     };
 
     private static readonly string[] SandFootstepPaths =
     {
-        "Assets/_Game/Content/Audio/SFX/Sand/Sand1.wav",
-        "Assets/_Game/Content/Audio/SFX/Sand/Sand2.wav",
-        "Assets/_Game/Content/Audio/SFX/Sand/Sand3.wav",
-        "Assets/_Game/Content/Audio/SFX/Sand/Sand4.wav",
-        "Assets/_Game/Content/Audio/SFX/Sand/Sand5.wav",
-        "Assets/_Game/Content/Audio/SFX/Sand/Sand6.wav"
+        "Assets/_Game/Content/Audio/SFX/footstep/sand/Sand1.wav",
+        "Assets/_Game/Content/Audio/SFX/footstep/sand/Sand2.wav",
+        "Assets/_Game/Content/Audio/SFX/footstep/sand/Sand3.wav",
+        "Assets/_Game/Content/Audio/SFX/footstep/sand/Sand4.wav",
+        "Assets/_Game/Content/Audio/SFX/footstep/sand/Sand5.wav",
+        "Assets/_Game/Content/Audio/SFX/footstep/sand/Sand6.wav"
     };
 
     // 地图与羊圈尺寸（世界单位）。
@@ -678,7 +678,7 @@ public static class AlphaFlockExpansionSceneSetup
             WorldObstaclePrefabBuilder.LoadBuildingSprite("红箱子");
         serialized.FindProperty("houseSprite").objectReferenceValue =
             WorldObstaclePrefabBuilder.LoadBuildingSprite("房子");
-        serialized.FindProperty("redChestCount").intValue = 10;
+        serialized.FindProperty("redChestCount").intValue = 7;
         serialized.FindProperty("area").rectValue = WorldRect;
         SerializedProperty zones = serialized.FindProperty("exclusionZones");
         zones.arraySize = 1;

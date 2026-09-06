@@ -25,9 +25,9 @@ public class SettingsController : MonoBehaviour
             PlayerPrefs.GetFloat(
                 AudioManager.MASTER_VOLUME_KEY, 1f);
 
-        float sheepVolume =
+        float sfxVolume =
             PlayerPrefs.GetFloat(
-                AudioManager.SHEEP_VOLUME_KEY, 1f);
+                AudioManager.SFX_VOLUME_KEY, 1f);
 
         if (bgmSlider != null)
             bgmSlider.SetValueWithoutNotify(bgmVolume);
@@ -36,7 +36,7 @@ public class SettingsController : MonoBehaviour
             sfxSlider.SetValueWithoutNotify(masterVolume);
 
         if (sheepSlider != null)
-            sheepSlider.SetValueWithoutNotify(sheepVolume);
+            sheepSlider.SetValueWithoutNotify(sfxVolume);
     }
 
 
@@ -76,11 +76,11 @@ public class SettingsController : MonoBehaviour
     {
         if (AudioManager.Instance != null)
         {
-            AudioManager.Instance.SetSheepVolume(value);
+            AudioManager.Instance.SetSFXVolume(value);
         }
 
         PlayerPrefs.SetFloat(
-            AudioManager.SHEEP_VOLUME_KEY, value);
+            AudioManager.SFX_VOLUME_KEY, value);
     }
 
 

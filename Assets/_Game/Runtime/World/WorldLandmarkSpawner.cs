@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// 单局固定地标：10 个红箱子、房屋，以及 2×2/2×3 成片农田。它们只在开局生成一次（Spawn 有一次性保护），
+/// 单局固定地标：7 个红箱子、房屋，以及 2×2/2×3 成片农田。它们只在开局生成一次（Spawn 有一次性保护），
 /// 不参与普通散布物的补充；被摧毁后换成"坏"图沉到 Background 层，残骸永久留在原地。
 /// 箱子和房屋使用整张 Sprite（Single 模式），所以完好图和坏图共用同一张画布、天然对齐。
 /// </summary>
@@ -30,7 +30,7 @@ public sealed class WorldLandmarkSpawner : MonoBehaviour
     [SerializeField] private Rect[] exclusionZones = Array.Empty<Rect>();
 
     [Header("Counts")]
-    [SerializeField, Min(1)] private int redChestCount = 10;
+    [SerializeField, Min(1)] private int redChestCount = 7;
     [SerializeField, Min(1)] private int minimumHouseCount = 3;
     [SerializeField, Min(1)] private int maximumHouseCount = 4;
     [SerializeField, Min(0)] private int farmClusterCount = 10;
@@ -43,9 +43,9 @@ public sealed class WorldLandmarkSpawner : MonoBehaviour
     [SerializeField] private Vector2 redChestColliderOffset = new(0.06f, 0.36f);
     [Tooltip("摆放红箱子时与其他地标 / 已有碰撞体的最小间距。")]
     [SerializeField, Min(0.5f)] private float redChestClearance = 6f;
-    [Tooltip("每个红箱子摔碎后掉落的紫色及以上品质羊的最少数量。")]
+    [Tooltip("本局唯一奖励箱摔碎后掉落的紫色及以上品质羊的最少数量。")]
     [SerializeField, Min(1)] private int rewardSheepMinimum = 3;
-    [Tooltip("每个红箱子摔碎后掉落的紫色及以上品质羊的最多数量。")]
+    [Tooltip("本局唯一奖励箱摔碎后掉落的紫色及以上品质羊的最多数量。")]
     [SerializeField, Min(1)] private int rewardSheepMaximum = 5;
 
     [Header("House")]
@@ -87,11 +87,20 @@ public sealed class WorldLandmarkSpawner : MonoBehaviour
         {
             Debug.LogWarning($"红箱子只放下了 {createdChests.Count}/{redChestCount} 个，地图可能太挤或排除区太大。", this);
         }
-        // 每个红箱子都装着奖励：摔碎后掉 3~5 只紫色及以上品质的羊。
-        foreach (GameObject chest in createdChests)
+        // 用同一世界种子从本局箱子中固定选一个，并立即预留奖励羊类型。
+        // 其他箱子只有破坏反馈，不会额外抬高稀有羊产量。
+        if (createdChests.Count > 0
+            && sheepSpawner != null
+            && sheepSpawner.TryReserveRewardSpecialGroup(
+                out ProgressiveSheepSpawner.RewardSpecialGroupReservation reservation))
         {
-            LandmarkChestReward reward = chest.AddComponent<LandmarkChestReward>();
-            reward.Configure(sheepSpawner, rewardSheepMinimum, rewardSheepMaximum);
+            GameObject rewardChest = createdChests[random.Next(createdChests.Count)];
+            LandmarkChestReward reward = rewardChest.AddComponent<LandmarkChestReward>();
+            reward.Configure(
+                sheepSpawner,
+                reservation,
+                rewardSheepMinimum,
+                rewardSheepMaximum);
         }
 
         int houseCount = random.Next(
@@ -307,14 +316,20 @@ public sealed class WorldLandmarkSpawner : MonoBehaviour
 public sealed class LandmarkChestReward : MonoBehaviour
 {
     private ProgressiveSheepSpawner sheepSpawner;
+    private ProgressiveSheepSpawner.RewardSpecialGroupReservation reservation;
     private BreakableObstacle obstacle;
     private bool rewarded;
     private int minimumCount = 3;
     private int maximumCount = 5;
 
-    public void Configure(ProgressiveSheepSpawner spawner, int minimum, int maximum)
+    public void Configure(
+        ProgressiveSheepSpawner spawner,
+        ProgressiveSheepSpawner.RewardSpecialGroupReservation rewardReservation,
+        int minimum,
+        int maximum)
     {
         sheepSpawner = spawner;
+        reservation = rewardReservation;
         minimumCount = Mathf.Max(1, minimum);
         maximumCount = Mathf.Max(minimumCount, maximum);
     }
@@ -337,6 +352,9 @@ public sealed class LandmarkChestReward : MonoBehaviour
         rewarded = true;
         // 3~5 只同一种紫色及以上品质的羊，成簇落在箱子旁边。
         sheepSpawner?.TrySpawnRewardSpecialGroup(
-            (Vector2)transform.position + Vector2.right * 2f, minimumCount, maximumCount);
+            reservation,
+            (Vector2)transform.position + Vector2.right * 2f,
+            minimumCount,
+            maximumCount);
     }
 }

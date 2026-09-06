@@ -8,6 +8,7 @@ public sealed class BreakableObstacleAudio : MonoBehaviour
 
     [Header("Break SFX")]
     [SerializeField] private AudioClip breakClip;
+    [SerializeField] private AudioClip[] randomBreakClips;
     [SerializeField, Range(0f, 1f)] private float volumeScale = 0.6f;
 
     private BreakableObstacle breakableObstacle;
@@ -40,7 +41,28 @@ public sealed class BreakableObstacleAudio : MonoBehaviour
         if (brokenObstacle != breakableObstacle)
             return;
 
-        if (breakClip != null && AudioManager.Instance != null)
-            AudioManager.Instance.PlaySFX(breakClip, volumeScale, SharedClipCooldown);
+        AudioClip clipToPlay = GetBreakClip();
+
+        if (clipToPlay != null && AudioManager.Instance != null)
+            AudioManager.Instance.PlaySFX(clipToPlay, volumeScale, SharedClipCooldown);
+        }
+
+    private AudioClip GetBreakClip()
+    {
+        if (randomBreakClips != null && randomBreakClips.Length > 0)
+        {
+            int startIndex = Random.Range(0, randomBreakClips.Length);
+
+            for (int i = 0; i < randomBreakClips.Length; i++)
+            {
+                AudioClip clip =
+                    randomBreakClips[(startIndex + i) % randomBreakClips.Length];
+
+                if (clip != null)
+                    return clip;
+            }
+        }
+
+        return breakClip;
     }
 }

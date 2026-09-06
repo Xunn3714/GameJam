@@ -11,8 +11,8 @@ public static class WorldObstaclePrefabBuilder
     public const string DefinitionFolder = "Assets/_Game/Content/Data/World/Obstacles";
     private const string DebrisFolder = "Assets/Art/Debris";
     private const string BuildingFolder = "Assets/Art/Buildings";
-    private const string WoodBreakClipPath = "Assets/_Game/Content/Audio/BGM/sound efct/wood.mp3";
-    private const string StoneBreakClipPath = "Assets/_Game/Content/Audio/BGM/sound efct/stone.mp3";
+    private const string WoodBreakClipPath = "Assets/_Game/Content/Audio/SFX/wood.mp3";
+    private const string StoneBreakClipPath = "Assets/_Game/Content/Audio/SFX/stone.mp3";
     private const string VfxFolder = PrefabFolder + "/VFX";
 
     public const string BreakParticlesPrefabPath = VfxFolder + "/BreakParticles.prefab";

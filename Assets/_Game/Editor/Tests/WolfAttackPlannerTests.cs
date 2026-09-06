@@ -52,6 +52,32 @@ public sealed class WolfAttackPlannerTests
     }
 
     [Test]
+    public void RuntimeLongWolfWidthMultiplierChangesTheEffectiveWidth()
+    {
+        GameObject wolfObject = new GameObject("TestLongWolf");
+        try
+        {
+            LongWolfSweep sweep = wolfObject.AddComponent<LongWolfSweep>();
+            float originalWidth = sweep.BodyWidth;
+            sweep.SetRuntimeWidthMultiplier(1.5f);
+
+            Assert.AreEqual(originalWidth * 1.5f, sweep.BodyWidth, 0.0001f);
+            Assert.IsTrue(LongWolfSweep.TouchesSweep(
+                new Vector2(0f, sweep.BodyWidth * 0.45f),
+                0f,
+                Vector2.zero,
+                Vector2.right,
+                Vector2.right,
+                2f,
+                sweep.BodyWidth));
+        }
+        finally
+        {
+            UnityEngine.Object.DestroyImmediate(wolfObject);
+        }
+    }
+
+    [Test]
     public void TutorialStageNeverAttacks()
     {
         WolfAttackSchedule.Stage stage = Stages()[0];

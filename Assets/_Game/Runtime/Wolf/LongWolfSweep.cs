@@ -106,7 +106,7 @@ public sealed class LongWolfSweep : MonoBehaviour
             if (bodyVisual != null) bodyVisual.gameObject.SetActive(false);
             if (headVisual != null) headVisual.gameObject.SetActive(false);
             float height = skinRenderer.sprite.rect.height / skinRenderer.sprite.pixelsPerUnit;
-            float scale = bodyWidth / Mathf.Max(0.001f, height);
+            float scale = BodyWidth / Mathf.Max(0.001f, height);
             skinRenderer.transform.localRotation = rotation;
             skinRenderer.transform.localPosition = (Vector3)(-direction.normalized * BodyLength * 0.5f);
             skinRenderer.transform.localScale = Vector3.one * scale;
@@ -120,13 +120,13 @@ public sealed class LongWolfSweep : MonoBehaviour
         if (bodyVisual != null)
         {
             bodyVisual.localRotation = rotation;
-            bodyVisual.localScale = new Vector3(BodyLength, bodyWidth, 1f);
+            bodyVisual.localScale = new Vector3(BodyLength, BodyWidth, 1f);
         }
         if (headVisual != null)
         {
             headVisual.localRotation = rotation;
             // Keep the original head proportions relative to the narrower body.
-            headVisual.localScale = Vector3.one * (bodyWidth / 1.3f);
+            headVisual.localScale = Vector3.one * (BodyWidth / 1.3f);
         }
     }
 
@@ -149,7 +149,7 @@ public sealed class LongWolfSweep : MonoBehaviour
             Vector2 center = collider.transform.TransformPoint(collider.offset);
             Vector3 scale = collider.transform.lossyScale;
             float radius = collider.radius * Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.y));
-            if (!TouchesSweep(center, radius, previousHead, nextHead, direction, BodyLength, bodyWidth))
+            if (!TouchesSweep(center, radius, previousHead, nextHead, direction, BodyLength, BodyWidth))
                 continue;
 
             wolf.CaptureAlongPath(sheep, CapturedCount++);
