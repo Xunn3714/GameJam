@@ -26395,6 +26395,7 @@ GameObject:
   - component: {fileID: 2024521173}
   - component: {fileID: 2024521171}
   - component: {fileID: 2024521174}
+  - component: {fileID: 2024521177}
   m_Layer: 0
   m_Name: SheepFlock
   m_TagString: Untagged
@@ -26572,6 +26573,28 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 4
+--- !u!114 &2024521177
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2024521169}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7bce1d9e8032a54458867204da18bc02, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SheepRecruitAudio
+  tutorialPen: {fileID: 1069232734}
+  sheepClips:
+  - {fileID: 8300000, guid: b59169a9551b5d24ea194b3aaabb0554, type: 3}
+  - {fileID: 8300000, guid: 39f941faa41f0ac42acc4273452ca7bb, type: 3}
+  - {fileID: 8300000, guid: c868deb329e88b9449830c5061f79c2d, type: 3}
+  - {fileID: 8300000, guid: 0e3b81c678f2fb6429b4f2fd08842cde, type: 3}
+  - {fileID: 8300000, guid: ca00fb9fd9ab50d47817802100e4f583, type: 3}
+  - {fileID: 8300000, guid: b6f119997d3139e439ae29d01617cbbc, type: 3}
+  - {fileID: 8300000, guid: d33e8c21b8ac8234ea8b097d212b1b3b, type: 3}
+  recruitBleatChance: 0.5
 --- !u!1 &2037612877
 GameObject:
   m_ObjectHideFlags: 0
