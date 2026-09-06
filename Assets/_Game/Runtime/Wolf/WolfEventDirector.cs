@@ -32,12 +32,6 @@ public sealed class WolfEventDirector : MonoBehaviour
     [Tooltip("羊群达到这么多只之后才开始狼群倒计时；0 表示一开始就计时。")]
     [SerializeField, Min(0)] private int requiredMemberCount = 6;
 
-    [Header("Huddle")]
-    [Tooltip("狼嚎提示期间让羊群抱团。")]
-    [SerializeField] private bool huddleDuringHowl = true;
-    [Tooltip("狼冲进来的攻击阶段是否继续抱团；关掉则狼一出现羊群就散开。")]
-    [SerializeField] private bool huddleDuringAttack = true;
-
     [Header("Rhythm (seconds)")]
     [Tooltip("生长空挡的最短时长。")]
     [SerializeField, Min(0f)] private float calmDurationMin = 15f;
@@ -181,7 +175,6 @@ public sealed class WolfEventDirector : MonoBehaviour
     public void Stop()
     {
         isRunning = false;
-        SetHuddle(false);
         if (activeWolf != null)
         {
             activeWolf.Finished -= HandleWolfFinished;
@@ -199,14 +192,6 @@ public sealed class WolfEventDirector : MonoBehaviour
     private bool HasReachedStartCondition()
     {
         return requiredMemberCount <= 0 || flock == null || flock.MemberCount >= requiredMemberCount;
-    }
-
-    private void SetHuddle(bool huddle)
-    {
-        if (flock != null)
-        {
-            flock.SetHuddle(huddle);
-        }
     }
 
     private void Update()
@@ -265,7 +250,6 @@ public sealed class WolfEventDirector : MonoBehaviour
         {
             case WolfEventPhase.Dormant:
                 phaseDuration = 0f;
-                SetHuddle(false);
                 break;
 
             case WolfEventPhase.Calm:
@@ -283,24 +267,20 @@ public sealed class WolfEventDirector : MonoBehaviour
                 {
                     phaseDuration = UnityEngine.Random.Range(calmDurationMin, calmDurationMax);
                 }
-                SetHuddle(false);
                 break;
 
             case WolfEventPhase.Howl:
                 phaseDuration = howlDuration;
-                SetHuddle(huddleDuringHowl);
                 PlayHowl();
                 break;
 
             case WolfEventPhase.Attack:
                 phaseDuration = attackTimeout;
-                SetHuddle(huddleDuringHowl && huddleDuringAttack);
                 ReleaseAttack();
                 break;
 
             case WolfEventPhase.Retreat:
                 phaseDuration = retreatDuration;
-                SetHuddle(false);
                 // 攻击超时兜底进来时编队可能还在放狼，必须一起停掉，否则空挡阶段还会继续出狼。
                 if (formationRunner != null)
                 {
