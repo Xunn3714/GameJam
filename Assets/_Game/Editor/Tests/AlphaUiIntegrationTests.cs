@@ -486,6 +486,20 @@ public sealed class AlphaUiIntegrationTests
     }
 
     [Test]
+    public void EndingIllustrationTexturesAreAvailableThroughResources()
+    {
+        Texture2D fakeEnding = Resources.Load<Texture2D>(EndingIllustrationSequence.FakeEndingResourcePath);
+        Texture2D trueEnding = Resources.Load<Texture2D>(EndingIllustrationSequence.TrueEndingResourcePath);
+
+        Assert.That(fakeEnding, Is.Not.Null);
+        Assert.That(fakeEnding.width, Is.EqualTo(1920));
+        Assert.That(fakeEnding.height, Is.EqualTo(478));
+        Assert.That(trueEnding, Is.Not.Null);
+        Assert.That(trueEnding.width, Is.EqualTo(1920));
+        Assert.That(trueEnding.height, Is.EqualTo(1080));
+    }
+
+    [Test]
     public void CollectionUnlockedCountIgnoresStaleSaveEntries()
     {
         GameObject owner = new GameObject("CollectionManagerTest");

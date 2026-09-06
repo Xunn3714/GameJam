@@ -378,12 +378,6 @@ public class SheepCollectionManager : MonoBehaviour
                 description =
                     "最常见、也最可靠的羊群伙伴。",
 
-                abilityName =
-                    "群体行动",
-
-                abilityDescription =
-                    "会跟随羊群一起移动与冲刺。",
-
                 order =
                     0
             }
