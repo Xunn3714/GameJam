@@ -15,18 +15,21 @@ public sealed class AlphaBannerView : MonoBehaviour
     [SerializeField] private BannerView bannerView;
     [SerializeField] private Image background;
     [SerializeField] private TMP_Text label;
-    [SerializeField, Min(0.1f)] private float holdDuration = 2.2f;
+    [Tooltip("每条提示完整可读的最短停留时间；排队提示不能提前顶掉当前提示。")]
+    [SerializeField, Min(0.1f)] private float holdDuration = 3f;
     [SerializeField, Min(0.05f)] private float fadeDuration = 0.35f;
 
     private readonly struct BannerMessage
     {
         public readonly string Text;
         public readonly Sprite Icon;
+        public readonly AudioClip Sound;
 
-        public BannerMessage(string text, Sprite icon)
+        public BannerMessage(string text, Sprite icon, AudioClip sound = null)
         {
             Text = text;
             Icon = icon;
+            Sound = sound;
         }
     }
 
@@ -73,10 +76,15 @@ public sealed class AlphaBannerView : MonoBehaviour
 
     public void Show(string message, Sprite icon)
     {
+        Show(message, icon, null);
+    }
+
+    public void Show(string message, Sprite icon, AudioClip sound)
+    {
         if (string.IsNullOrWhiteSpace(message))
             return;
 
-        pending.Enqueue(new BannerMessage(message, icon));
+        pending.Enqueue(new BannerMessage(message, icon, sound));
     }
 
     /// <summary>
@@ -124,7 +132,7 @@ public sealed class AlphaBannerView : MonoBehaviour
 
             case 2:
                 timer += deltaTime;
-                if (timer >= holdDuration || pending.Count > 0) { timer = 0f; state = 3; }
+                if (timer >= holdDuration) { timer = 0f; state = 3; }
                 break;
 
             case 3:
@@ -155,5 +163,8 @@ public sealed class AlphaBannerView : MonoBehaviour
             bannerView.Show(message.Text, message.Icon);
         else if (label != null)
             label.text = message.Text;
+
+        if (message.Sound != null && AudioManager.Instance != null)
+            AudioManager.Instance.PlaySFX(message.Sound);
     }
 }
