@@ -382,7 +382,7 @@ public class SheepCollectionManager : MonoBehaviour
                     "群体行动",
 
                 abilityDescription =
-                    "会跟随羊群一起移动、收拢与冲刺。",
+                    "会跟随羊群一起移动与冲刺。",
 
                 order =
                     0

@@ -15,6 +15,16 @@ public sealed class WolfAttackSchedule : ScriptableObject
         [Tooltip("羊群至少多少只进入这个阶段（按当前羊数）。")]
         [Min(0)] public int minMemberCount;
 
+        [Header("Rhythm (seconds)")]
+        [Tooltip("本阶段攻击结束后，到下一次狼嚎前的最短空挡。0 表示使用阶段默认值。")]
+        [Min(0f)] public float calmDurationMin;
+        [Tooltip("本阶段攻击结束后，到下一次狼嚎前的最长空挡。0 表示使用阶段默认值。")]
+        [Min(0f)] public float calmDurationMax;
+
+        [Header("Long Wolf")]
+        [Tooltip("长狼身体宽度倍率。0 或 1 表示原宽度。")]
+        [Min(0f)] public float longWolfWidthMultiplier = 1f;
+
         [Header("大类权重（一只狼 / 多只狼 / 本场损失最多的攻击）")]
         [Min(0f)] public float singleWeight = 100f;
         [Min(0f)] public float packWeight;
@@ -73,6 +83,42 @@ public sealed class WolfAttackSchedule : ScriptableObject
         return index >= 0 && index < stages.Length ? stages[index] : null;
     }
 
+    /// <summary>按当前阶段取得狼嚎前空挡；130 只以上固定 5 秒。</summary>
+    public Vector2 GetCalmDurationRange(int memberCount)
+    {
+        if (memberCount >= 130)
+            return new Vector2(5f, 5f);
+
+        int stageIndex = GetStageIndex(memberCount);
+        Stage stage = GetStage(memberCount);
+        float minimum = stage != null ? stage.calmDurationMin : 0f;
+        float maximum = stage != null ? stage.calmDurationMax : 0f;
+        if (minimum > 0f || maximum > 0f)
+            return new Vector2(Mathf.Max(0f, minimum), Mathf.Max(minimum, maximum));
+
+        // 兼容尚未重新保存的旧 Schedule 资产。
+        switch (stageIndex)
+        {
+            case 1: return new Vector2(8f, 10f);
+            case 2: return new Vector2(6f, 10f);
+            default: return new Vector2(6f, 8f);
+        }
+    }
+
+    /// <summary>第二阶段之后（阶段三起）长狼逐级变粗；旧资产也适用该默认值。</summary>
+    public float GetLongWolfWidthMultiplier(int memberCount)
+    {
+        if (memberCount >= 130)
+            return 1.65f;
+
+        int stageIndex = GetStageIndex(memberCount);
+        Stage stage = GetStage(memberCount);
+        if (stage != null && stage.longWolfWidthMultiplier > 1.001f)
+            return stage.longWolfWidthMultiplier;
+
+        return stageIndex >= 4 ? 1.5f : stageIndex >= 3 ? 1.35f : 1f;
+    }
+
     public static Stage[] CreateDefaultStages()
     {
         return new[]
@@ -80,17 +126,20 @@ public sealed class WolfAttackSchedule : ScriptableObject
             new Stage
             {
                 displayName = "阶段0 教学", minMemberCount = 0,
+                calmDurationMin = 0f, calmDurationMax = 0f,
                 singleWeight = 0f, packWeight = 0f, mostLossWeight = 0f,
             },
             new Stage
             {
                 displayName = "阶段一", minMemberCount = 6,
+                calmDurationMin = 8f, calmDurationMax = 10f,
                 singleWeight = 100f, packWeight = 0f, mostLossWeight = 0f,
                 straightWolfWeight = 100f, smartWolfWeight = 0f, longWolfWeight = 0f,
             },
             new Stage
             {
                 displayName = "阶段二", minMemberCount = 20,
+                calmDurationMin = 6f, calmDurationMax = 10f,
                 singleWeight = 60f, packWeight = 40f, mostLossWeight = 0f,
                 straightWolfWeight = 10f, smartWolfWeight = 45f, longWolfWeight = 45f,
                 parallelSequentialWeight = 40f, parallelSimultaneousWeight = 40f,
@@ -99,6 +148,8 @@ public sealed class WolfAttackSchedule : ScriptableObject
             new Stage
             {
                 displayName = "阶段三", minMemberCount = 50,
+                calmDurationMin = 6f, calmDurationMax = 8f,
+                longWolfWidthMultiplier = 1.35f,
                 singleWeight = 20f, packWeight = 80f, mostLossWeight = 0f,
                 straightWolfWeight = 0f, smartWolfWeight = 50f, longWolfWeight = 50f,
                 parallelSequentialWeight = 30f, parallelSimultaneousWeight = 30f,
@@ -107,6 +158,8 @@ public sealed class WolfAttackSchedule : ScriptableObject
             new Stage
             {
                 displayName = "阶段四", minMemberCount = 90,
+                calmDurationMin = 6f, calmDurationMax = 8f,
+                longWolfWidthMultiplier = 1.5f,
                 singleWeight = 20f, packWeight = 65f, mostLossWeight = 15f,
                 straightWolfWeight = 0f, smartWolfWeight = 45f, longWolfWeight = 55f,
                 parallelSequentialWeight = 20f, parallelSimultaneousWeight = 20f,

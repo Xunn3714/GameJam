@@ -35,6 +35,9 @@ public static class WolfAttackScheduleSetup
             WolfAttackSchedule.Stage source = defaults[index];
             stage.FindPropertyRelative("displayName").stringValue = source.displayName;
             stage.FindPropertyRelative("minMemberCount").intValue = source.minMemberCount;
+            stage.FindPropertyRelative("calmDurationMin").floatValue = source.calmDurationMin;
+            stage.FindPropertyRelative("calmDurationMax").floatValue = source.calmDurationMax;
+            stage.FindPropertyRelative("longWolfWidthMultiplier").floatValue = source.longWolfWidthMultiplier;
             stage.FindPropertyRelative("singleWeight").floatValue = source.singleWeight;
             stage.FindPropertyRelative("packWeight").floatValue = source.packWeight;
             stage.FindPropertyRelative("mostLossWeight").floatValue = source.mostLossWeight;

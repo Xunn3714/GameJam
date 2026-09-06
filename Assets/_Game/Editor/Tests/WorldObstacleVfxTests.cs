@@ -4,19 +4,14 @@ using UnityEngine;
 
 public sealed class WorldObstacleVfxTests
 {
+    private const string WoodBreakClipPath =
+        "Assets/_Game/Content/Audio/SFX/wood.mp3";
+
     [Test]
     public void GeneratedObstaclePrefabsHaveExactlyOneConfiguredVfxComponent()
     {
-        GameObject particlesPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(
-            WorldObstaclePrefabBuilder.BreakParticlesPrefabPath);
-        Assert.IsNotNull(particlesPrefab, "Missing common break-particle prefab.");
-
-        ParticleSystem breakParticles = particlesPrefab.GetComponent<ParticleSystem>();
-        Assert.IsNotNull(breakParticles, "Common break-particle prefab has no ParticleSystem on its root.");
-
         AssertPrefabVfx(
             WorldObstaclePrefabBuilder.FencePrefabPath,
-            breakParticles,
             WorldObstaclePrefabBuilder.WoodFragmentPrefabPath,
             8,
             Vector2.zero,
@@ -26,7 +21,6 @@ public sealed class WorldObstacleVfxTests
         {
             AssertPrefabVfx(
                 spec.PrefabPath,
-                breakParticles,
                 spec.FragmentPrefabPath,
                 spec.FragmentCount,
                 spec.FragmentSpawnOffset,
@@ -34,9 +28,27 @@ public sealed class WorldObstacleVfxTests
         }
     }
 
+    [Test]
+    public void GeneratedObstaclePrefabsKeepBreakAudioFromMain()
+    {
+        AssertPrefabAudio(
+            WorldObstaclePrefabBuilder.FencePrefabPath,
+            WoodBreakClipPath,
+            null,
+            1f);
+
+        foreach (WorldObstaclePrefabBuilder.DebrisSpec spec in WorldObstaclePrefabBuilder.DebrisSpecs)
+        {
+            AssertPrefabAudio(
+                spec.PrefabPath,
+                spec.BreakClipPath,
+                spec.RandomBreakClipPaths,
+                spec.BreakVolume);
+        }
+    }
+
     private static void AssertPrefabVfx(
         string prefabPath,
-        ParticleSystem expectedParticles,
         string expectedFragmentPath,
         int expectedFragmentCount,
         Vector2 expectedOffset,
@@ -49,10 +61,8 @@ public sealed class WorldObstacleVfxTests
         Assert.AreEqual(1, components.Length, $"{prefabPath} must have exactly one VFX component.");
 
         SerializedObject serialized = new SerializedObject(components[0]);
-        Assert.AreSame(
-            expectedParticles,
-            serialized.FindProperty("breakParticlesPrefab").objectReferenceValue,
-            $"{prefabPath} has the wrong common particle prefab.");
+        Assert.IsNull(serialized.FindProperty("breakParticlesPrefab"),
+            $"{prefabPath} must no longer expose the legacy white-particle effect.");
 
         GameObject expectedFragment = string.IsNullOrWhiteSpace(expectedFragmentPath)
             ? null
@@ -74,5 +84,55 @@ public sealed class WorldObstacleVfxTests
             serialized.FindProperty("fragmentSpawnRadius").floatValue,
             0.0001f,
             $"{prefabPath} has the wrong spawn radius.");
+    }
+
+    private static void AssertPrefabAudio(
+        string prefabPath,
+        string expectedClipPath,
+        string[] expectedRandomClipPaths,
+        float expectedVolume)
+    {
+        GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+        Assert.IsNotNull(prefab, $"Missing obstacle prefab: {prefabPath}");
+
+        bool expectsAudio = !string.IsNullOrWhiteSpace(expectedClipPath)
+            || (expectedRandomClipPaths != null && expectedRandomClipPaths.Length > 0);
+        BreakableObstacleAudio[] components = prefab.GetComponents<BreakableObstacleAudio>();
+        Assert.AreEqual(
+            expectsAudio ? 1 : 0,
+            components.Length,
+            $"{prefabPath} has the wrong number of break-audio components.");
+
+        if (!expectsAudio)
+            return;
+
+        SerializedObject serialized = new SerializedObject(components[0]);
+        AudioClip expectedClip = string.IsNullOrWhiteSpace(expectedClipPath)
+            ? null
+            : AssetDatabase.LoadAssetAtPath<AudioClip>(expectedClipPath);
+        Assert.AreSame(
+            expectedClip,
+            serialized.FindProperty("breakClip").objectReferenceValue,
+            $"{prefabPath} has the wrong fixed break clip.");
+
+        SerializedProperty randomClips = serialized.FindProperty("randomBreakClips");
+        int expectedRandomCount = expectedRandomClipPaths?.Length ?? 0;
+        Assert.AreEqual(
+            expectedRandomCount,
+            randomClips.arraySize,
+            $"{prefabPath} has the wrong number of random break clips.");
+        for (int index = 0; index < expectedRandomCount; index++)
+        {
+            Assert.AreSame(
+                AssetDatabase.LoadAssetAtPath<AudioClip>(expectedRandomClipPaths[index]),
+                randomClips.GetArrayElementAtIndex(index).objectReferenceValue,
+                $"{prefabPath} has the wrong random break clip at index {index}.");
+        }
+
+        Assert.AreEqual(
+            expectedVolume,
+            serialized.FindProperty("volumeScale").floatValue,
+            0.0001f,
+            $"{prefabPath} has the wrong break volume.");
     }
 }

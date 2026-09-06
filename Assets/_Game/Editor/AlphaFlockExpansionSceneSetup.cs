@@ -29,29 +29,40 @@ public static class AlphaFlockExpansionSceneSetup
     private const string PauseSystemPrefabPath = "Assets/_Game/Content/Perfabs/UI/PauseSystem.prefab";
     private const string ResultPanelPrefabPath = "Assets/_Game/Content/Perfabs/UI/ResultPanel.prefab";
     private const string TaskSystemPrefabPath = "Assets/_Game/Content/Perfabs/UI/TaskSystem.prefab";
-    private const string GameplayBgmPath = "Assets/_Game/Content/Audio/BGM/SheepMvp/sheep-coming.wav";
-    private const string WolfSpawnClipPath = "Assets/_Game/Content/Audio/BGM/sound efct/woof/woof.wav";
-    private const string WolfAttack1ClipPath = "Assets/_Game/Content/Audio/BGM/sound efct/woof/attact1.wav";
-    private const string WolfAttack2ClipPath = "Assets/_Game/Content/Audio/BGM/sound efct/woof/attack2.wav";
-    private const string WolfAttack3ClipPath = "Assets/_Game/Content/Audio/BGM/sound efct/woof/attack3.wav";
-    private const string WolfCaptureClipPath = "Assets/_Game/Content/Audio/BGM/sound efct/sheep/sheep (8).wav";
+    private const string GameplayBgmPath = "Assets/_Game/Content/Audio/BGM/sheep-coming.wav";
+    private const string WolfSpawnClipPath = "Assets/_Game/Content/Audio/SFX/woof/woof.wav";
+    private const string WolfAttack1ClipPath = "Assets/_Game/Content/Audio/SFX/woof/attact1.wav";
+    private const string WolfAttack2ClipPath = "Assets/_Game/Content/Audio/SFX/woof/attack2.wav";
+    private const string WolfAttack3ClipPath = "Assets/_Game/Content/Audio/SFX/woof/attack3.wav";
+    private const string WolfCaptureClipPath = "Assets/_Game/Content/Audio/SFX/sheep/sheep (8).wav";
+
+    private static readonly string[] SheepRecruitClipPaths =
+    {
+        "Assets/_Game/Content/Audio/SFX/sheep/sheep (1).wav",
+        "Assets/_Game/Content/Audio/SFX/sheep/sheep (2).wav",
+        "Assets/_Game/Content/Audio/SFX/sheep/sheep (3).wav",
+        "Assets/_Game/Content/Audio/SFX/sheep/sheep (4).wav",
+        "Assets/_Game/Content/Audio/SFX/sheep/sheep (5).wav",
+        "Assets/_Game/Content/Audio/SFX/sheep/sheep (7).wav",
+        "Assets/_Game/Content/Audio/SFX/sheep/sheep (9).wav"
+    };
 
     private static readonly string[] GrassFootstepPaths =
     {
-        "Assets/_Game/Content/Audio/SFX/Grass1.wav",
-        "Assets/_Game/Content/Audio/SFX/Grass2.wav",
-        "Assets/_Game/Content/Audio/SFX/Grass3.wav",
-        "Assets/_Game/Content/Audio/SFX/Grass4.wav"
+        "Assets/_Game/Content/Audio/SFX/footstep/grass/Grass1.wav",
+        "Assets/_Game/Content/Audio/SFX/footstep/grass/Grass2.wav",
+        "Assets/_Game/Content/Audio/SFX/footstep/grass/Grass3.wav",
+        "Assets/_Game/Content/Audio/SFX/footstep/grass/Grass4.wav"
     };
 
     private static readonly string[] SandFootstepPaths =
     {
-        "Assets/_Game/Content/Audio/SFX/Sand/Sand1.wav",
-        "Assets/_Game/Content/Audio/SFX/Sand/Sand2.wav",
-        "Assets/_Game/Content/Audio/SFX/Sand/Sand3.wav",
-        "Assets/_Game/Content/Audio/SFX/Sand/Sand4.wav",
-        "Assets/_Game/Content/Audio/SFX/Sand/Sand5.wav",
-        "Assets/_Game/Content/Audio/SFX/Sand/Sand6.wav"
+        "Assets/_Game/Content/Audio/SFX/footstep/sand/Sand1.wav",
+        "Assets/_Game/Content/Audio/SFX/footstep/sand/Sand2.wav",
+        "Assets/_Game/Content/Audio/SFX/footstep/sand/Sand3.wav",
+        "Assets/_Game/Content/Audio/SFX/footstep/sand/Sand4.wav",
+        "Assets/_Game/Content/Audio/SFX/footstep/sand/Sand5.wav",
+        "Assets/_Game/Content/Audio/SFX/footstep/sand/Sand6.wav"
     };
 
     // 地图与羊圈尺寸（世界单位）。
@@ -83,6 +94,7 @@ public static class AlphaFlockExpansionSceneSetup
         "WolfSystem",
         "WorldSeed",
         "WorldDebrisSpawner",
+        "WorldLandmarkSpawner",
         "BorderFence",
         "TutorialPen",
         "AlphaCanvas",
@@ -176,12 +188,14 @@ public static class AlphaFlockExpansionSceneSetup
         Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
         FlockMovementController movement = FindComponentInScene<FlockMovementController>(scene);
         WolfEventDirector wolfDirector = FindComponentInScene<WolfEventDirector>(scene);
+        TutorialPen tutorialPen = FindComponentInScene<TutorialPen>(scene);
 
-        if (movement == null || wolfDirector == null)
-            throw new System.InvalidOperationException("Alpha scene is missing its flock or wolf system.");
+        if (movement == null || wolfDirector == null || tutorialPen == null)
+            throw new System.InvalidOperationException("Alpha scene is missing its flock, tutorial pen, or wolf system.");
 
         EnsureSceneAudio(scene);
         ConfigureFootstepAudio(movement);
+        ConfigureRecruitAudio(movement, tutorialPen);
         ConfigureWolfAudio(wolfDirector);
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene, ScenePath);
@@ -260,9 +274,11 @@ public static class AlphaFlockExpansionSceneSetup
             out FlockMovementController movement,
             out FlockActionController actions);
         tutorialPen.BindFlock(flock);
+        ConfigureRecruitAudio(movement, tutorialPen);
         CameraFollow2D cameraFollow = ConfigureCamera(scene, flockObject.transform, out Camera gameplayCamera);
         ConfigureLighting(scene);
         ProgressiveSheepSpawner sheepSpawner = CreateSheepSpawner(scene, flock, namePool, gameplayCamera, worldSeed);
+        CreateLandmarkSpawner(scene, worldSeed, sheepSpawner, fencePrefab, penFenceDefinition);
         CreateWolfSystem(scene, flock, wolfPrefab.GetComponent<Wolf>(), out WolfSpawner wolfSpawner, out WolfEventDirector director);
         LevelUi ui = CreateLevelUi(scene);
         CreateGameController(
@@ -646,6 +662,45 @@ public static class AlphaFlockExpansionSceneSetup
         return spawner;
     }
 
+    private static WorldLandmarkSpawner CreateLandmarkSpawner(
+        Scene scene,
+        WorldSeed worldSeed,
+        ProgressiveSheepSpawner sheepSpawner,
+        GameObject fencePrefab,
+        ObstacleDefinition penFenceDefinition)
+    {
+        GameObject spawnerObject = new GameObject("WorldLandmarkSpawner");
+        SceneManager.MoveGameObjectToScene(spawnerObject, scene);
+        WorldLandmarkSpawner spawner = spawnerObject.AddComponent<WorldLandmarkSpawner>();
+
+        SerializedObject serialized = new SerializedObject(spawner);
+        serialized.FindProperty("worldSeed").objectReferenceValue = worldSeed;
+        serialized.FindProperty("sheepSpawner").objectReferenceValue = sheepSpawner;
+        serialized.FindProperty("riceFieldPrefab").objectReferenceValue =
+            LoadRequired<GameObject>(WorldObstaclePrefabBuilder.PrefabFolder + "/Obstacle_RiceField.prefab");
+        serialized.FindProperty("haystackPrefab").objectReferenceValue =
+            LoadRequired<GameObject>(WorldObstaclePrefabBuilder.PrefabFolder + "/Obstacle_Haystack.prefab");
+        serialized.FindProperty("barrelPrefab").objectReferenceValue =
+            LoadRequired<GameObject>(WorldObstaclePrefabBuilder.PrefabFolder + "/Obstacle_Barrel.prefab");
+        serialized.FindProperty("fencePrefab").objectReferenceValue = fencePrefab;
+        serialized.FindProperty("penFenceDefinition").objectReferenceValue = penFenceDefinition;
+        serialized.FindProperty("redChestDefinition").objectReferenceValue =
+            LoadRequired<ObstacleDefinition>(WorldObstaclePrefabBuilder.RedChestDefinitionPath);
+        serialized.FindProperty("houseDefinition").objectReferenceValue =
+            LoadRequired<ObstacleDefinition>(WorldObstaclePrefabBuilder.HouseDefinitionPath);
+        serialized.FindProperty("redChestSprite").objectReferenceValue =
+            WorldObstaclePrefabBuilder.LoadBuildingSprite("红箱子");
+        serialized.FindProperty("houseSprite").objectReferenceValue =
+            WorldObstaclePrefabBuilder.LoadBuildingSprite("房子");
+        serialized.FindProperty("redChestCount").intValue = 7;
+        serialized.FindProperty("area").rectValue = WorldRect;
+        SerializedProperty zones = serialized.FindProperty("exclusionZones");
+        zones.arraySize = 1;
+        zones.GetArrayElementAtIndex(0).rectValue = Expand(PenRect, 5f);
+        serialized.ApplyModifiedPropertiesWithoutUndo();
+        return spawner;
+    }
+
     // ------------------------------------------------------------------ flock & spawners
 
     private static GameObject CreateFlock(
@@ -776,6 +831,20 @@ public static class AlphaFlockExpansionSceneSetup
             LoadAudioClips(SandFootstepPaths),
             0.7f,
             0.35f);
+    }
+
+    private static void ConfigureRecruitAudio(
+        FlockMovementController movement,
+        TutorialPen tutorialPen)
+    {
+        SheepRecruitAudio recruitAudio = movement.GetComponent<SheepRecruitAudio>();
+        if (recruitAudio == null)
+            recruitAudio = movement.gameObject.AddComponent<SheepRecruitAudio>();
+
+        recruitAudio.Configure(
+            tutorialPen,
+            LoadAudioClips(SheepRecruitClipPaths),
+            0.5f);
     }
 
     private static void ConfigureWolfAudio(WolfEventDirector director)

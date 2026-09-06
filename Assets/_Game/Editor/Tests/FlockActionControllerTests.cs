@@ -13,18 +13,6 @@ public sealed class FlockActionControllerTests
     }
 
     [Test]
-    public void CompressionSpeedScaleTracksFormationContinuously()
-    {
-        float normal = FlockActionController.CalculateCompressionSpeedScale(1f, 0.45f, 0.58f);
-        float halfway = FlockActionController.CalculateCompressionSpeedScale(0.725f, 0.45f, 0.58f);
-        float compact = FlockActionController.CalculateCompressionSpeedScale(0.45f, 0.45f, 0.58f);
-
-        Assert.AreEqual(1f, normal, 0.0001f);
-        Assert.That(halfway, Is.LessThan(normal).And.GreaterThan(compact));
-        Assert.AreEqual(0.58f, compact, 0.0001f);
-    }
-
-    [Test]
     public void DashSweepStopsBeforeThinColliderThatEndpointCheckMisses()
     {
         GameObject blockerObject = new GameObject("ThinDashBlocker");

@@ -3,14 +3,20 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>First collection celebrations have their own queue, separate from gameplay banners.</summary>
+/// <summary>首次发现羊种时，在左下角复用图鉴详情卡进行庆祝。</summary>
 public sealed class SheepDiscoveryToastView : MonoBehaviour
 {
+    private const float EnterDuration = 0.28f;
     private const float FadeDuration = 0.18f;
+    private const float DisplayScale = 0.72f;
+    private static readonly Vector2 DisplayPosition = new Vector2(28f, 28f);
+
     private readonly Queue<Discovery> pending = new Queue<Discovery>();
     private readonly HashSet<string> announcedTypes = new HashSet<string>();
     private CanvasGroup group;
-    private TMP_Text label;
+    private SheepDetailCardView card;
+    private RectTransform cardRect;
+    private Outline rarityBorder;
     private Discovery current;
     private float age;
     private bool showing;
@@ -18,47 +24,76 @@ public sealed class SheepDiscoveryToastView : MonoBehaviour
 
     private readonly struct Discovery
     {
-        public readonly string Message;
-        public readonly SheepQuality Quality;
+        public readonly SheepCollectionEntry Entry;
+        public readonly int EncounterCount;
 
-        public Discovery(string name, SheepQuality quality)
+        public Discovery(SheepCollectionEntry entry, int encounterCount)
         {
-            Message = $"恭喜你第一次和{name}成为种群！";
-            Quality = quality;
+            Entry = entry;
+            EncounterCount = encounterCount;
         }
     }
 
-    public static SheepDiscoveryToastView Create(Transform parent, Sprite panelSprite)
+    public static SheepDiscoveryToastView Create(
+        Transform parent,
+        SheepDetailCardView detailCardTemplate,
+        Sprite fallbackPanelSprite)
     {
-        Image panel = MvpUiFactory.CreateImage("SheepDiscoveryNotice", parent,
-            panelSprite != null ? Color.white : MvpUiFactory.Paper);
-        panel.sprite = panelSprite;
-        panel.raycastTarget = false;
-        // Keep the existing wolf HUD (16..96) and event banner (110..200) unobstructed.
-        MvpUiFactory.Anchor(panel.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
-            new Vector2(0f, -210f), new Vector2(520f, 90f));
-        SheepDiscoveryToastView view = panel.gameObject.AddComponent<SheepDiscoveryToastView>();
-        view.group = panel.gameObject.AddComponent<CanvasGroup>();
-        view.group.alpha = 0f;
-        view.group.blocksRaycasts = false;
-        view.group.interactable = false;
-        view.label = MvpUiFactory.CreateText("Message", panel.transform,
-            string.Empty, 24f, TextAlignmentOptions.Center);
-        MvpUiFactory.Stretch(view.label.rectTransform, 14f);
-        view.label.enableAutoSizing = true;
-        view.label.fontSizeMin = 18f;
-        view.label.fontSizeMax = 24f;
-        view.label.richText = false;
+        SheepDetailCardView popupCard = detailCardTemplate != null
+            ? Instantiate(detailCardTemplate, parent, false)
+            : CreateFallbackCard(parent, fallbackPanelSprite);
+        if (popupCard == null)
+            return null;
+
+        GameObject cardObject = popupCard.gameObject;
+        cardObject.name = "SheepDiscoveryCard";
+        cardObject.SetActive(true);
+        cardObject.transform.SetAsLastSibling();
+
+        RectTransform rect = cardObject.transform as RectTransform;
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.zero;
+        rect.pivot = Vector2.zero;
+        rect.anchoredPosition = DisplayPosition;
+        rect.localRotation = Quaternion.identity;
+        rect.localScale = Vector3.one * DisplayScale;
+
+        foreach (Graphic graphic in cardObject.GetComponentsInChildren<Graphic>(true))
+            graphic.raycastTarget = false;
+
+        CanvasGroup canvasGroup = cardObject.GetComponent<CanvasGroup>();
+        if (canvasGroup == null)
+            canvasGroup = cardObject.AddComponent<CanvasGroup>();
+        canvasGroup.alpha = 0f;
+        canvasGroup.blocksRaycasts = false;
+        canvasGroup.interactable = false;
+
+        Shadow shadow = cardObject.AddComponent<Shadow>();
+        shadow.effectColor = new Color(0.08f, 0.07f, 0.05f, 0.34f);
+        shadow.effectDistance = new Vector2(10f, -10f);
+        shadow.useGraphicAlpha = true;
+
+        Outline border = cardObject.AddComponent<Outline>();
+        border.effectColor = SheepCardView.GetQualityColor(SheepQuality.Common);
+        border.effectDistance = new Vector2(6f, -6f);
+        border.useGraphicAlpha = true;
+
+        SheepDiscoveryToastView view = cardObject.AddComponent<SheepDiscoveryToastView>();
+        view.card = popupCard;
+        view.cardRect = rect;
+        view.group = canvasGroup;
+        view.rarityBorder = border;
         return view;
     }
 
-    public void Show(string typeId, string typeName, SheepQuality quality)
+    public void Show(string typeId, SheepCollectionEntry entry, int encounterCount)
     {
-        if (string.IsNullOrWhiteSpace(typeId) || string.IsNullOrWhiteSpace(typeName)
+        if (string.IsNullOrWhiteSpace(typeId)
+            || entry == null
             || !announcedTypes.Add(typeId))
             return;
 
-        pending.Enqueue(new Discovery(typeName, quality));
+        pending.Enqueue(new Discovery(entry, Mathf.Max(1, encounterCount)));
     }
 
     public static float GetHoldDuration(SheepQuality quality)
@@ -74,24 +109,11 @@ public sealed class SheepDiscoveryToastView : MonoBehaviour
         }
     }
 
-    public static Color GetTextColor(SheepQuality quality)
-    {
-        // Dark enough to remain readable on the same pale paper sprite at every quality.
-        switch (quality)
-        {
-            case SheepQuality.Green: return new Color32(48, 108, 42, 255);
-            case SheepQuality.Blue: return new Color32(37, 91, 151, 255);
-            case SheepQuality.Purple: return new Color32(116, 63, 155, 255);
-            case SheepQuality.Gold: return new Color32(142, 95, 9, 255);
-            case SheepQuality.EasterEgg: return new Color32(169, 51, 112, 255);
-            default: return MvpUiFactory.Ink;
-        }
-    }
-
     private void Update()
     {
         if (group == null)
             return;
+
         bool paused = Time.timeScale <= 0f;
         if (!paused)
             Advance(Time.deltaTime);
@@ -104,21 +126,79 @@ public sealed class SheepDiscoveryToastView : MonoBehaviour
         {
             if (pending.Count == 0)
                 return;
+
             current = pending.Dequeue();
-            label.text = current.Message;
-            label.color = GetTextColor(current.Quality);
+            card.Show(current.Entry, current.EncounterCount);
+            if (rarityBorder != null)
+                rarityBorder.effectColor = SheepCardView.GetQualityColor(current.Entry.quality);
             age = 0f;
             showing = true;
         }
 
-        age += deltaTime;
-        float duration = GetHoldDuration(current.Quality) + FadeDuration * 2f;
-        requestedAlpha = Mathf.Min(Mathf.Clamp01(age / FadeDuration),
-            Mathf.Clamp01((duration - age) / FadeDuration));
-        if (age >= duration)
-        {
-            showing = false;
-            requestedAlpha = 0f;
-        }
+        age += Mathf.Max(0f, deltaTime);
+        float holdDuration = GetHoldDuration(current.Entry.quality);
+        float duration = EnterDuration + holdDuration + FadeDuration;
+        float enter = Mathf.Clamp01(age / EnterDuration);
+        float leave = Mathf.Clamp01((duration - age) / FadeDuration);
+        requestedAlpha = Mathf.Min(Mathf.Clamp01(age / FadeDuration), leave);
+
+        float bounceScale = enter < 0.68f
+            ? Mathf.Lerp(0.52f, 1.12f, enter / 0.68f)
+            : Mathf.Lerp(1.12f, 1f, (enter - 0.68f) / 0.32f);
+        cardRect.localScale = Vector3.one * (DisplayScale * bounceScale);
+        cardRect.localRotation = Quaternion.Euler(0f, 0f, Mathf.Lerp(-5f, 0f, enter));
+        float hop = Mathf.Sin(enter * Mathf.PI) * 38f - (1f - enter) * 18f;
+        cardRect.anchoredPosition = DisplayPosition + Vector2.up * hop;
+
+        if (age < duration)
+            return;
+
+        showing = false;
+        requestedAlpha = 0f;
+        cardRect.anchoredPosition = DisplayPosition;
+        cardRect.localRotation = Quaternion.identity;
+        cardRect.localScale = Vector3.one * DisplayScale;
+    }
+
+    private static SheepDetailCardView CreateFallbackCard(Transform parent, Sprite panelSprite)
+    {
+        Image panel = MvpUiFactory.CreateImage("SheepDiscoveryCard", parent,
+            panelSprite != null ? Color.white : MvpUiFactory.Paper);
+        panel.sprite = panelSprite;
+        panel.rectTransform.sizeDelta = new Vector2(470f, 570f);
+
+        Image sheepImage = MvpUiFactory.CreateImage("SheepImage", panel.transform, Color.white);
+        sheepImage.preserveAspect = true;
+        MvpUiFactory.Anchor(sheepImage.rectTransform,
+            new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+            new Vector2(0f, -132f), new Vector2(220f, 190f));
+
+        TMP_Text name = CreateText(panel.transform, "Txt_SheepName", -245f, 30f);
+        TMP_Text rarity = CreateText(panel.transform, "Txt_Rarity", -285f, 21f);
+        TMP_Text count = CreateText(panel.transform, "Txt_Count", -320f, 18f);
+        TMP_Text description = CreateText(panel.transform, "Txt_Description", -375f, 19f);
+        TMP_Text abilityName = CreateText(panel.transform, "Txt_AbilityName", -430f, 21f);
+        TMP_Text ability = CreateText(panel.transform, "Txt_AbilityDescription", -485f, 18f);
+
+        SheepDetailCardView card = panel.gameObject.AddComponent<SheepDetailCardView>();
+        card.Configure(sheepImage, name, rarity, count, description, abilityName, ability, null);
+        return card;
+    }
+
+    private static TMP_Text CreateText(
+        Transform parent,
+        string name,
+        float y,
+        float fontSize)
+    {
+        TMP_Text text = MvpUiFactory.CreateText(name, parent, string.Empty, fontSize,
+            TextAlignmentOptions.Center);
+        MvpUiFactory.Anchor(text.rectTransform,
+            new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+            new Vector2(0f, y), new Vector2(400f, 44f));
+        text.enableAutoSizing = true;
+        text.fontSizeMin = 14f;
+        text.fontSizeMax = fontSize;
+        return text;
     }
 }

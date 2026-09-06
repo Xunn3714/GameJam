@@ -11,7 +11,7 @@ public enum FlockActionPhase
 }
 
 /// <summary>
-/// Alpha 羊群主动动作：按下 E 后整群后退、停顿蓄势，再向前冲刺；Q 持续收拢队形。
+/// Alpha 羊群主动动作：按下 E 后整群后退、停顿蓄势，再向前冲刺。
 /// </summary>
 [DisallowMultipleComponent]
 [DefaultExecutionOrder(-75)]
@@ -32,34 +32,25 @@ public sealed class FlockActionController : MonoBehaviour
     [SerializeField, Min(0.1f)] private float dashSpeed = 8f;
     [SerializeField, Min(0.1f)] private float dashDistance = 2.2f;
 
-    [Header("Q Compression")]
-    [SerializeField, Range(0.2f, 1f)] private float minimumManualCompactness = 0.45f;
-    [SerializeField, Min(0.01f)] private float compactingSpeed = 0.45f;
-    [SerializeField, Min(0.01f)] private float restoringSpeed = 0.2f;
-    [SerializeField, Range(0.05f, 1f)] private float compactedMoveSpeedMultiplier = 0.58f;
-
     private bool controlEnabled = true;
-    private bool compressionHeld;
-    private float manualCompactness = 1f;
     private float remainingRetreatDistance;
     private float remainingWindupTime;
     private float remainingDashDistance;
     private float currentDashSpeed;
     private float currentImpactForce;
+    private bool lastImpactDamagedObstacle;
     private Vector2 dashDirection = Vector2.right;
     private FlockActionPhase phase;
 
     public FlockActionPhase Phase => phase;
     public bool IsActing => phase != FlockActionPhase.Idle;
     public bool IsDashing => phase == FlockActionPhase.Dashing;
-    public float ManualCompactness => manualCompactness;
     public float CurrentImpactForce => currentImpactForce;
 
     private void Awake()
     {
         flock ??= GetComponent<FlockController>();
         movement ??= GetComponent<FlockMovementController>();
-        manualCompactness = 1f;
     }
 
     public void Configure(FlockController flockController, FlockMovementController movementController)
@@ -73,9 +64,6 @@ public sealed class FlockActionController : MonoBehaviour
         if (!controlEnabled || movement == null || !movement.ControlEnabled)
         {
             FinishAction();
-            SetCompressionHeld(false);
-            UpdateCompression(Time.deltaTime);
-            UpdateMovementSpeedScale();
             return;
         }
 
@@ -83,15 +71,8 @@ public sealed class FlockActionController : MonoBehaviour
             return;
 
         Keyboard keyboard = Keyboard.current;
-        if (keyboard != null)
-        {
-            SetCompressionHeld(keyboard.qKey.isPressed);
-            if (keyboard.eKey.wasPressedThisFrame)
-                StartGroupDash();
-        }
-
-        UpdateCompression(Time.deltaTime);
-        UpdateMovementSpeedScale();
+        if (keyboard != null && keyboard.eKey.wasPressedThisFrame)
+            StartGroupDash();
     }
 
     private void FixedUpdate()
@@ -170,11 +151,6 @@ public sealed class FlockActionController : MonoBehaviour
         return true;
     }
 
-    public void SetCompressionHeld(bool held)
-    {
-        compressionHeld = held;
-    }
-
     public void SetControlEnabled(bool enabled)
     {
         controlEnabled = enabled;
@@ -182,10 +158,6 @@ public sealed class FlockActionController : MonoBehaviour
             return;
 
         FinishAction();
-        compressionHeld = false;
-        manualCompactness = 1f;
-        flock?.SetManualCompactness(1f);
-        movement?.SetActionSpeedScale(1f);
     }
 
     public static float CalculateImpactForce(int memberCount)
@@ -196,17 +168,6 @@ public sealed class FlockActionController : MonoBehaviour
     public static bool MeetsBreakThreshold(float impactForce, int requiredForce)
     {
         return impactForce >= Mathf.Max(1, requiredForce);
-    }
-
-    public static float CalculateCompressionSpeedScale(
-        float compactness,
-        float minimumCompactness,
-        float minimumSpeedScale)
-    {
-        minimumCompactness = Mathf.Clamp(minimumCompactness, 0.2f, 1f);
-        float amount = Mathf.Clamp01(
-            (1f - compactness) / Mathf.Max(0.0001f, 1f - minimumCompactness));
-        return Mathf.Lerp(1f, Mathf.Clamp(minimumSpeedScale, 0.05f, 1f), amount);
     }
 
     private void UpdateRetreat()
@@ -278,7 +239,7 @@ public sealed class FlockActionController : MonoBehaviour
     private bool HandleDashBlock(Collider2D blocker)
     {
         bool brokeObstacle = TryBreakObstacle(blocker);
-        bool impactAnimationStarted = PlayFlockImpact(hardImpact: !brokeObstacle);
+        bool impactAnimationStarted = PlayFlockImpact(hardImpact: !brokeObstacle && !lastImpactDamagedObstacle);
         if (brokeObstacle)
             return true;
 
@@ -289,31 +250,9 @@ public sealed class FlockActionController : MonoBehaviour
         return false;
     }
 
-    private void UpdateCompression(float deltaTime)
-    {
-        float target = compressionHeld ? minimumManualCompactness : 1f;
-        float speed = compressionHeld ? compactingSpeed : restoringSpeed;
-        manualCompactness = Mathf.MoveTowards(
-            manualCompactness,
-            target,
-            Mathf.Max(0f, speed) * Mathf.Max(0f, deltaTime));
-        flock?.SetManualCompactness(manualCompactness);
-    }
-
-    private void UpdateMovementSpeedScale()
-    {
-        if (movement == null)
-            return;
-
-        float compressionScale = CalculateCompressionSpeedScale(
-            flock != null ? flock.ManualCompactness : manualCompactness,
-            minimumManualCompactness,
-            compactedMoveSpeedMultiplier);
-        movement.SetActionSpeedScale(compressionScale);
-    }
-
     private bool TryBreakObstacle(Collider2D blocker)
     {
+        lastImpactDamagedObstacle = false;
         if (blocker == null)
         {
             flock.ReportFenceChargeImpact(hardImpact: true);
@@ -337,9 +276,13 @@ public sealed class FlockActionController : MonoBehaviour
             : breakable.Definition.RequiredFlockCount;
         bool canBreak = MeetsBreakThreshold(currentImpactForce, requiredForce);
         flock.ReportFenceChargeImpact(hardImpact: !canBreak);
-        if (canBreak)
-            breakable.Break();
-        return canBreak;
+        if (!canBreak)
+            return false;
+
+        // 多段障碍（大石头）吃掉本次冲刺，下一次 E 才能完成破坏。
+        bool destroyed = breakable.Break();
+        lastImpactDamagedObstacle = !destroyed && breakable.IsDamaged;
+        return destroyed;
     }
 
     private bool PlayFlockImpact(bool hardImpact)
@@ -380,10 +323,6 @@ public sealed class FlockActionController : MonoBehaviour
     private void OnDisable()
     {
         FinishAction();
-        compressionHeld = false;
-        manualCompactness = 1f;
-        flock?.SetManualCompactness(1f);
-        movement?.SetActionSpeedScale(1f);
     }
 
     private void OnValidate()

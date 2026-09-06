@@ -7,6 +7,12 @@ using Random = UnityEngine.Random;
 public sealed class ProgressiveSheepSpawner : MonoBehaviour
 {
     private const float GoldenAngle = 2.39996323f;
+    private static readonly SheepQuality[] RewardQualities =
+    {
+        SheepQuality.EasterEgg,
+        SheepQuality.Purple,
+        SheepQuality.Gold,
+    };
 
     [Header("References")]
     [SerializeField] private FlockController flock;
@@ -37,6 +43,8 @@ public sealed class ProgressiveSheepSpawner : MonoBehaviour
     private System.Random random;
     private int fallbackNameIndex = 1;
     private int groupSequence;
+    private int currentMinimumBatchSize = 1;
+    private int currentMaximumBatchSize = 1;
     private float spawnAngleOffset;
     private bool initialized;
 
@@ -50,6 +58,34 @@ public sealed class ProgressiveSheepSpawner : MonoBehaviour
         public string TypeId { get; }
         public bool Collected { get; set; }
         public HashSet<RecruitableSheep> WildMembers { get; } = new();
+    }
+
+    private readonly struct RewardCandidate
+    {
+        public RewardCandidate(SpecialSheepCatalog.Entry entry, SheepQuality quality)
+        {
+            Entry = entry;
+            Quality = quality;
+        }
+
+        public SpecialSheepCatalog.Entry Entry { get; }
+        public SheepQuality Quality { get; }
+    }
+
+    public sealed class RewardSpecialGroupReservation
+    {
+        internal RewardSpecialGroupReservation(
+            SpecialSheepCatalog.Entry catalogEntry,
+            SheepQuality quality)
+        {
+            CatalogEntry = catalogEntry;
+            Quality = quality;
+        }
+
+        public string TypeId => CatalogEntry != null ? CatalogEntry.TypeId : string.Empty;
+        internal SpecialSheepCatalog.Entry CatalogEntry { get; }
+        internal SheepQuality Quality { get; }
+        internal bool Consumed { get; set; }
     }
 
     /// <summary>某种类型的羊被刷出时触发（类型 id, 羊）。</summary>
@@ -92,6 +128,13 @@ public sealed class ProgressiveSheepSpawner : MonoBehaviour
         spawnAreaSize = area.size;
     }
 
+    /// <summary>同步当前成长阶段的普通刷新批次范围，奖励刷新也复用这一策略。</summary>
+    public void SetCurrentBatchRange(int minimumCount, int maximumCount)
+    {
+        currentMinimumBatchSize = Mathf.Max(1, minimumCount);
+        currentMaximumBatchSize = Mathf.Max(currentMinimumBatchSize, maximumCount);
+    }
+
     public void Initialize()
     {
         if (initialized)
@@ -115,6 +158,8 @@ public sealed class ProgressiveSheepSpawner : MonoBehaviour
         if (!initialized)
             Initialize();
 
+        SetCurrentBatchRange(minimumCount, maximumCount);
+
         RecruitableSheep prefab = specialSheepCatalog != null
             ? specialSheepCatalog.BaseSheepPrefab
             : null;
@@ -124,9 +169,7 @@ public sealed class ProgressiveSheepSpawner : MonoBehaviour
             return false;
         }
 
-        minimumCount = Mathf.Max(1, minimumCount);
-        maximumCount = Mathf.Max(minimumCount, maximumCount);
-        int count = random.Next(minimumCount, maximumCount + 1);
+        int count = RollCurrentBatchSize();
 
         if (!TryFindClusterCenter(count, out Vector2 clusterCenter))
         {
@@ -225,6 +268,131 @@ public sealed class ProgressiveSheepSpawner : MonoBehaviour
             $"累计刷新 {TotalSpawned} 只。",
             this);
         return true;
+    }
+
+    /// <summary>
+    /// 在开局为固定奖励预留一种彩色、紫色或金色羊。预留立即占用本局唯一名额，
+    /// 避免玩家打开宝箱之前，同一类型又被普通刷新器抽中。
+    /// </summary>
+    public bool TryReserveRewardSpecialGroup(out RewardSpecialGroupReservation reservation)
+    {
+        return TryReserveRewardSpecialGroup(null, out reservation);
+    }
+
+    /// <summary>
+    /// 优先从尚未发现的奖励羊中等概率选择；没有未发现候选时，从全部奖励候选中等概率选择。
+    /// 因为每个候选羊只出现一次，各品质概率自然等于该品质候选数占候选池总数的比例。
+    /// </summary>
+    public bool TryReserveRewardSpecialGroup(
+        Func<string, bool> isDiscovered,
+        out RewardSpecialGroupReservation reservation)
+    {
+        reservation = null;
+        if (!initialized)
+            Initialize();
+
+        if (specialSheepCatalog == null || specialSheepCatalog.BaseSheepPrefab == null)
+            return false;
+
+        List<RewardCandidate> allCandidates = new();
+        List<RewardCandidate> undiscoveredCandidates = new();
+        foreach (SheepQuality quality in RewardQualities)
+        {
+            foreach (SpecialSheepCatalog.Tier tier in specialSheepCatalog.Tiers)
+            {
+                if (tier == null || tier.Quality != quality)
+                    continue;
+
+                foreach (SpecialSheepCatalog.Entry entry in tier.Entries)
+                {
+                    if (entry == null
+                        || !entry.CanSpawn
+                        || !specialRunState.IsAvailable(entry.TypeId))
+                    {
+                        continue;
+                    }
+
+                    RewardCandidate candidate = new(entry, quality);
+                    allCandidates.Add(candidate);
+                    if (isDiscovered == null || !isDiscovered(entry.TypeId))
+                        undiscoveredCandidates.Add(candidate);
+                }
+            }
+        }
+
+        List<RewardCandidate> candidates = undiscoveredCandidates.Count > 0
+            ? undiscoveredCandidates
+            : allCandidates;
+        while (candidates.Count > 0)
+        {
+            int candidateIndex = random.Next(candidates.Count);
+            RewardCandidate candidate = candidates[candidateIndex];
+            candidates.RemoveAt(candidateIndex);
+            if (!specialRunState.TryActivate(candidate.Entry.TypeId))
+                continue;
+
+            reservation = new RewardSpecialGroupReservation(candidate.Entry, candidate.Quality);
+            return true;
+        }
+
+        Debug.LogWarning("红箱子奖励未预留：特殊羊目录里没有本局可用的彩色、紫色或金色羊。", this);
+        return false;
+    }
+
+    /// <summary>按当前普通刷新批次范围，在指定位置生成已经预留的特殊羊组。每份预留只能消费一次。</summary>
+    public bool TrySpawnRewardSpecialGroup(
+        RewardSpecialGroupReservation reservation,
+        Vector2 center)
+    {
+        if (!initialized)
+            Initialize();
+
+        if (reservation == null
+            || reservation.Consumed
+            || reservation.CatalogEntry == null
+            || specialSheepCatalog == null
+            || specialSheepCatalog.BaseSheepPrefab == null)
+            return false;
+
+        reservation.Consumed = true;
+        SpecialSheepCatalog.Entry entry = reservation.CatalogEntry;
+
+        int count = RollCurrentBatchSize();
+        groupSequence++;
+        List<RecruitableSheep> created = new(count);
+        if (!TryCreateGroupInstances(
+                specialSheepCatalog.BaseSheepPrefab,
+                count,
+                center,
+                groupSequence,
+                entry.TypeId,
+                entry,
+                reservation.Quality,
+                created))
+        {
+            DestroyGroupInstances(created);
+            specialRunState.ReleaseIfActive(entry.TypeId);
+            return false;
+        }
+
+        ActiveSpecialGroup specialGroup = new(entry.TypeId);
+        foreach (RecruitableSheep sheep in created)
+        {
+            TotalSpawned++;
+            activeBatch.Add(sheep);
+            specialGroup.WildMembers.Add(sheep);
+            specialGroupBySheep[sheep] = specialGroup;
+            SheepIdentity identity = sheep.GetComponent<SheepIdentity>();
+            SheepSpawned?.Invoke(identity.SheepTypeId, sheep);
+        }
+
+        Debug.Log($"红箱子奖励了 {count} 只{entry.DisplayName}。", this);
+        return true;
+    }
+
+    private int RollCurrentBatchSize()
+    {
+        return random.Next(currentMinimumBatchSize, currentMaximumBatchSize + 1);
     }
 
     private bool TryCreateGroupInstances(

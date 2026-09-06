@@ -47,6 +47,8 @@ public sealed class ObstacleDefinition : ScriptableObject
     [Header("Break Rule")]
     [SerializeField] private ObstacleBreakRule breakRule = ObstacleBreakRule.OnAnyContact;
     [SerializeField, Min(1)] private int requiredFlockCount = 6;
+    [Tooltip("需要多少次独立的 E 冲撞才会完全摧毁。普通物件为 1；大石头为 2。")]
+    [SerializeField, Min(1)] private int requiredDashHits = 1;
     [Tooltip("围栏门槛按当前羊数还是本局历史最高羊数判断。")]
     [SerializeField] private ObstacleCountSource countSource = ObstacleCountSource.CurrentFlockCount;
 
@@ -64,6 +66,7 @@ public sealed class ObstacleDefinition : ScriptableObject
     public ObstacleSizeCategory SizeCategory => sizeCategory;
     public ObstacleBreakRule BreakRule => breakRule;
     public int RequiredFlockCount => requiredFlockCount;
+    public int RequiredDashHits => requiredDashHits;
     public ObstacleCountSource CountSource => countSource;
     public ObstacleBrokenBehavior BrokenBehavior => brokenBehavior;
     public float BreakAnimationDuration => breakAnimationDuration;

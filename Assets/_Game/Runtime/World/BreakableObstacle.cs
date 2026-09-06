@@ -17,9 +17,13 @@ public sealed class BreakableObstacle : MonoBehaviour
 
     private Collider2D[] colliders;
     private bool isBroken;
+    private int receivedDashHits;
 
     public ObstacleDefinition Definition => definition;
     public bool IsBroken => isBroken;
+    public int ReceivedDashHits => receivedDashHits;
+    public int RequiredDashHits => definition != null ? definition.RequiredDashHits : 1;
+    public bool IsDamaged => receivedDashHits > 0 && !isBroken;
 
     public event Action<BreakableObstacle> Broken;
 
@@ -76,10 +80,21 @@ public sealed class BreakableObstacle : MonoBehaviour
         return member != null && member.Flock != null;
     }
 
-    public void Break()
+    /// <summary>
+    /// 记录一次有效冲撞。多段障碍在最后一次之前仍保持实体碰撞，
+    /// 因而必须由下一次 E 冲刺完成摧毁。
+    /// </summary>
+    public bool Break()
     {
         if (isBroken)
-            return;
+            return false;
+
+        receivedDashHits++;
+        if (receivedDashHits < RequiredDashHits)
+        {
+            ApplyDamagedVisual();
+            return false;
+        }
 
         isBroken = true;
 
@@ -97,10 +112,17 @@ public sealed class BreakableObstacle : MonoBehaviour
 
         if (behavior == ObstacleBrokenBehavior.Disappear)
         {
+            // 多段障碍已经在前一击展示过破损图；最后一击直接从地图移除。
+            if (RequiredDashHits > 1)
+            {
+                Destroy(gameObject);
+                return true;
+            }
+
             // 花草：被踩扁——压矮、变宽、淡出，然后销毁。花草本身在羊下面（order -1），压扁过程不会盖住羊。
             float duration = definition != null ? definition.BreakAnimationDuration : 0.4f;
             StartCoroutine(TrampleThenDestroy(duration));
-            return;
+            return true;
         }
 
         // 有坏图的：立刻换成坏图并沉到 Background 层，成为地面的一部分，羊从上面走过。
@@ -114,6 +136,13 @@ public sealed class BreakableObstacle : MonoBehaviour
         }
 
         ApplyBrokenSorting();
+        return true;
+    }
+
+    private void ApplyDamagedVisual()
+    {
+        if (spriteRenderer != null && definition != null && definition.BrokenSprite != null)
+            spriteRenderer.sprite = definition.BrokenSprite;
     }
 
     private IEnumerator TrampleThenDestroy(float duration)
