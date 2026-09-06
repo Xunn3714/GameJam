@@ -28,9 +28,44 @@ public class CollectionPanelController : MonoBehaviour
     private SheepCardView selectedCard;
 
 
+    private Image scrollbarSheepIcon;
+
     private void OnEnable()
     {
+        EnsureScrollbarSheepIcon();
         RefreshCollection();
+    }
+
+    private void EnsureScrollbarSheepIcon()
+    {
+        if (scrollbarSheepIcon != null || contentRoot == null)
+            return;
+
+        ScrollRect scroll = contentRoot.GetComponentInParent<ScrollRect>(true);
+        RectTransform handle = scroll != null && scroll.verticalScrollbar != null
+            ? scroll.verticalScrollbar.handleRect : null;
+        if (handle == null)
+            return;
+
+        Sprite sheepSprite = Resources.Load<Sprite>("SheepScrollbarThumb");
+        if (sheepSprite == null)
+            return;
+
+        GameObject iconObject = new GameObject("SheepScrollbarIcon",
+            typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        iconObject.layer = handle.gameObject.layer;
+        RectTransform iconRect = (RectTransform)iconObject.transform;
+        iconRect.SetParent(handle, false);
+        iconRect.anchorMin = iconRect.anchorMax = new Vector2(0.5f, 0.5f);
+        iconRect.pivot = new Vector2(0.5f, 0.5f);
+        iconRect.anchoredPosition = Vector2.zero;
+        iconRect.sizeDelta = new Vector2(80f, 60f);
+
+        scrollbarSheepIcon = iconObject.GetComponent<Image>();
+        scrollbarSheepIcon.sprite = sheepSprite;
+        scrollbarSheepIcon.preserveAspect = true;
+        // The existing green handle continues to receive clicks and drags.
+        scrollbarSheepIcon.raycastTarget = false;
     }
 
 
