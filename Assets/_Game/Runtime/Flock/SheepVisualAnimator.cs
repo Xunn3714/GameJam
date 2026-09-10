@@ -28,6 +28,10 @@ public sealed class SheepVisualAnimator : MonoBehaviour
     [SerializeField, Min(0.1f)] private float minimumIdleDelay = 1.6f;
     [SerializeField, Min(0.1f)] private float maximumIdleDelay = 4.8f;
 
+    [Header("Group Action")]
+    [SerializeField, Min(0f)] private float windupAnticipationSquash = 0.1f;
+    [SerializeField, Min(0f)] private float windupAnticipationBlendSpeed = 8f;
+
     [Header("Obstacle Impact")]
     [SerializeField, Min(0f)] private float softImpactSquash = 0.16f;
     [SerializeField, Min(0f)] private float hardImpactSquash = 0.28f;
@@ -56,6 +60,8 @@ public sealed class SheepVisualAnimator : MonoBehaviour
     private bool flockFacingIntentLeft;
     private bool groupActionVisualActive;
     private float poopReactionAge = -1f;
+    private bool groupActionHolding;
+    private float groupActionHoldBlend;
 
     public bool IsHardImpactPlaying => impactAge >= 0f && hardImpact;
     public bool IsPoopReactionPlaying => poopReactionAge >= 0f;
@@ -83,9 +89,10 @@ public sealed class SheepVisualAnimator : MonoBehaviour
     }
 
     /// <summary>主动动作期间保留伸缩反馈，但禁止 Sprite 绕 Z 轴摇摆。</summary>
-    public void SetGroupActionVisual(bool active)
+    public void SetGroupActionVisual(bool active, bool holding = false)
     {
         groupActionVisualActive = active;
+        groupActionHolding = active && holding;
     }
 
     public bool PlayObstacleImpact(bool cannotBreak, Vector2 movementDirection)
@@ -171,6 +178,8 @@ public sealed class SheepVisualAnimator : MonoBehaviour
     {
         groupActionVisualActive = false;
         poopReactionAge = -1f;
+        groupActionHolding = false;
+        groupActionHoldBlend = 0f;
         if (sourceRenderer != null)
             sourceRenderer.forceRenderingOff = false;
         if (animatedRenderer != null)
@@ -195,6 +204,11 @@ public sealed class SheepVisualAnimator : MonoBehaviour
         UpdateFacing(frameVelocity);
         UpdateIdle(isMoving);
         UpdateImpact();
+        bool anticipating = groupActionHolding && impactAge < 0f;
+        groupActionHoldBlend = Mathf.MoveTowards(
+            groupActionHoldBlend,
+            anticipating ? 1f : 0f,
+            Mathf.Max(0f, windupAnticipationBlendSpeed) * Time.deltaTime);
         ApplyAnimation(isMoving);
         wasMoving = isMoving;
     }
@@ -323,6 +337,14 @@ public sealed class SheepVisualAnimator : MonoBehaviour
             }
         }
 
+        if (groupActionHoldBlend > 0f)
+        {
+            float anticipation = windupAnticipationSquash * groupActionHoldBlend;
+            scaleX += anticipation * 0.8f;
+            scaleY -= anticipation;
+            offsetY -= anticipation * 0.16f;
+        }
+
         float flipFold = 1f;
         if (flipAge >= 0f)
         {
@@ -443,5 +465,7 @@ public sealed class SheepVisualAnimator : MonoBehaviour
     {
         maximumIdleDelay = Mathf.Max(maximumIdleDelay, minimumIdleDelay);
         hardImpactCooldown = Mathf.Max(0f, hardImpactCooldown);
+        windupAnticipationSquash = Mathf.Max(0f, windupAnticipationSquash);
+        windupAnticipationBlendSpeed = Mathf.Max(0f, windupAnticipationBlendSpeed);
     }
 }

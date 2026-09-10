@@ -13,6 +13,69 @@ public sealed class FlockActionControllerTests
     }
 
     [Test]
+    public void RetreatingMemberBlockDoesNotStopGroupAction()
+    {
+        Assert.IsFalse(FlockActionController.ShouldMemberBlockStopAction(
+            Vector2.zero,
+            Vector2.right,
+            Vector2.left * 0.1f,
+            Vector2.left));
+    }
+
+    [Test]
+    public void RearMemberBlockDoesNotStopForwardDash()
+    {
+        Assert.IsFalse(FlockActionController.ShouldMemberBlockStopAction(
+            Vector2.zero,
+            Vector2.right,
+            Vector2.right * 0.1f,
+            Vector2.left));
+    }
+
+    [Test]
+    public void FrontMemberBlockStopsForwardDash()
+    {
+        Assert.IsTrue(FlockActionController.ShouldMemberBlockStopAction(
+            Vector2.zero,
+            Vector2.right,
+            Vector2.right * 0.1f,
+            Vector2.right));
+    }
+
+    [Test]
+    public void RetreatSpeedEasesAtBothEnds()
+    {
+        Assert.That(FlockActionController.CalculateRetreatSpeedFactor(0f, 0.45f),
+            Is.EqualTo(0.45f).Within(0.001f));
+        Assert.That(FlockActionController.CalculateRetreatSpeedFactor(0.5f, 0.45f),
+            Is.EqualTo(1f).Within(0.001f));
+        Assert.That(FlockActionController.CalculateRetreatSpeedFactor(1f, 0.45f),
+            Is.EqualTo(0.45f).Within(0.001f));
+    }
+
+    [Test]
+    public void DashSpeedBuildsThenSettlesAtTheEnd()
+    {
+        Assert.That(FlockActionController.CalculateDashSpeedFactor(0f, 0.65f, 0.75f),
+            Is.EqualTo(0.65f).Within(0.001f));
+        Assert.That(FlockActionController.CalculateDashSpeedFactor(0.5f, 0.65f, 0.75f),
+            Is.EqualTo(1f).Within(0.001f));
+        Assert.That(FlockActionController.CalculateDashSpeedFactor(1f, 0.65f, 0.75f),
+            Is.EqualTo(0.75f).Within(0.001f));
+    }
+
+    [Test]
+    public void ImpactFollowThroughPreservesThenReleasesMomentum()
+    {
+        Assert.That(FlockActionController.CalculateImpactFollowThroughSpeedFactor(1f, 0.72f),
+            Is.EqualTo(0.72f).Within(0.001f));
+        Assert.That(FlockActionController.CalculateImpactFollowThroughSpeedFactor(0.5f, 0.72f),
+            Is.GreaterThan(0f).And.LessThan(0.72f));
+        Assert.That(FlockActionController.CalculateImpactFollowThroughSpeedFactor(0f, 0.72f),
+            Is.EqualTo(0f).Within(0.001f));
+    }
+
+    [Test]
     public void DashSweepStopsBeforeThinColliderThatEndpointCheckMisses()
     {
         GameObject blockerObject = new GameObject("ThinDashBlocker");
@@ -45,4 +108,5 @@ public sealed class FlockActionControllerTests
             Object.DestroyImmediate(blockerObject);
         }
     }
+
 }

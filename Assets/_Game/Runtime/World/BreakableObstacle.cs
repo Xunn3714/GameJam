@@ -70,12 +70,10 @@ public sealed class BreakableObstacle : MonoBehaviour
         }
     }
 
-    /// 判断碰上来的是不是羊群的一员（中心点或任意已入群成员）。野外未招募的羊不算。
+    /// 判断碰上来的是不是已入群的真实羊。羊群目标中心只表达移动意图，
+    /// 不能隔着障碍代替成员触发破坏或围栏范围。
     public static bool IsFlockContact(Collider2D other)
     {
-        if (other.GetComponentInParent<FlockController>() != null)
-            return true;
-
         SheepMember member = other.GetComponentInParent<SheepMember>();
         return member != null && member.Flock != null;
     }
