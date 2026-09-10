@@ -121,6 +121,20 @@ public sealed class AlphaProgressionTests
             CurrentTask(6, true, 100, true, borderBroken: true, currentMemberCount: 100).Id);
     }
 
+    [Test]
+    public void PoopCounterIsAStatLineAndDoesNotComplete()
+    {
+        MvpObjectiveSnapshot counter = AlphaTaskSequence.PoopCounter(7);
+
+        Assert.AreEqual("alpha.poop_counter", counter.Id);
+        Assert.AreEqual("Space 拉屎", counter.Title);
+        Assert.AreEqual(7, counter.Progress);
+        Assert.AreEqual(0, counter.Target);
+        Assert.IsTrue(counter.IsCounter);
+        Assert.IsFalse(counter.IsRequired);
+        Assert.IsFalse(counter.IsComplete);
+    }
+
     private static MvpObjectiveSnapshot CurrentTask(
         int newRecruitCount,
         bool penOpened = false,

@@ -26404,6 +26404,7 @@ GameObject:
   - component: {fileID: 2024521171}
   - component: {fileID: 2024521174}
   - component: {fileID: 2024521177}
+  - component: {fileID: 2024521178}
   m_Layer: 0
   m_Name: SheepFlock
   m_TagString: Untagged
@@ -26603,6 +26604,28 @@ MonoBehaviour:
   - {fileID: 8300000, guid: b6f119997d3139e439ae29d01617cbbc, type: 3}
   - {fileID: 8300000, guid: d33e8c21b8ac8234ea8b097d212b1b3b, type: 3}
   recruitBleatChance: 0.5
+--- !u!114 &2024521178
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2024521169}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 53a708b0ad6044b594063aec52566f51, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::PoopAbility
+  poopAction: {fileID: 11400000, guid: 17bc173d972edda449f29844fc283b86, type: 2}
+  spawnPoint: {fileID: 0}
+  poopPrefab: {fileID: 5617940016520123198, guid: b3277c9e502007845b6caa1af6a1153e, type: 3}
+  poopClip: {fileID: 0}
+  cooldownSeconds: 2
+  lifetimeSeconds: 10
+  maxActivePoops: 100
+  ringIntervalSeconds: 0.2
+  ringWidth: 1.9
+  footOffset: 0.08
 --- !u!1 &2037612877
 GameObject:
   m_ObjectHideFlags: 0
@@ -27351,6 +27374,7 @@ MonoBehaviour:
   flock: {fileID: 2024521173}
   flockMovement: {fileID: 2024521172}
   flockActions: {fileID: 2024521171}
+  poopAbility: {fileID: 2024521178}
   sheepSpawner: {fileID: 851048526}
   cameraFollow: {fileID: 519420033}
   wolfDirector: {fileID: 1515015899}

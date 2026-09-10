@@ -15,7 +15,7 @@ public class TaskChecklistView : MonoBehaviour
     [SerializeField] private TMP_Text progress01;
     [SerializeField] private Image progressFill01;
 
-    [Header("Rows hidden by the sequential Alpha task flow")]
+    [Header("Additional Task Rows")]
     [SerializeField] private GameObject taskRow02;
     [SerializeField] private Image checkIcon02;
     [SerializeField] private TMP_Text progress02;
@@ -25,10 +25,12 @@ public class TaskChecklistView : MonoBehaviour
     [SerializeField] private GameObject taskRow03;
     [SerializeField] private Image checkIcon03;
     [SerializeField] private TMP_Text progress03;
+    [SerializeField] private TMP_Text taskTitle03;
 
     [SerializeField] private GameObject taskRow04;
     [SerializeField] private Image checkIcon04;
     [SerializeField] private TMP_Text progress04;
+    [SerializeField] private TMP_Text taskTitle04;
 
     [Header("Group")]
     [SerializeField] private TMP_Text groupCountText;
@@ -50,7 +52,10 @@ public class TaskChecklistView : MonoBehaviour
 
         ApplyClearTypography(taskHeaderText);
         ApplyClearTypography(taskTitle01);
+        ResolveAdditionalTitles();
         ApplyClearTypography(taskTitle02);
+        ApplyClearTypography(taskTitle03);
+        ApplyClearTypography(taskTitle04);
         ApplyClearTypography(progress01);
         EnsureCounterIsFullyVisible(progress01);
         EnsureCounterIsFullyVisible(progress02);
@@ -74,8 +79,10 @@ public class TaskChecklistView : MonoBehaviour
         SetRowActive(taskRow04, checkIcon04, false);
         ResizePanelForTaskCount(objectives != null ? objectives.Count : 0);
 
-        if (taskTitle01 != null)
-            taskTitle01.text = string.Empty;
+        ClearTitle(taskTitle01);
+        ClearTitle(taskTitle02);
+        ClearTitle(taskTitle03);
+        ClearTitle(taskTitle04);
 
         ResetTask(checkIcon01, progress01);
         SetProgressFill(progressFill01, 0f);
@@ -86,27 +93,21 @@ public class TaskChecklistView : MonoBehaviour
         if (objectives == null || objectives.Count == 0)
             return;
 
+        ApplyRow(taskRow01, taskTitle01, checkIcon01, progress01, objectives[0]);
         MvpObjectiveSnapshot current = objectives[0];
-        SetRowActive(taskRow01, checkIcon01, true);
-        if (taskTitle01 != null)
-            taskTitle01.text = current.Title;
-        ApplyTask(checkIcon01, progress01, current);
         SetProgressFill(
             progressFill01,
             current.Target > 0
                 ? (float)current.Progress / current.Target
                 : current.IsComplete ? 1f : 0f);
 
-        // 第二行留给支线任务（例如宝通寺的「寻找？？」）。
-        if (objectives.Count < 2)
-            return;
-
-        MvpObjectiveSnapshot extra = objectives[1];
-        SetRowActive(taskRow02, checkIcon02, true);
-        ResolveTitle02();
-        if (taskTitle02 != null)
-            taskTitle02.text = extra.Title;
-        ApplyTask(checkIcon02, progress02, extra);
+        ResolveAdditionalTitles();
+        if (objectives.Count > 1)
+            ApplyRow(taskRow02, taskTitle02, checkIcon02, progress02, objectives[1]);
+        if (objectives.Count > 2)
+            ApplyRow(taskRow03, taskTitle03, checkIcon03, progress03, objectives[2]);
+        if (objectives.Count > 3)
+            ApplyRow(taskRow04, taskTitle04, checkIcon04, progress04, objectives[3]);
     }
 
     private void ResizePanelForTaskCount(int taskCount)
@@ -125,19 +126,25 @@ public class TaskChecklistView : MonoBehaviour
         panelRect.sizeDelta = size;
     }
 
-    /// <summary>第二行的标题文本没在 Inspector 里连的话，自己从行里找一个。</summary>
-    private void ResolveTitle02()
+    private void ResolveAdditionalTitles()
     {
-        if (taskTitle02 != null || taskRow02 == null)
+        ResolveTitle(ref taskTitle02, taskRow02, progress02);
+        ResolveTitle(ref taskTitle03, taskRow03, progress03);
+        ResolveTitle(ref taskTitle04, taskRow04, progress04);
+    }
+
+    private static void ResolveTitle(ref TMP_Text title, GameObject row, TMP_Text progress)
+    {
+        if (title != null || row == null)
             return;
 
-        foreach (TMP_Text candidate in taskRow02.GetComponentsInChildren<TMP_Text>(true))
+        foreach (TMP_Text candidate in row.GetComponentsInChildren<TMP_Text>(true))
         {
-            if (candidate == progress02)
+            if (candidate == progress)
                 continue;
 
-            taskTitle02 = candidate;
-            ApplyClearTypography(taskTitle02);
+            title = candidate;
+            ApplyClearTypography(title);
             return;
         }
     }
@@ -163,6 +170,7 @@ public class TaskChecklistView : MonoBehaviour
     {
         if (icon != null)
         {
+            icon.gameObject.SetActive(!objective.IsCounter);
             icon.sprite =
                 objective.IsComplete
                     ? checkedSprite
@@ -171,18 +179,43 @@ public class TaskChecklistView : MonoBehaviour
 
         if (progressText != null)
         {
-            progressText.text = objective.Target > 0
-                ? $"{objective.Progress}/{objective.Target}"
-                : objective.IsComplete ? "完成" : string.Empty;
+            progressText.text = objective.IsCounter
+                ? $"{objective.Progress} 次"
+                : objective.Target > 0
+                    ? $"{objective.Progress}/{objective.Target}"
+                    : objective.IsComplete ? "完成" : string.Empty;
         }
     }
 
     private void ResetTask(Image icon, TMP_Text progressText)
     {
         if (icon != null)
+        {
+            icon.gameObject.SetActive(true);
             icon.sprite = uncheckedSprite;
+        }
         if (progressText != null)
             progressText.text = string.Empty;
+    }
+
+    private void ApplyRow(
+        GameObject row,
+        TMP_Text title,
+        Image icon,
+        TMP_Text progress,
+        MvpObjectiveSnapshot objective)
+    {
+        SetRowActive(row, icon, true);
+        if (title != null)
+            title.text = objective.Title;
+
+        ApplyTask(icon, progress, objective);
+    }
+
+    private static void ClearTitle(TMP_Text title)
+    {
+        if (title != null)
+            title.text = string.Empty;
     }
 
     private static void SetProgressFill(Image fill, float value)

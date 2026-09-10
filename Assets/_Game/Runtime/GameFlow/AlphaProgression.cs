@@ -152,6 +152,20 @@ public static class AlphaTaskSequence
             requiredCount);
     }
 
+    /// <summary>常驻统计行：只记录本局成功生成粪便的次数，不参与任务完成判断。</summary>
+    public static MvpObjectiveSnapshot PoopCounter(int useCount)
+    {
+        return new MvpObjectiveSnapshot(
+            "alpha.poop_counter",
+            "Space 拉屎",
+            false,
+            false,
+            false,
+            Mathf.Max(0, useCount),
+            0,
+            true);
+    }
+
     private static MvpObjectiveSnapshot Objective(
         string id,
         string title,

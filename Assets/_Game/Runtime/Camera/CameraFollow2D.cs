@@ -1,16 +1,27 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public sealed class CameraFollow2D : MonoBehaviour
 {
     private const float SettleDistance = 0.01f;
+    private const float ZoomComparisonTolerance = 0.001f;
 
     [SerializeField] private Transform target;
     [SerializeField, Min(0f)] private float smoothTime = 0.15f;
     [SerializeField, Min(0f)] private float zoomSmoothTime = 0.6f;
 
+    [Header("Player Zoom")]
+    [Tooltip("游戏进行时允许鼠标滚轮调整显示范围。滚轮向上放大画面，向下拉远画面。")]
+    [SerializeField] private bool enableMouseWheelZoom = true;
+    [Tooltip("玩家能缩小到的最低正交视角。阶段配置只控制最高视角。")]
+    [SerializeField, Min(0.1f)] private float minimumOrthographicSize = 3.5f;
+    [Tooltip("每次滚轮输入改变多少正交视角单位。")]
+    [SerializeField, Min(0.05f)] private float mouseWheelZoomStep = 1f;
+
     private Vector3 velocity;
     private float zoomVelocity;
     private float targetOrthographicSize;
+    private float maximumOrthographicSize;
     private float cameraZ;
     private FlockController flockController;
     private Camera attachedCamera;
@@ -38,18 +49,20 @@ public sealed class CameraFollow2D : MonoBehaviour
     public float CurrentOrthographicSize => attachedCamera != null && attachedCamera.orthographic
         ? attachedCamera.orthographicSize
         : targetOrthographicSize;
+    public float TargetOrthographicSize => targetOrthographicSize;
+    public float MinimumOrthographicSize => Mathf.Max(0.1f, minimumOrthographicSize);
+    public float MaximumOrthographicSize => Mathf.Max(MinimumOrthographicSize, maximumOrthographicSize);
 
     private void Awake()
     {
         cameraZ = transform.position.z;
-        attachedCamera = GetComponent<Camera>();
-        targetOrthographicSize = attachedCamera != null && attachedCamera.orthographic
-            ? attachedCamera.orthographicSize
-            : 0f;
+        EnsureZoomState();
     }
 
     private void LateUpdate()
     {
+        HandleMouseWheelZoom();
+
         if (target == null)
             return;
 
@@ -145,13 +158,14 @@ public sealed class CameraFollow2D : MonoBehaviour
 
     public void SetOrthographicSize(float size, bool immediate = false)
     {
-        if (attachedCamera == null)
-            attachedCamera = GetComponent<Camera>();
-
+        EnsureAttachedCamera();
         if (attachedCamera == null || !attachedCamera.orthographic)
             return;
 
-        targetOrthographicSize = Mathf.Max(0.01f, size);
+        targetOrthographicSize = Mathf.Clamp(
+            size,
+            MinimumOrthographicSize,
+            MaximumOrthographicSize);
         if (!immediate)
             return;
 
@@ -159,12 +173,67 @@ public sealed class CameraFollow2D : MonoBehaviour
         zoomVelocity = 0f;
     }
 
+    /// <summary>
+    /// 按历史最高羊数单向解锁更大视野。只提高玩家可用的缩放上限，
+    /// 不会主动改变当前镜头或玩家选定的目标视角。
+    /// </summary>
+    public void UnlockMaximumOrthographicSize(float size)
+    {
+        EnsureZoomState();
+        maximumOrthographicSize = Mathf.Max(
+            MaximumOrthographicSize,
+            MinimumOrthographicSize,
+            size);
+    }
+
+    /// <summary>正方向放大画面、缩小显示范围；负方向拉远画面、扩大显示范围。</summary>
+    public bool AdjustOrthographicSize(float scrollDirection)
+    {
+        if (Mathf.Abs(scrollDirection) <= Mathf.Epsilon)
+            return false;
+
+        float previousTarget = targetOrthographicSize;
+        float nextTarget = previousTarget - Mathf.Sign(scrollDirection) * mouseWheelZoomStep;
+        SetOrthographicSize(nextTarget);
+        return Mathf.Abs(targetOrthographicSize - previousTarget) > ZoomComparisonTolerance;
+    }
+
+    private void HandleMouseWheelZoom()
+    {
+        if (!enableMouseWheelZoom || Time.timeScale <= 0f)
+            return;
+
+        Mouse mouse = Mouse.current;
+        if (mouse == null)
+            return;
+
+        float scroll = mouse.scroll.ReadValue().y;
+        if (Mathf.Abs(scroll) > Mathf.Epsilon)
+            AdjustOrthographicSize(scroll);
+    }
+
+    private void EnsureAttachedCamera()
+    {
+        if (attachedCamera == null)
+            attachedCamera = GetComponent<Camera>();
+    }
+
+    private void EnsureZoomState()
+    {
+        EnsureAttachedCamera();
+        if (targetOrthographicSize > 0f || attachedCamera == null || !attachedCamera.orthographic)
+            return;
+
+        targetOrthographicSize = attachedCamera.orthographicSize;
+        maximumOrthographicSize = Mathf.Max(MinimumOrthographicSize, targetOrthographicSize);
+    }
+
     private void UpdateZoom()
     {
         if (attachedCamera == null || !attachedCamera.orthographic || targetOrthographicSize <= 0f)
             return;
 
-        if (Mathf.Abs(attachedCamera.orthographicSize - targetOrthographicSize) <= 0.001f)
+        if (Mathf.Abs(attachedCamera.orthographicSize - targetOrthographicSize) <= ZoomComparisonTolerance)
         {
             attachedCamera.orthographicSize = targetOrthographicSize;
             zoomVelocity = 0f;

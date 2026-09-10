@@ -11,6 +11,9 @@ public sealed class SheepVisualAnimator : MonoBehaviour
     private const float IdleAnimationDuration = 0.78f;
     private const float SoftImpactDuration = 0.26f;
     private const float HardImpactDuration = 0.62f;
+    private const float PoopReactionDuration = 0.82f;
+    private const float PoopCompressionEnd = 0.18f;
+    private const float PoopAirborneEnd = 0.58f;
 
     [Header("Movement")]
     [SerializeField, Min(0f)] private float movementStretch = 0.055f;
@@ -52,8 +55,10 @@ public sealed class SheepVisualAnimator : MonoBehaviour
     private bool hasFlockFacingIntent;
     private bool flockFacingIntentLeft;
     private bool groupActionVisualActive;
+    private float poopReactionAge = -1f;
 
     public bool IsHardImpactPlaying => impactAge >= 0f && hardImpact;
+    public bool IsPoopReactionPlaying => poopReactionAge >= 0f;
     public bool IsMovementLocked => IsHardImpactPlaying;
     public float HardImpactCooldownRemaining => Mathf.Max(0f, nextHardImpactAllowedTime - Time.time);
 
@@ -115,6 +120,14 @@ public sealed class SheepVisualAnimator : MonoBehaviour
         idleCountdown = IdleAnimationDuration;
     }
 
+    /// <summary>拉屎后的挤压、轻跳和落地回弹；只改显示子节点，不移动羊的物理根节点。</summary>
+    public void PlayPoopReaction()
+    {
+        poopReactionAge = 0f;
+        idleAge = -1f;
+        idleCountdown = Mathf.Max(idleCountdown, PoopReactionDuration);
+    }
+
     private float jumpAge = -1f;
     private float jumpHeight;
     private float jumpDuration = 0.55f;
@@ -157,6 +170,7 @@ public sealed class SheepVisualAnimator : MonoBehaviour
     private void OnDisable()
     {
         groupActionVisualActive = false;
+        poopReactionAge = -1f;
         if (sourceRenderer != null)
             sourceRenderer.forceRenderingOff = false;
         if (animatedRenderer != null)
@@ -344,6 +358,37 @@ public sealed class SheepVisualAnimator : MonoBehaviour
                     new Color(1f, 0.92f, 0.62f, sourceRenderer.color.a),
                     envelope * 0.45f);
             }
+        }
+
+        if (poopReactionAge >= 0f)
+        {
+            poopReactionAge += Time.deltaTime;
+            float reactionTime = Mathf.Min(poopReactionAge, PoopReactionDuration);
+
+            if (reactionTime < PoopCompressionEnd)
+            {
+                float compression = Mathf.Sin(reactionTime / PoopCompressionEnd * Mathf.PI) * 0.16f;
+                scaleX += compression;
+                scaleY -= compression;
+            }
+            else if (reactionTime < PoopAirborneEnd)
+            {
+                float airProgress = Mathf.InverseLerp(PoopCompressionEnd, PoopAirborneEnd, reactionTime);
+                float airArc = Mathf.Sin(airProgress * Mathf.PI);
+                offsetY += airArc * 0.2f;
+                scaleX -= airArc * 0.035f;
+                scaleY += airArc * 0.05f;
+            }
+            else
+            {
+                float landingProgress = Mathf.InverseLerp(PoopAirborneEnd, PoopReactionDuration, reactionTime);
+                float landingSquash = Mathf.Sin(landingProgress * Mathf.PI) * 0.13f;
+                scaleX += landingSquash;
+                scaleY -= landingSquash;
+            }
+
+            if (poopReactionAge >= PoopReactionDuration)
+                poopReactionAge = -1f;
         }
 
         visualTransform.localScale = new Vector3(scaleX * flipFold, scaleY, 1f);
