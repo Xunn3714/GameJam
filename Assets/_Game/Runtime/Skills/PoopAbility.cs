@@ -155,7 +155,8 @@ public sealed class PoopAbility : MonoBehaviour
     /// <summary>点击单只羊时触发的一次性拉屎，复用整群技能同样的落点、容量和动画逻辑。</summary>
     public bool TryPoopAt(SheepMember member)
     {
-        if (member == null || !isActiveAndEnabled || poopPrefab == null || Time.timeScale == 0f)
+        if (member == null || !isActiveAndEnabled || !controlEnabled ||
+            poopPrefab == null || Time.timeScale == 0f)
             return false;
 
         SpriteRenderer sheepRenderer = member.GetComponent<SpriteRenderer>();

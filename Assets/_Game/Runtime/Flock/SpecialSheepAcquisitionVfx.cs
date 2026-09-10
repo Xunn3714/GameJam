@@ -117,10 +117,12 @@ public sealed class SpecialSheepAcquisitionVfx : MonoBehaviour, ISpecialSheepFea
         if (outerGlow == null || innerGlow == null)
             return;
 
+        // Do not interrupt an acquisition or another preview. The acquisition
+        // coroutine is also responsible for enabling the permanent trail, and
+        // ResetVisuals would clear both that trail and the gold aura.
         if (acquisitionRoutine != null)
-            StopCoroutine(acquisitionRoutine);
+            return;
 
-        ResetVisuals();
         acquisitionRoutine = StartCoroutine(PlayAcquisitionSequence(startTrailAfterGlow: false));
     }
 
