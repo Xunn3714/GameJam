@@ -268,7 +268,6 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
             endingIllustrationSequence = EndingIllustrationSequence.Create(uiCanvas.transform);
 
         ApplyStage();
-        ApplyCameraMaximum(flock.MemberCount, true);
         RefreshComposition();
         MaintainNearbyPopulation();
         initialized = true;
@@ -306,7 +305,6 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
             return;
 
         RefreshComposition();
-        ApplyCameraMaximum(memberCount, false);
 
         if (memberCount <= 0)
         {
@@ -747,23 +745,13 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
             return;
 
         sheepSpawner?.SetCurrentBatchRange(stage.MinimumBatchSize, stage.MaximumBatchSize);
+        cameraFollow?.UnlockMaximumOrthographicSize(stage.CameraSize);
 
         float baseCameraSize = stages[0] != null ? stages[0].CameraSize : stage.CameraSize;
         float multiplier = speedScaleExponent <= 0f
             ? 1f
             : Mathf.Pow(stage.CameraSize / Mathf.Max(0.1f, baseCameraSize), speedScaleExponent);
         flock.SetSpeedMultiplier(multiplier);
-    }
-
-    private void ApplyCameraMaximum(int currentMemberCount, bool immediate)
-    {
-        int cameraStageIndex = AlphaProgression.ResolveStageIndex(stages, currentMemberCount);
-        if (cameraStageIndex < 0 || cameraStageIndex >= stages.Length)
-            return;
-
-        FlockGrowthStage cameraStage = stages[cameraStageIndex];
-        if (cameraStage != null)
-            cameraFollow?.SetMaximumOrthographicSize(cameraStage.CameraSize, immediate);
     }
 
     public float CurrentSpeedMultiplier => flock != null ? flock.SpeedMultiplier : 1f;

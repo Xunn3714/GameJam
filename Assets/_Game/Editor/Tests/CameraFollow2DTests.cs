@@ -9,11 +9,12 @@ public sealed class CameraFollow2DTests
         GameObject cameraObject = CreateCamera(out Camera camera, out CameraFollow2D follow);
         try
         {
-            follow.SetMaximumOrthographicSize(7f, true);
+            follow.UnlockMaximumOrthographicSize(7f);
 
-            Assert.That(camera.orthographicSize, Is.EqualTo(7f).Within(0.001f));
+            Assert.That(camera.orthographicSize, Is.EqualTo(5f).Within(0.001f));
+            Assert.That(follow.TargetOrthographicSize, Is.EqualTo(5f).Within(0.001f));
             Assert.That(follow.AdjustOrthographicSize(1f), Is.True);
-            Assert.That(follow.TargetOrthographicSize, Is.EqualTo(6f).Within(0.001f));
+            Assert.That(follow.TargetOrthographicSize, Is.EqualTo(4f).Within(0.001f));
 
             for (int index = 0; index < 10; index++)
                 follow.AdjustOrthographicSize(1f);
@@ -32,25 +33,28 @@ public sealed class CameraFollow2DTests
     }
 
     [Test]
-    public void SetMaximumOrthographicSize_PreservesManualChoiceAcrossStageUpgrade()
+    public void UnlockMaximumOrthographicSize_IsOneWayAndNeverMovesTheCamera()
     {
-        GameObject cameraObject = CreateCamera(out _, out CameraFollow2D follow);
+        GameObject cameraObject = CreateCamera(out Camera camera, out CameraFollow2D follow);
         try
         {
-            follow.SetMaximumOrthographicSize(5f, true);
-            follow.SetMaximumOrthographicSize(7f);
-            Assert.That(follow.TargetOrthographicSize, Is.EqualTo(7f).Within(0.001f),
-                "Staying at the previous cap should retain the existing automatic stage zoom.");
+            follow.UnlockMaximumOrthographicSize(7f);
+            Assert.That(follow.MaximumOrthographicSize, Is.EqualTo(7f).Within(0.001f));
+            Assert.That(follow.TargetOrthographicSize, Is.EqualTo(5f).Within(0.001f));
+            Assert.That(camera.orthographicSize, Is.EqualTo(5f).Within(0.001f));
 
-            follow.AdjustOrthographicSize(1f);
-            follow.SetMaximumOrthographicSize(10f);
+            follow.AdjustOrthographicSize(-1f);
+            follow.UnlockMaximumOrthographicSize(10f);
             Assert.That(follow.TargetOrthographicSize, Is.EqualTo(6f).Within(0.001f),
-                "A manual zoom choice should survive later stage upgrades.");
+                "Unlocking a new stage must preserve the player's zoom target.");
             Assert.That(follow.MaximumOrthographicSize, Is.EqualTo(10f).Within(0.001f));
+            Assert.That(camera.orthographicSize, Is.EqualTo(5f).Within(0.001f));
 
-            follow.SetMaximumOrthographicSize(5f);
-            Assert.That(follow.TargetOrthographicSize, Is.EqualTo(5f).Within(0.001f),
-                "Falling below a flock threshold should clamp the view to the lower cap.");
+            follow.UnlockMaximumOrthographicSize(5f);
+            Assert.That(follow.MaximumOrthographicSize, Is.EqualTo(10f).Within(0.001f),
+                "Unlocked camera stages must never downgrade.");
+            Assert.That(follow.TargetOrthographicSize, Is.EqualTo(6f).Within(0.001f));
+            Assert.That(camera.orthographicSize, Is.EqualTo(5f).Within(0.001f));
         }
         finally
         {

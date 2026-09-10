@@ -49,7 +49,12 @@ public sealed class AlphaProgression
 
         HighestFlockSize = memberCount;
 
-        int unlockedIndex = Mathf.Max(StageIndex, ResolveStageIndex(stages, HighestFlockSize));
+        int unlockedIndex = StageIndex;
+        for (int index = 0; index < stages.Count; index++)
+        {
+            if (stages[index] != null && HighestFlockSize >= stages[index].MinimumFlockSize)
+                unlockedIndex = Mathf.Max(unlockedIndex, index);
+        }
 
         bool stageChanged = unlockedIndex != StageIndex;
         StageIndex = unlockedIndex;
@@ -62,26 +67,6 @@ public sealed class AlphaProgression
         }
 
         return new Change(stageChanged, exitJustUnlocked, true);
-    }
-
-    /// <summary>
-    /// 按给定羊数查找当前满足的最高阶段。与只升不降的历史进度分离，
-    /// 可供相机等需要随当前羊数升降的表现系统使用。
-    /// </summary>
-    public static int ResolveStageIndex(IReadOnlyList<FlockGrowthStage> stageList, int memberCount)
-    {
-        if (stageList == null || stageList.Count == 0)
-            return -1;
-
-        int result = 0;
-        for (int index = 0; index < stageList.Count; index++)
-        {
-            FlockGrowthStage stage = stageList[index];
-            if (stage != null && memberCount >= stage.MinimumFlockSize)
-                result = index;
-        }
-
-        return result;
     }
 }
 

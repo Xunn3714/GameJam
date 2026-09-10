@@ -56,11 +56,7 @@ public sealed class CameraFollow2D : MonoBehaviour
     private void Awake()
     {
         cameraZ = transform.position.z;
-        attachedCamera = GetComponent<Camera>();
-        targetOrthographicSize = attachedCamera != null && attachedCamera.orthographic
-            ? attachedCamera.orthographicSize
-            : 0f;
-        maximumOrthographicSize = Mathf.Max(MinimumOrthographicSize, targetOrthographicSize);
+        EnsureZoomState();
     }
 
     private void LateUpdate()
@@ -178,19 +174,16 @@ public sealed class CameraFollow2D : MonoBehaviour
     }
 
     /// <summary>
-    /// 更新当前羊群阶段允许的最高视角。玩家停在旧上限时随阶段自动拉高；
-    /// 玩家已经主动缩小过时，只提高上限，不覆盖其选择。
+    /// 按历史最高羊数单向解锁更大视野。只提高玩家可用的缩放上限，
+    /// 不会主动改变当前镜头或玩家选定的目标视角。
     /// </summary>
-    public void SetMaximumOrthographicSize(float size, bool immediate = false)
+    public void UnlockMaximumOrthographicSize(float size)
     {
-        float previousMaximum = MaximumOrthographicSize;
-        bool wasAtMaximum = targetOrthographicSize >= previousMaximum - ZoomComparisonTolerance;
-
-        maximumOrthographicSize = Mathf.Max(MinimumOrthographicSize, size);
-        float requestedSize = immediate || wasAtMaximum
-            ? maximumOrthographicSize
-            : targetOrthographicSize;
-        SetOrthographicSize(requestedSize, immediate);
+        EnsureZoomState();
+        maximumOrthographicSize = Mathf.Max(
+            MaximumOrthographicSize,
+            MinimumOrthographicSize,
+            size);
     }
 
     /// <summary>正方向放大画面、缩小显示范围；负方向拉远画面、扩大显示范围。</summary>
@@ -223,6 +216,16 @@ public sealed class CameraFollow2D : MonoBehaviour
     {
         if (attachedCamera == null)
             attachedCamera = GetComponent<Camera>();
+    }
+
+    private void EnsureZoomState()
+    {
+        EnsureAttachedCamera();
+        if (targetOrthographicSize > 0f || attachedCamera == null || !attachedCamera.orthographic)
+            return;
+
+        targetOrthographicSize = attachedCamera.orthographicSize;
+        maximumOrthographicSize = Mathf.Max(MinimumOrthographicSize, targetOrthographicSize);
     }
 
     private void UpdateZoom()
