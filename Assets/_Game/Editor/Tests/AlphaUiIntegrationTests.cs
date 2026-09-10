@@ -17,6 +17,10 @@ public sealed class AlphaUiIntegrationTests
         "Assets/_Game/Content/Perfabs/UI/PauseSystem.prefab";
     private const string TaskSystemPrefabPath =
         "Assets/_Game/Content/Perfabs/UI/TaskSystem.prefab";
+    private const string PoopPrefabPath =
+        "Assets/_Game/Content/Perfabs/SheepMvp/Poop.prefab";
+    private const string BreakParticlesPrefabPath =
+        "Assets/_Game/Content/Perfabs/World/VFX/BreakParticles.prefab";
     private const string MainMenuScenePath =
         "Assets/_Game/Scenes/MainMenu.unity";
     private const string ResultPanelPrefabPath =
@@ -391,6 +395,17 @@ public sealed class AlphaUiIntegrationTests
             Assert.That(fenceTitle.text, Is.EqualTo("撞开羊圈！"));
 
             Assert.That(transforms.Any(item => item.name == "Key_Q"), Is.False);
+            PoopAbility poopAbility = transforms.Select(item => item.GetComponent<PoopAbility>())
+                .First(item => item != null);
+            Assert.That(poopAbility.CooldownSeconds, Is.EqualTo(2f));
+            Assert.That(poopAbility.LifetimeSeconds, Is.EqualTo(10f));
+            Assert.That(poopAbility.MaxActivePoops, Is.EqualTo(100));
+            Assert.That(poopAbility.RingIntervalSeconds, Is.EqualTo(0.2f));
+            Assert.That(poopAbility.RingWidth, Is.EqualTo(1.9f));
+            SerializedObject poopData = new SerializedObject(poopAbility);
+            Assert.That(poopData.FindProperty("poopAction").objectReferenceValue, Is.Not.Null);
+            Assert.That(poopData.FindProperty("poopPrefab").objectReferenceValue, Is.Not.Null);
+            Assert.That(poopData.FindProperty("footOffset").floatValue, Is.EqualTo(0.08f));
             Transform moveTutorial = transforms.Single(item => item.name == "MoveTutorial");
             Transform recruitTutorial = transforms.Single(item => item.name == "RecruitTutorial");
             Transform fenceTutorial = transforms.Single(item => item.name == "FenceTutorial");
@@ -402,6 +417,22 @@ public sealed class AlphaUiIntegrationTests
         {
             EditorSceneManager.CloseScene(scene, true);
         }
+    }
+
+    [Test]
+    public void PoopPrefabReusesExistingBreakParticlesEffect()
+    {
+        GameObject poopPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(PoopPrefabPath);
+        GameObject breakParticles = AssetDatabase.LoadAssetAtPath<GameObject>(BreakParticlesPrefabPath);
+        Assert.That(poopPrefab, Is.Not.Null);
+        Assert.That(breakParticles, Is.Not.Null);
+
+        PoopVisual visual = poopPrefab.GetComponent<PoopVisual>();
+        Assert.That(visual, Is.Not.Null);
+        SerializedObject serialized = new SerializedObject(visual);
+        Assert.That(
+            serialized.FindProperty("despawnEffectPrefab").objectReferenceValue,
+            Is.SameAs(breakParticles));
     }
 
     [Test]
@@ -435,6 +466,48 @@ public sealed class AlphaUiIntegrationTests
             Assert.That(counter.text, Is.EqualTo("30/150"));
             Assert.That(counter.rectTransform.sizeDelta.x, Is.GreaterThanOrEqualTo(96f));
             Assert.That(counter.overflowMode, Is.EqualTo(TextOverflowModes.Overflow));
+        }
+        finally
+        {
+            Object.DestroyImmediate(instance);
+        }
+    }
+
+    [Test]
+    public void PoopCounterAndPagodaTaskOccupySeparateRows()
+    {
+        GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(TaskSystemPrefabPath);
+        GameObject instance = Object.Instantiate(prefab);
+        try
+        {
+            TaskChecklistView checklist = instance.GetComponentInChildren<TaskChecklistView>(true);
+            checklist.ApplyObjectives(new[]
+            {
+                new MvpObjectiveSnapshot("alpha.grow", "壮大羊群！", true, false, false, 17, 20),
+                AlphaTaskSequence.PoopCounter(7),
+                AlphaTaskSequence.Pagoda(30, 150, false)
+            }, 17);
+
+            Transform taskPanel = instance.GetComponentsInChildren<Transform>(true)
+                .Single(item => item.name == "TaskPanel");
+            Transform[] visibleRows = taskPanel.GetComponentsInChildren<Transform>(true)
+                .Where(item => item.name.StartsWith("TaskRow_") && item.gameObject.activeSelf)
+                .ToArray();
+            Assert.That(visibleRows, Has.Length.EqualTo(3));
+
+            TMP_Text poopTitle = taskPanel.GetComponentsInChildren<TMP_Text>(true)
+                .Single(item => item.name == "Txt_Task_02");
+            TMP_Text poopCount = taskPanel.GetComponentsInChildren<TMP_Text>(true)
+                .Single(item => item.name == "Progress_02");
+            Assert.That(poopTitle.text, Is.EqualTo("Space 拉屎"));
+            Assert.That(poopCount.text, Is.EqualTo("7 次"));
+
+            TMP_Text pagodaTitle = taskPanel.GetComponentsInChildren<TMP_Text>(true)
+                .Single(item => item.name == "Txt_Task_03");
+            TMP_Text pagodaProgress = taskPanel.GetComponentsInChildren<TMP_Text>(true)
+                .Single(item => item.name == "Progress_03");
+            Assert.That(pagodaTitle.text, Is.EqualTo("寻找？？"));
+            Assert.That(pagodaProgress.text, Is.EqualTo("30/150"));
         }
         finally
         {

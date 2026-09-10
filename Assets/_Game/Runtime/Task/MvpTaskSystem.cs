@@ -86,7 +86,8 @@ public readonly struct MvpObjectiveSnapshot
         bool isNew,
         bool isComplete,
         int progress,
-        int target)
+        int target,
+        bool isCounter = false)
     {
         Id = id;
         Title = title;
@@ -95,6 +96,7 @@ public readonly struct MvpObjectiveSnapshot
         IsComplete = isComplete;
         Progress = progress;
         Target = target;
+        IsCounter = isCounter;
     }
 
     public string Id { get; }
@@ -104,6 +106,7 @@ public readonly struct MvpObjectiveSnapshot
     public bool IsComplete { get; }
     public int Progress { get; }
     public int Target { get; }
+    public bool IsCounter { get; }
 }
 
 public sealed class MvpTaskSystem
@@ -190,7 +193,14 @@ public sealed class MvpTaskSystem
             {
                 MvpObjectiveSnapshot old = snapshots[i];
                 snapshots[i] = new MvpObjectiveSnapshot(
-                    old.Id, old.Title, old.IsRequired, false, old.IsComplete, old.Progress, old.Target);
+                    old.Id,
+                    old.Title,
+                    old.IsRequired,
+                    false,
+                    old.IsComplete,
+                    old.Progress,
+                    old.Target,
+                    old.IsCounter);
             }
         }
     }

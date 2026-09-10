@@ -27,6 +27,7 @@
 
 - WASD 控制羊群中心。
 - 游戏进行中可用鼠标滚轮调整显示范围：向上滚放大画面、缩小范围，向下滚拉远画面、扩大范围。最低视角由相机配置控制；按当前羊数匹配的 `cameraSize` 是最高视角，羊被狼叼走或脱队并跌破阶段门槛时上限同步降低，重新达到门槛后恢复。玩家停在旧上限时会随上限自动变化，否则保留仍在新范围内的手动选择。
+- Space 使用独立的整群拉屎动作。触发时按成员到羊群中心的距离，以 `1.9` 单位宽度分圈；中心圈立即执行，之后每隔 `0.2` 秒执行下一圈。每只仍在羊群中的羊都会在自身贴图脚下生成 `Assets/Art/SkillSprites/Poop/shit.png`，使用与该羊相同的 Sorting Layer、且 Sorting Order 低 1；随后羊播放纵向挤压、小幅起跳落下、落地再次挤压的动作，动画只改变显示子节点，不改变物理位置。技能冷却 2 秒，粪便存在 10 秒，场上最多保留 100 个；超出时仍按生成顺序删除最早的粪便。自然到期或因上限被删除时，复用 `World/VFX/BreakParticles` 生成 2 个棕色小圆粒，落地并产生一次可见反弹，1 秒后消失。任务栏常驻显示本局成功触发技能的次数，但该统计不参与主线完成判断。
 - 接触野生羊后自动加入。
 - 新批次在当前镜头外、世界边界内生成。
 - 动态生成的羊保持单局名字唯一；名称池耗尽后使用递增后备名。
@@ -88,7 +89,7 @@
 
 ### 验证
 
-- EditMode 测试：`Assets/_Game/Editor/Tests/AlphaProgressionTests.cs`（阶段不降级、100 只解锁出口、门槛可配）、`AlphaRunStatsTests.cs`（统计准确）、`FlockSeparationTests.cs`（主群连通、持续脱队与重新招募）。
+- EditMode 测试：`Assets/_Game/Editor/Tests/AlphaProgressionTests.cs`（阶段不降级、100 只解锁出口、门槛可配、拉屎计数行）、`PoopAbilityTests.cs`（冷却、10 秒配置、100 个容量、分圈、渲染顺序与羊动画入口）、`AlphaUiIntegrationTests.cs`（主场景参数及现有 `BreakParticles` 引用）、`AlphaRunStatsTests.cs`（统计准确）、`FlockSeparationTests.cs`（主群连通、持续脱队与重新招募）。
 - 菜单：`Game Jam → Alpha Flock Expansion → Setup Scene`（会先执行 `Game Jam → World → Build Obstacle Prefabs`）。
 
 ### 2026-09-05 第二轮调整

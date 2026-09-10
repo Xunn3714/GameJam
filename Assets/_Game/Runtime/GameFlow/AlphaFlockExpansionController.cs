@@ -13,6 +13,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     [SerializeField] private FlockController flock;
     [SerializeField] private FlockMovementController flockMovement;
     [SerializeField] private FlockActionController flockActions;
+    [SerializeField] private PoopAbility poopAbility;
     [SerializeField] private ProgressiveSheepSpawner sheepSpawner;
     [SerializeField] private CameraFollow2D cameraFollow;
     [Tooltip("狼群节奏（生长空挡 → 狼嚎 → 攻击 → 跑路）。有它时狼由它掌控；为空则退回旧的 WolfSpawner 定时。")]
@@ -108,6 +109,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     private PagodaLandmark hookedPagoda;
     private bool firstWolfEventCompleted;
     private int newRecruitCount;
+    private int poopUseCount;
     private readonly List<MvpObjectiveSnapshot> objectiveScratch = new List<MvpObjectiveSnapshot>();
     private float nextPopulationRefreshTime;
     private float nextImpactFeedbackTime;
@@ -134,6 +136,8 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
             flockMovement = flock.GetComponent<FlockMovementController>();
         if (flock != null && flockActions == null)
             flockActions = flock.GetComponent<FlockActionController>();
+        if (flock != null && poopAbility == null)
+            poopAbility = flock.GetComponent<PoopAbility>();
         flockActions?.Configure(flock, flockMovement);
     }
 
@@ -161,6 +165,9 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         {
             tutorialPen.Opened += HandleTutorialPenOpened;
         }
+
+        if (poopAbility != null)
+            poopAbility.Used += HandlePoopUsed;
     }
 
     private void OnDisable()
@@ -187,6 +194,9 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         {
             tutorialPen.Opened -= HandleTutorialPenOpened;
         }
+
+        if (poopAbility != null)
+            poopAbility.Used -= HandlePoopUsed;
     }
 
     private void Start()
@@ -575,7 +585,16 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         RefreshObjectives();
     }
 
-    /// <summary>把 Alpha 的进度翻译成任务栏当前唯一显示的条目。</summary>
+    private void HandlePoopUsed()
+    {
+        if (ended)
+            return;
+
+        poopUseCount++;
+        RefreshObjectives();
+    }
+
+    /// <summary>把 Alpha 的进度翻译成主线、技能计数和可选支线条目。</summary>
     private void RefreshObjectives()
     {
         if (hudView == null || progression == null)
@@ -600,6 +619,8 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
             armyTarget,
             sheepTideTarget,
             exitUnlockFlockSize));
+
+        objectiveScratch.Add(AlphaTaskSequence.PoopCounter(poopUseCount));
 
         // 撞过宝通寺但羊不够时解锁的支线，排在主线下面一行。
         if (pagodaTaskUnlocked)
@@ -634,6 +655,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         wolfDirector?.Stop();
         wolfSpawner?.StopSpawning();
         flockActions?.SetControlEnabled(false);
+        poopAbility?.SetControlEnabled(false);
         flockMovement?.SetControlEnabled(false);
         if (pauseManager != null)
             pauseManager.SetResultLocked(true);
