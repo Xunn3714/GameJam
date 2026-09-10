@@ -29,8 +29,8 @@ public sealed class FlockActionController : MonoBehaviour
     [SerializeField, Min(0f)] private float retreatDistance = 0.65f;
     [Tooltip("后退结束后原地蓄势的时间。")]
     [SerializeField, Min(0f)] private float windupDuration = 0.3f;
-    [SerializeField, Min(0.1f)] private float dashSpeed = 8f;
-    [SerializeField, Min(0.1f)] private float dashDistance = 2.2f;
+    [SerializeField, Min(0.1f)] private float dashSpeed = 9f;
+    [SerializeField, Min(0.1f)] private float dashDistance = 3.2f;
 
     [Header("Action Feel")]
     [Tooltip("后撤开始与结束时的最低速度比例，中段仍会达到完整后撤速度。")]
@@ -40,9 +40,9 @@ public sealed class FlockActionController : MonoBehaviour
     [Tooltip("冲刺完成前的收尾速度比例，降低动作结束时的生硬急停。")]
     [SerializeField, Range(0.1f, 1f)] private float dashEndSpeedFactor = 0.75f;
     [Tooltip("撞不开障碍后，后排成员继续向前涌动的时间。")]
-    [SerializeField, Min(0f)] private float impactFollowThroughDuration = 0.22f;
+    [SerializeField, Min(0f)] private float impactFollowThroughDuration = 0.28f;
     [Tooltip("撞击续冲相对于完整冲刺速度的比例，会在持续时间内衰减到零。")]
-    [SerializeField, Range(0.1f, 1f)] private float impactFollowThroughSpeedFactor = 0.72f;
+    [SerializeField, Range(0.1f, 1f)] private float impactFollowThroughSpeedFactor = 0.78f;
 
     private bool controlEnabled = true;
     private float initialRetreatDistance;

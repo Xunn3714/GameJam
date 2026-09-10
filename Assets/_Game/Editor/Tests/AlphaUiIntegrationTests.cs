@@ -145,8 +145,19 @@ public sealed class AlphaUiIntegrationTests
                 Has.Length.EqualTo(1));
             Assert.That(objects.SelectMany(item => item.GetComponents<EventSystem>()).ToArray(),
                 Has.Length.EqualTo(1));
-            Assert.That(objects.SelectMany(item => item.GetComponents<FlockActionController>()).ToArray(),
-                Has.Length.EqualTo(1));
+            FlockActionController[] flockActions = objects
+                .SelectMany(item => item.GetComponents<FlockActionController>())
+                .ToArray();
+            Assert.That(flockActions, Has.Length.EqualTo(1));
+            SerializedObject actionData = new SerializedObject(flockActions[0]);
+            Assert.That(actionData.FindProperty("dashSpeed").floatValue,
+                Is.EqualTo(9f).Within(0.001f));
+            Assert.That(actionData.FindProperty("dashDistance").floatValue,
+                Is.EqualTo(3.2f).Within(0.001f));
+            Assert.That(actionData.FindProperty("impactFollowThroughDuration").floatValue,
+                Is.EqualTo(0.28f).Within(0.001f));
+            Assert.That(actionData.FindProperty("impactFollowThroughSpeedFactor").floatValue,
+                Is.EqualTo(0.78f).Within(0.001f));
             Assert.That(objects.SelectMany(item => item.GetComponents<AlphaFlockExpansionController>()).ToArray(),
                 Has.Length.EqualTo(1));
             Assert.That(objects.SelectMany(item => item.GetComponents<WorldDebrisSpawner>()).ToArray(),
