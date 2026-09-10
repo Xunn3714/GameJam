@@ -62,8 +62,8 @@ public sealed class FlockController : MonoBehaviour
     private bool facingCommittedThisHold;
     private float actionMemberSpeedMultiplier = 1f;
     private Vector2 groupActionDirection = Vector2.right;
-    private Collider2D pendingGroupActionBlocker;
-    private bool hasPendingGroupActionBlock;
+    private readonly List<Collider2D> pendingGroupActionBlockers = new List<Collider2D>();
+    private readonly HashSet<Transform> breachedFenceGroups = new HashSet<Transform>();
     private float nextSeparationCheckTime;
     private float currentMembershipRadius = 5.5f;
     private readonly Dictionary<SheepMember, float> outsideMembershipSince =
@@ -134,8 +134,8 @@ public sealed class FlockController : MonoBehaviour
         bool actionStarted = active && !IsGroupActionActive;
         if (!active || !IsGroupActionActive)
         {
-            pendingGroupActionBlocker = null;
-            hasPendingGroupActionBlock = false;
+            pendingGroupActionBlockers.Clear();
+            breachedFenceGroups.Clear();
         }
 
         if (forwardDirection.sqrMagnitude > 0.0001f)
@@ -185,25 +185,45 @@ public sealed class FlockController : MonoBehaviour
         if (IsGroupActionActive
             && !IsGroupActionHolding
             && !IsGroupActionFollowThrough
-            && !hasPendingGroupActionBlock)
+            && blocker != null
+            && !pendingGroupActionBlockers.Contains(blocker))
         {
-            pendingGroupActionBlocker = blocker;
-            hasPendingGroupActionBlock = true;
+            pendingGroupActionBlockers.Add(blocker);
         }
     }
 
-    internal bool TryConsumeGroupActionMemberBlock(out Collider2D blocker)
+    internal int ConsumeGroupActionMemberBlocks(List<Collider2D> results)
     {
-        if (!hasPendingGroupActionBlock)
-        {
-            blocker = null;
-            return false;
-        }
+        if (results == null)
+            return 0;
 
-        blocker = pendingGroupActionBlocker;
-        pendingGroupActionBlocker = null;
-        hasPendingGroupActionBlock = false;
-        return true;
+        results.Clear();
+        results.AddRange(pendingGroupActionBlockers);
+        pendingGroupActionBlockers.Clear();
+        return results.Count;
+    }
+
+    internal void RegisterGroupActionFenceBreach(FenceObstacle fence)
+    {
+        if (fence == null)
+            return;
+
+        breachedFenceGroups.Add(GetFenceGroup(fence));
+    }
+
+    internal bool IsGroupActionFenceBreach(Collider2D blocker)
+    {
+        FenceObstacle fence = blocker != null
+            ? blocker.GetComponentInParent<FenceObstacle>()
+            : null;
+        return fence != null && breachedFenceGroups.Contains(GetFenceGroup(fence));
+    }
+
+    private static Transform GetFenceGroup(FenceObstacle fence)
+    {
+        return fence.transform.parent != null
+            ? fence.transform.parent
+            : fence.transform;
     }
 
     internal bool HasMovementLockedMembers()
