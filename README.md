@@ -10,7 +10,7 @@
 
 - Unity：`6000.5.9f1`
 - 渲染：Universal Render Pipeline / 2D Renderer
-- 输入：Unity Input System；WASD 控制羊群，E 触发整群后退蓄势冲刺
+- 输入：Unity Input System；WASD 控制羊群，E 触发整群后退蓄势冲刺，鼠标滚轮调整显示范围
 - 当前入口：`Assets/_Game/Scenes/MainMenu.unity`
 - 当前关卡：`Assets/_Game/Scenes/AlphaFlockExpansion.unity`
 - 首轮目标平台：Windows（WASD + E）

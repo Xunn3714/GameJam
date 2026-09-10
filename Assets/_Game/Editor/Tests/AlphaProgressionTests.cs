@@ -81,6 +81,17 @@ public sealed class AlphaProgressionTests
     }
 
     [Test]
+    public void ResolveStageIndexCanDecreaseWithCurrentFlockSize()
+    {
+        FlockGrowthStage[] stages = Stages();
+
+        Assert.AreEqual(3, AlphaProgression.ResolveStageIndex(stages, 55));
+        Assert.AreEqual(2, AlphaProgression.ResolveStageIndex(stages, 49));
+        Assert.AreEqual(1, AlphaProgression.ResolveStageIndex(stages, 19));
+        Assert.AreEqual(0, AlphaProgression.ResolveStageIndex(stages, 1));
+    }
+
+    [Test]
     public void SequentialTaskReachesSixAfterFiveRecruitedPartners()
     {
         MvpObjectiveSnapshot first = CurrentTask(newRecruitCount: 0);
