@@ -183,16 +183,19 @@ public sealed class CameraFollow2D : MonoBehaviour
     }
 
     /// <summary>
-    /// 按历史最高羊数单向解锁更大视野。只提高玩家可用的缩放上限，
-    /// 不会主动改变当前镜头或玩家选定的目标视角。
+    /// 按历史最高羊数单向解锁更大视野。首次解锁更高视野时自动把目标
+    /// 拉到新的阶段尺寸；重复应用同一阶段不会覆盖玩家之后的滚轮选择。
     /// </summary>
     public void UnlockMaximumOrthographicSize(float size)
     {
         EnsureZoomState();
-        maximumOrthographicSize = Mathf.Max(
-            MaximumOrthographicSize,
-            MinimumOrthographicSize,
-            size);
+        float previousMaximum = MaximumOrthographicSize;
+        float unlockedMaximum = Mathf.Max(previousMaximum, MinimumOrthographicSize, size);
+        if (unlockedMaximum <= previousMaximum + ZoomComparisonTolerance)
+            return;
+
+        maximumOrthographicSize = unlockedMaximum;
+        targetOrthographicSize = unlockedMaximum;
     }
 
     /// <summary>正方向放大画面、缩小显示范围；负方向拉远画面、扩大显示范围。</summary>
