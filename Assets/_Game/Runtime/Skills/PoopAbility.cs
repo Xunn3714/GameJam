@@ -152,6 +152,22 @@ public sealed class PoopAbility : MonoBehaviour
         return true;
     }
 
+    /// <summary>点击单只羊时触发的一次性拉屎，复用整群技能同样的落点、容量和动画逻辑。</summary>
+    public bool TryPoopAt(SheepMember member)
+    {
+        if (member == null || !isActiveAndEnabled || poopPrefab == null || Time.timeScale == 0f)
+            return false;
+
+        SpriteRenderer sheepRenderer = member.GetComponent<SpriteRenderer>();
+        Vector3 position = member.transform.position;
+        if (sheepRenderer != null)
+            position.y = sheepRenderer.bounds.min.y + footOffset;
+
+        SpawnPoop(position, sheepRenderer);
+        SheepVisualAnimator.Ensure(member.gameObject)?.PlayPoopReaction();
+        return true;
+    }
+
     public static int CalculateRingIndex(float distanceFromCenter, float radialRingWidth)
     {
         float safeWidth = Mathf.Max(0.1f, radialRingWidth);
