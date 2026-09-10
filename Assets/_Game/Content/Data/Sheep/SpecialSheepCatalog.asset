@@ -62,8 +62,8 @@ MonoBehaviour:
       spawnEnabled: 1
     - assetGuid: 218d202a0e4f66a47a6b37ee8b3b3347
       typeId: sheep.special.218d202a0e4f66a47a6b37ee8b3b3347
-      lastImportedFileName: "\u773C\u955C\u7F8A"
-      displayName: "\u773C\u955C\u7F8A"
+      lastImportedFileName: "\u773C\u775B\u7F8A"
+      displayName: "\u773C\u775B\u7F8A"
       sprite: {fileID: 21300000, guid: 218d202a0e4f66a47a6b37ee8b3b3347, type: 3}
       codexDescription: "\u67B6\u7740\u4E00\u526F\u539A\u5E95\u773C\u955C\uFF0C\u6700\u7231\u770B\u4E66\uFF0C\u636E\u8BF4\u8349\u539F\u4E0A\u6BCF\u4E00\u5F20\u5730\u56FE\u5B83\u90FD\u80CC\u5F97\u4E0B\u6765\u3002\n\n\"\u65B0\u6765\u7684\u7F8A\u603B\u95EE\u6211\u8349\u539F\u5730\u56FE\u5728\u54EA\u513F\uFF0C\"\u56FE\u4E66\u7BA1\u7406\u5458\u8BF4\uFF0C\"\u6211\u76F4\u63A5\u6307\u773C\u955C\u7F8A\u2014\u2014\u6BD4\u5730\u56FE\u51C6\uFF0C\u8FD8\u5E26\u66F4\u65B0\uFF0C\u5C31\u662F\u95EE\u8DEF\u65F6\u5B83\u8981\u5148\u6276\u4E00\u6276\u773C\u955C\uFF0C\u518D\u7ED9\u4F60\u8BB2\u4E00\u8DEF\u7684\u7B2C\u4E09\u6761\u8FD1\u9053\u3002\""
       visualEffectDescription: 
@@ -153,8 +153,8 @@ MonoBehaviour:
       spawnEnabled: 1
     - assetGuid: 728a837e9f020984684dc1440ef9132f
       typeId: sheep.special.728a837e9f020984684dc1440ef9132f
-      lastImportedFileName: "\u56F4\u8116\u7F8A"
-      displayName: "\u56F4\u8116\u7F8A"
+      lastImportedFileName: "\u5FAE\u535A\u7F8A"
+      displayName: "\u5FAE\u535A\u7F8A"
       sprite: {fileID: 21300000, guid: 728a837e9f020984684dc1440ef9132f, type: 3}
       codexDescription: "\u4E00\u5E74\u56DB\u5B63\u56F4\u7740\u7EA2\u56F4\u8116\uFF0C\u662F\u7F8A\u7FA4\u4E2D\u6700\u6709\u4EEA\u5F0F\u611F\u7684\u5C0F\u7F8A\uFF0C\u56F4\u8116\u662F\u5976\u5976\u4EB2\u624B\u7EC7\u7684\u3002\n\n\"\u8349\u539F\u590F\u5929\u4E0D\u4E0B\u96EA\uFF0C\u53EF\u56F4\u8116\u7F8A\u7684\u8116\u5B50\u6C38\u8FDC\u662F\u6696\u7EA2\u8272\u7684\uFF0C\"\u5C0F\u7F8A\u8BF4\uFF0C\"\u5976\u5976\u6BCF\u5E74\u7EC7\u4E00\u6761\u65B0\u7684\uFF0C\u65E7\u7684\u5B83\u8BF4'\u5728\u8863\u67DC\u91CC\u4F11\u5047'\u2014\u2014\u4E00\u5E74\u4F11\u4E00\u6761\uFF0C\u8863\u67DC\u5FEB\u4F11\u6EE1\u4E86\u3002\""
       visualEffectDescription: 
