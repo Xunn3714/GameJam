@@ -53,6 +53,15 @@ public sealed class CameraFollow2D : MonoBehaviour
     public float MinimumOrthographicSize => Mathf.Max(0.1f, minimumOrthographicSize);
     public float MaximumOrthographicSize => Mathf.Max(MinimumOrthographicSize, maximumOrthographicSize);
 
+    /// <summary>
+    /// 玩家重新输入或主动动作接管时清除镜头跟随惯性，避免目标已改向、
+    /// 画面却仍沿上一次自动回正方向继续滑动。
+    /// </summary>
+    public void ResetFollowVelocity()
+    {
+        velocity = Vector3.zero;
+    }
+
     private void Awake()
     {
         cameraZ = transform.position.z;

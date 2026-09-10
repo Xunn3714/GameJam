@@ -251,6 +251,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
 
         Rect worldRect = borderRing != null ? borderRing.WorldRect : sheepSpawner.SpawnBounds;
         flockMovement?.ConfigureMovementBounds(worldRect);
+        flockMovement?.ConfigureLeashView(cameraFollow);
         cameraFollow?.ConfigureBounds(worldRect);
         borderRing?.ApplyRequiredCount(exitUnlockFlockSize);
 
@@ -480,19 +481,30 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     private void UnlockExit()
     {
         borderRing?.ApplyRequiredCount(exitUnlockFlockSize);
-        ExpandBoundsForExit();
+        flockMovement?.SetExternalMovementCanLeaveBounds(true);
+        ExpandCameraBoundsForExit();
         ShowBanner($"历史最高达到 {exitUnlockFlockSize} 只！按 E 让整群蓄势冲刺，撞开围栏后冲出草原");
         Debug.Log("出口已解锁。", this);
     }
 
-    private void ExpandBoundsForExit()
+    private Rect GetExpandedExitBounds()
     {
         Rect worldRect = borderRing != null ? borderRing.WorldRect : sheepSpawner.SpawnBounds;
-        Rect expanded = new Rect(
+        return new Rect(
             worldRect.xMin - exitBoundsExpansion,
             worldRect.yMin - exitBoundsExpansion,
             worldRect.width + exitBoundsExpansion * 2f,
             worldRect.height + exitBoundsExpansion * 2f);
+    }
+
+    private void ExpandCameraBoundsForExit()
+    {
+        cameraFollow?.ConfigureBounds(GetExpandedExitBounds());
+    }
+
+    private void ExpandBoundsForExit()
+    {
+        Rect expanded = GetExpandedExitBounds();
         flockMovement?.ConfigureMovementBounds(expanded);
         cameraFollow?.ConfigureBounds(expanded);
     }
@@ -500,6 +512,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     private void HandleBorderFenceBroken(FenceObstacle fence)
     {
         borderBroken = true;
+        flockMovement?.SetExternalMovementCanLeaveBounds(false);
         cameraFollow?.Shake(fenceBreakShakeAmplitude, fenceBreakShakeDuration);
         ExpandBoundsForExit();
         ShowBanner("围栏破了！带着羊群冲出去！");
