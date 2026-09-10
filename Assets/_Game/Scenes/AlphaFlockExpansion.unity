@@ -26444,8 +26444,8 @@ MonoBehaviour:
   retreatSpeed: 3
   retreatDistance: 0.65
   windupDuration: 0.3
-  dashSpeed: 8
-  dashDistance: 2.2
+  dashSpeed: 9
+  dashDistance: 3.2
   minimumManualCompactness: 0.45
   compactingSpeed: 0.45
   restoringSpeed: 0.2

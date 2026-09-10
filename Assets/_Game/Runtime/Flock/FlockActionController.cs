@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -18,6 +19,13 @@ public enum FlockActionPhase
 [RequireComponent(typeof(FlockController), typeof(FlockMovementController))]
 public sealed class FlockActionController : MonoBehaviour
 {
+    private enum DashImpactResult
+    {
+        Cleared,
+        Damaged,
+        Blocked,
+    }
+
     [Header("References")]
     [SerializeField] private FlockController flock;
     [SerializeField] private FlockMovementController movement;
@@ -29,8 +37,8 @@ public sealed class FlockActionController : MonoBehaviour
     [SerializeField, Min(0f)] private float retreatDistance = 0.65f;
     [Tooltip("后退结束后原地蓄势的时间。")]
     [SerializeField, Min(0f)] private float windupDuration = 0.3f;
-    [SerializeField, Min(0.1f)] private float dashSpeed = 8f;
-    [SerializeField, Min(0.1f)] private float dashDistance = 2.2f;
+    [SerializeField, Min(0.1f)] private float dashSpeed = 9f;
+    [SerializeField, Min(0.1f)] private float dashDistance = 3.2f;
 
     [Header("Action Feel")]
     [Tooltip("后撤开始与结束时的最低速度比例，中段仍会达到完整后撤速度。")]
@@ -40,9 +48,9 @@ public sealed class FlockActionController : MonoBehaviour
     [Tooltip("冲刺完成前的收尾速度比例，降低动作结束时的生硬急停。")]
     [SerializeField, Range(0.1f, 1f)] private float dashEndSpeedFactor = 0.75f;
     [Tooltip("撞不开障碍后，后排成员继续向前涌动的时间。")]
-    [SerializeField, Min(0f)] private float impactFollowThroughDuration = 0.22f;
+    [SerializeField, Min(0f)] private float impactFollowThroughDuration = 0.28f;
     [Tooltip("撞击续冲相对于完整冲刺速度的比例，会在持续时间内衰减到零。")]
-    [SerializeField, Range(0.1f, 1f)] private float impactFollowThroughSpeedFactor = 0.72f;
+    [SerializeField, Range(0.1f, 1f)] private float impactFollowThroughSpeedFactor = 0.78f;
 
     private bool controlEnabled = true;
     private float initialRetreatDistance;
@@ -56,6 +64,11 @@ public sealed class FlockActionController : MonoBehaviour
     private bool lastImpactDamagedObstacle;
     private Vector2 dashDirection = Vector2.right;
     private FlockActionPhase phase;
+    private readonly List<Collider2D> pendingMemberBlockers = new List<Collider2D>();
+    private readonly List<Collider2D> impactBlockers = new List<Collider2D>();
+    private readonly HashSet<Collider2D> impactBlockerSet = new HashSet<Collider2D>();
+    private readonly HashSet<BreakableObstacle> impactedObstacles = new HashSet<BreakableObstacle>();
+    private readonly HashSet<Transform> impactedFenceGroups = new HashSet<Transform>();
 
     public FlockActionPhase Phase => phase;
     public bool IsActing => phase != FlockActionPhase.Idle;
@@ -95,11 +108,11 @@ public sealed class FlockActionController : MonoBehaviour
         if (!IsActing || movement == null || flock == null || Time.timeScale == 0f)
             return;
 
-        if (flock.TryConsumeGroupActionMemberBlock(out Collider2D memberBlocker))
+        if (flock.ConsumeGroupActionMemberBlocks(pendingMemberBlockers) > 0)
         {
             // 后撤时后排成员贴到障碍，只让该成员停下或沿边缘脱离。
             // 不能因此提前结束整群后撤，否则下一帧反向冲刺时会显得卡顿。
-            if (phase == FlockActionPhase.Dashing && !HandleDashBlock(memberBlocker))
+            if (phase == FlockActionPhase.Dashing && !HandleDashBlocks(pendingMemberBlockers))
                 return;
         }
 
@@ -347,36 +360,85 @@ public sealed class FlockActionController : MonoBehaviour
 
     private bool HandleDashBlock(Collider2D blocker)
     {
-        bool brokeObstacle = TryBreakObstacle(blocker);
-        if (brokeObstacle)
+        impactBlockers.Clear();
+        impactBlockerSet.Clear();
+        AddImpactBlocker(blocker);
+        return ResolveDashBlocks();
+    }
+
+    private bool HandleDashBlocks(IReadOnlyList<Collider2D> blockers)
+    {
+        impactBlockers.Clear();
+        impactBlockerSet.Clear();
+        for (int index = 0; index < blockers.Count; index++)
+            AddImpactBlocker(blockers[index]);
+
+        return ResolveDashBlocks();
+    }
+
+    private bool ResolveDashBlocks()
+    {
+        CollectContactingFenceSegments();
+        impactedObstacles.Clear();
+
+        bool clearedAny = false;
+        bool damagedAny = false;
+        bool blockedAny = false;
+        for (int index = 0; index < impactBlockers.Count; index++)
         {
-            PlayFlockImpact(hardImpact: false);
+            Collider2D blocker = impactBlockers[index];
+            BreakableObstacle obstacle = blocker != null
+                ? blocker.GetComponentInParent<BreakableObstacle>()
+                : null;
+            if (obstacle != null && !impactedObstacles.Add(obstacle))
+                continue;
+
+            DashImpactResult result = ApplyDashImpact(blocker, obstacle);
+            clearedAny |= result == DashImpactResult.Cleared;
+            damagedAny |= result == DashImpactResult.Damaged;
+            blockedAny |= result == DashImpactResult.Blocked;
+        }
+
+        if (!blockedAny && !damagedAny)
+        {
+            if (clearedAny)
+                PlayFlockImpact(hardImpact: false);
             return true;
         }
 
-        BeginImpactFollowThrough(hardImpact: !lastImpactDamagedObstacle);
+        lastImpactDamagedObstacle = damagedAny && !blockedAny;
+        BeginImpactFollowThrough(hardImpact: blockedAny);
         return false;
     }
 
-    private bool TryBreakObstacle(Collider2D blocker)
+    private DashImpactResult ApplyDashImpact(
+        Collider2D blocker,
+        BreakableObstacle breakable)
     {
-        lastImpactDamagedObstacle = false;
         if (blocker == null)
         {
             flock.ReportFenceChargeImpact(hardImpact: true);
-            return false;
+            return DashImpactResult.Blocked;
         }
 
-        BreakableObstacle breakable = blocker.GetComponentInParent<BreakableObstacle>();
-        if (breakable == null || breakable.IsBroken)
+        if (breakable == null)
         {
             flock.ReportFenceChargeImpact(hardImpact: true);
-            return false;
+            return DashImpactResult.Blocked;
         }
+
+        if (breakable.IsBroken)
+            return DashImpactResult.Cleared;
 
         FenceObstacle fence = breakable.GetComponent<FenceObstacle>();
         if (fence != null)
-            return fence.ReceiveDashImpact(flock, currentImpactForce);
+        {
+            if (!fence.ReceiveDashImpact(flock, currentImpactForce))
+                return DashImpactResult.Blocked;
+
+            flock.RegisterGroupActionFenceBreach(fence);
+            return DashImpactResult.Cleared;
+        }
 
         int requiredForce = breakable.Definition == null
             || breakable.Definition.BreakRule == ObstacleBreakRule.OnAnyContact
@@ -385,12 +447,65 @@ public sealed class FlockActionController : MonoBehaviour
         bool canBreak = MeetsBreakThreshold(currentImpactForce, requiredForce);
         flock.ReportFenceChargeImpact(hardImpact: !canBreak);
         if (!canBreak)
-            return false;
+            return DashImpactResult.Blocked;
 
         // 多段障碍（大石头）吃掉本次冲刺，下一次 E 才能完成破坏。
         bool destroyed = breakable.Break();
-        lastImpactDamagedObstacle = !destroyed && breakable.IsDamaged;
-        return destroyed;
+        return destroyed
+            ? DashImpactResult.Cleared
+            : DashImpactResult.Damaged;
+    }
+
+    private void CollectContactingFenceSegments()
+    {
+        impactedFenceGroups.Clear();
+        for (int index = 0; index < impactBlockers.Count; index++)
+        {
+            Collider2D blocker = impactBlockers[index];
+            FenceObstacle fence = blocker != null
+                ? blocker.GetComponentInParent<FenceObstacle>()
+                : null;
+            if (fence != null)
+                impactedFenceGroups.Add(GetFenceGroup(fence));
+        }
+
+        if (impactedFenceGroups.Count == 0 || flock == null)
+            return;
+
+        float probeDistance = Mathf.Max(
+            0.05f,
+            currentDashSpeed * Time.fixedDeltaTime + 0.05f);
+        for (int index = 0; index < flock.Members.Count; index++)
+        {
+            SheepFlockAgent agent = flock.Members[index] != null
+                ? flock.Members[index].Agent
+                : null;
+            if (agent == null
+                || !agent.TryGetGroupActionForwardBlocker(
+                    dashDirection,
+                    probeDistance,
+                    out Collider2D blocker))
+            {
+                continue;
+            }
+
+            FenceObstacle fence = blocker.GetComponentInParent<FenceObstacle>();
+            if (fence != null && impactedFenceGroups.Contains(GetFenceGroup(fence)))
+                AddImpactBlocker(blocker);
+        }
+    }
+
+    private static Transform GetFenceGroup(FenceObstacle fence)
+    {
+        return fence.transform.parent != null
+            ? fence.transform.parent
+            : fence.transform;
+    }
+
+    private void AddImpactBlocker(Collider2D blocker)
+    {
+        if (blocker != null && impactBlockerSet.Add(blocker))
+            impactBlockers.Add(blocker);
     }
 
     private bool PlayFlockImpact(bool hardImpact)

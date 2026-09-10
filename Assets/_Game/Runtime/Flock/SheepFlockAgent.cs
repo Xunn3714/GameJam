@@ -122,6 +122,39 @@ public sealed class SheepFlockAgent : MonoBehaviour
         return true;
     }
 
+    /// <summary>
+    /// 整群冲刺首次撞击时探测成员正前方仍在接触的障碍，供控制器一次性
+    /// 收集整条冲击前缘；不会移动成员或产生额外的撞击次数。
+    /// </summary>
+    internal bool TryGetGroupActionForwardBlocker(
+        Vector2 direction,
+        float probeDistance,
+        out Collider2D blocker)
+    {
+        blocker = null;
+        if (body == null || direction.sqrMagnitude <= 0.0001f)
+            return false;
+
+        if (MovementBlocking.TryGetBlocker(
+                body.position,
+                blockingRadius,
+                blockingLayers,
+                out blocker))
+        {
+            return true;
+        }
+
+        Vector2 forward = direction.normalized;
+        MovementBlocking.ResolveDashMove(
+            body.position,
+            body.position + forward * Mathf.Max(0.05f, probeDistance),
+            blockingRadius,
+            blockingLayers,
+            out MovementBlockResult blockResult);
+        blocker = blockResult.Blocker;
+        return blockResult.WasBlocked && blocker != null;
+    }
+
     private void Awake()
     {
         body = GetComponent<Rigidbody2D>();
@@ -274,6 +307,9 @@ public sealed class SheepFlockAgent : MonoBehaviour
                     flock.GroupActionDirection,
                     desiredStep,
                     blockerPoint);
+                // 中间栅栏段已经撞开后，中心可能先穿过缺口。左右较晚接触同一排
+                // 栅栏的羊即使落在中心后方，也要继续上报，扩出完整的实际冲击面。
+                stopsGroup |= flock.IsGroupActionFenceBreach(blockResult.Blocker);
                 if (stopsGroup)
                 {
                     flock.ReportGroupActionMemberBlocked(blockResult.Blocker);

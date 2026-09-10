@@ -511,6 +511,10 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
 
     private void HandleBorderFenceBroken(FenceObstacle fence)
     {
+        // 一次宽正面冲击可能同时撞开相邻多段外围围栏；全局出口反馈只播一次。
+        if (borderBroken)
+            return;
+
         borderBroken = true;
         flockMovement?.SetExternalMovementCanLeaveBounds(false);
         cameraFollow?.Shake(fenceBreakShakeAmplitude, fenceBreakShakeDuration);
