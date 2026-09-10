@@ -105,6 +105,27 @@ public sealed class SpecialSheepAcquisitionVfx : MonoBehaviour, ISpecialSheepFea
         Debug.Log($"特殊羊获得特效已触发：{sheep.TypeName} / {quality}", this);
     }
 
+    /// <summary>
+    /// 点击预览：只播放对应品质的发光脉冲，不触发获得时的粒子爆发和常驻拖尾。
+    /// 复用 <see cref="SheepCardView.GetQualityColor"/>，覆盖普通羊在内的全部品质。
+    /// </summary>
+    public void PlayGlowPreview(SheepQuality previewQuality)
+    {
+        quality = previewQuality;
+        qualityColor = SheepCardView.GetQualityColor(previewQuality);
+        EnsureVisuals();
+        if (outerGlow == null || innerGlow == null)
+            return;
+
+        // Do not interrupt an acquisition or another preview. The acquisition
+        // coroutine is also responsible for enabling the permanent trail, and
+        // ResetVisuals would clear both that trail and the gold aura.
+        if (acquisitionRoutine != null)
+            return;
+
+        acquisitionRoutine = StartCoroutine(PlayAcquisitionSequence(startTrailAfterGlow: false));
+    }
+
     private void LateUpdate()
     {
         if (!glowVisible || sourceRenderer == null)
@@ -125,7 +146,7 @@ public sealed class SpecialSheepAcquisitionVfx : MonoBehaviour, ISpecialSheepFea
         ResetVisuals();
     }
 
-    private IEnumerator PlayAcquisitionSequence()
+    private IEnumerator PlayAcquisitionSequence(bool startTrailAfterGlow = true)
     {
         glowVisible = true;
         outerGlow.gameObject.SetActive(true);
@@ -153,8 +174,8 @@ public sealed class SpecialSheepAcquisitionVfx : MonoBehaviour, ISpecialSheepFea
         outerGlow.gameObject.SetActive(false);
         innerGlow.gameObject.SetActive(false);
 
-        // 需求要求拖尾在发光播放完成后才出现。
-        if (trailParticles != null)
+        // 需求要求拖尾在发光播放完成后才出现；点击预览不需要留下常驻拖尾。
+        if (startTrailAfterGlow && trailParticles != null)
             trailParticles.Play(true);
 
         acquisitionRoutine = null;
