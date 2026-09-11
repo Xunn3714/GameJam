@@ -12,8 +12,11 @@ public enum ObstacleBreakRule
     /// 任意一只羊群成员接触即碎（建筑、木桶、石头、花草）。
     OnAnyContact,
 
-    /// 围栏：羊群数量达到要求后才允许破坏。具体触发方式由围栏组件决定。
+    /// 围栏、树木等：羊群数量达到要求后，必须用 E 整群冲刺才能破坏。
     RequireCountAndInteract,
+
+    /// 旧版树木规则，仅保留枚举数值以兼容已序列化资产。
+    ContactWhenCountElseInteract,
 }
 
 public enum ObstacleCountSource

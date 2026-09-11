@@ -26,6 +26,9 @@ public sealed class WolfAttackPlannerTests
     {
         WolfAttackSchedule.Stage[] stages = Stages();
         Assert.AreEqual(5, stages.Length);
+        Assert.AreEqual(new Vector2(5f, 8f), new Vector2(stages[1].calmDurationMin, stages[1].calmDurationMax));
+        Assert.AreEqual(new Vector2(5f, 7f), new Vector2(stages[2].calmDurationMin, stages[2].calmDurationMax));
+        Assert.AreEqual(new Vector2(5f, 7f), new Vector2(stages[3].calmDurationMin, stages[3].calmDurationMax));
         Assert.AreEqual(new[] { 0f, 0f, 0f }, stages[0].IntensityWeights);
         Assert.AreEqual(new[] { 1f, 0f, 0f }, stages[1].IntensityWeights);
         Assert.AreEqual(new[] { 3f, 4f, 0f }, stages[2].IntensityWeights);

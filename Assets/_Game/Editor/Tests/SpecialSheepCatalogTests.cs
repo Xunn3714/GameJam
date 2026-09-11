@@ -419,6 +419,96 @@ public sealed class ProgressiveSheepSpawnerGroupTests
     }
 
     [Test]
+    public void NormalSpawnIgnoresTriggersButStillRejectsSolidBlockingColliders()
+    {
+        GameObject flockObject = new("SpawnCollisionFlock");
+        GameObject prefabObject = new("SpawnCollisionPrefab");
+        GameObject spawnerObject = new("SpawnCollisionSpawner");
+        GameObject blockerObject = new("SpawnCollisionBlocker");
+        SpecialSheepCatalog runtimeCatalog = UnityEngine.Object.Instantiate(
+            SpecialSheepCatalogEditorUtility.LoadOrCreateAndSynchronize());
+
+        try
+        {
+            int blockingLayer = LayerMask.NameToLayer(MovementBlocking.BlockingLayerName);
+            Assert.GreaterOrEqual(blockingLayer, 0);
+            blockerObject.layer = blockingLayer;
+            BoxCollider2D blocker = blockerObject.AddComponent<BoxCollider2D>();
+            blocker.size = new Vector2(500f, 500f);
+            blocker.isTrigger = true;
+
+            FlockController flock = flockObject.AddComponent<FlockController>();
+            prefabObject.AddComponent<SpriteRenderer>();
+            RecruitableSheep prefab = prefabObject.AddComponent<RecruitableSheep>();
+            ProgressiveSheepSpawner spawner = spawnerObject.AddComponent<ProgressiveSheepSpawner>();
+            SerializedObject serialized = new(spawner);
+            serialized.FindProperty("flock").objectReferenceValue = flock;
+            serialized.FindProperty("specialSheepCatalog").objectReferenceValue = runtimeCatalog;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            runtimeCatalog.EditorSetBaseSheepPrefab(prefab);
+
+            Physics2D.SyncTransforms();
+            Assert.IsTrue(spawner.SpawnBatch(3, 3), "Trigger 不应阻止刷羊。");
+            Assert.AreEqual(3, spawner.TotalSpawned);
+
+            blocker.isTrigger = false;
+            Physics2D.SyncTransforms();
+            Assert.IsFalse(spawner.SpawnBatch(3, 3), "Blocking 层实体碰撞体必须继续阻止刷羊。");
+            Assert.AreEqual(3, spawner.TotalSpawned);
+        }
+        finally
+        {
+            UnityEngine.Object.DestroyImmediate(blockerObject);
+            UnityEngine.Object.DestroyImmediate(spawnerObject);
+            UnityEngine.Object.DestroyImmediate(prefabObject);
+            UnityEngine.Object.DestroyImmediate(flockObject);
+            UnityEngine.Object.DestroyImmediate(runtimeCatalog);
+        }
+    }
+
+    [Test]
+    public void NormalSpawnShrinksBatchWhenTheRequestedClusterCannotFit()
+    {
+        GameObject flockObject = new("SpawnFallbackFlock");
+        GameObject prefabObject = new("SpawnFallbackPrefab");
+        GameObject spawnerObject = new("SpawnFallbackSpawner");
+        GameObject cameraObject = new("SpawnFallbackCamera");
+        SpecialSheepCatalog runtimeCatalog = UnityEngine.Object.Instantiate(
+            SpecialSheepCatalogEditorUtility.LoadOrCreateAndSynchronize());
+
+        try
+        {
+            Camera camera = cameraObject.AddComponent<Camera>();
+            camera.orthographic = true;
+            camera.orthographicSize = 0.1f;
+
+            FlockController flock = flockObject.AddComponent<FlockController>();
+            prefabObject.AddComponent<SpriteRenderer>();
+            RecruitableSheep prefab = prefabObject.AddComponent<RecruitableSheep>();
+            ProgressiveSheepSpawner spawner = spawnerObject.AddComponent<ProgressiveSheepSpawner>();
+            SerializedObject serialized = new(spawner);
+            serialized.FindProperty("flock").objectReferenceValue = flock;
+            serialized.FindProperty("gameplayCamera").objectReferenceValue = camera;
+            serialized.FindProperty("specialSheepCatalog").objectReferenceValue = runtimeCatalog;
+            serialized.FindProperty("spawnAreaSize").vector2Value = new Vector2(5f, 5f);
+            serialized.FindProperty("cameraEdgePadding").floatValue = 0f;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            runtimeCatalog.EditorSetBaseSheepPrefab(prefab);
+
+            Assert.IsTrue(spawner.SpawnBatch(4, 4));
+            Assert.AreEqual(1, spawner.TotalSpawned, "4 只和 2 只组无法容纳时，应回退到 1 只。");
+        }
+        finally
+        {
+            UnityEngine.Object.DestroyImmediate(cameraObject);
+            UnityEngine.Object.DestroyImmediate(spawnerObject);
+            UnityEngine.Object.DestroyImmediate(prefabObject);
+            UnityEngine.Object.DestroyImmediate(flockObject);
+            UnityEngine.Object.DestroyImmediate(runtimeCatalog);
+        }
+    }
+
+    [Test]
     public void OneRollAppliesOneSpecialTypeToTheWholeGroupAndNextGroupUsesAnotherType()
     {
         GameObject flockObject = new("TestFlock");

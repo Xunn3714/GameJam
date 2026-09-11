@@ -1,12 +1,15 @@
+using System.Collections;
 using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.TestTools;
 
 public sealed class ScatteredSheepTests
 {
-    [Test]
-    public void RecruitedScatteredSheepRestoresItsColorBeforeScatter()
+    [UnityTest]
+    public IEnumerator RecruitedScatteredSheepRestoresItsColorBeforeScatter()
     {
+        yield return new EnterPlayMode();
         GameObject flockObject = new GameObject("TestFlock");
         GameObject sheepObject = new GameObject("TestSheep");
 
@@ -37,5 +40,6 @@ public sealed class ScatteredSheepTests
             Object.DestroyImmediate(sheepObject);
             Object.DestroyImmediate(flockObject);
         }
+        yield return new ExitPlayMode();
     }
 }

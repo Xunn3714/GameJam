@@ -23,24 +23,24 @@ MonoBehaviour:
     majorIntensityWeight: 0
   - displayName: "\u57FA\u7840\u88AD\u51FB"
     minMemberCount: 20
-    calmDurationMin: 6
-    calmDurationMax: 10
+    calmDurationMin: 5
+    calmDurationMax: 8
     longWolfWidthMultiplier: 1
     basicIntensityWeight: 1
     formationIntensityWeight: 0
     majorIntensityWeight: 0
   - displayName: "\u9635\u578B\u88AD\u51FB"
     minMemberCount: 50
-    calmDurationMin: 6
-    calmDurationMax: 8
+    calmDurationMin: 5
+    calmDurationMax: 7
     longWolfWidthMultiplier: 1.35
     basicIntensityWeight: 3
     formationIntensityWeight: 4
     majorIntensityWeight: 0
   - displayName: "\u5927\u578B\u88AD\u51FB"
     minMemberCount: 90
-    calmDurationMin: 6
-    calmDurationMax: 8
+    calmDurationMin: 5
+    calmDurationMax: 7
     longWolfWidthMultiplier: 1.5
     basicIntensityWeight: 2
     formationIntensityWeight: 4

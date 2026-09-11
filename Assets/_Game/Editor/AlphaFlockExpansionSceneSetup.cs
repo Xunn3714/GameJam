@@ -74,8 +74,106 @@ public static class AlphaFlockExpansionSceneSetup
     private const float BorderFenceScale = 2f;   // 外围围栏 4x2 单位
     private const float PenFenceScale = 1f;      // 羊圈栅栏 2x1 单位
     private const int ExitUnlockFlockSize = 100;
+    private const float EscapeBoundsExpansion = 10f;
     private const int TutorialRequiredFlockSize = 6;
     private const int WolfUnlockFlockSize = 20;
+
+    // 区块网格：3×2 共 6 格，每格 80×70；区块定义资产由 Setup 生成到这个目录。
+    private const string BlockDefinitionFolder = "Assets/_Game/Content/Data/World/Blocks";
+    private const int MapColumns = 3;
+    private const int MapRows = 2;
+
+    /// <summary>散布物条目：DebrisSpecs 里的 Id + 本格权重（间距沿用 spec）。</summary>
+    private readonly struct DebrisPick
+    {
+        public DebrisPick(string id, float weight, float clearance = -1f) { Id = id; Weight = weight; Clearance = clearance; }
+        public string Id { get; }
+        public float Weight { get; }
+        /// <summary>小于 0 时沿用 DebrisSpec 的间距；森林里把树的间距压小才能长得密。</summary>
+        public float Clearance { get; }
+    }
+
+    private readonly struct BlockSpec
+    {
+        public BlockSpec(
+            string file, string displayName, MapBlockRole role, float weight,
+            float density, DebrisPick[] debris,
+            int houseMin = 0, int houseMax = 0, int chests = 0, int tractorMin = 0, int tractorMax = 0, int farms = 0, bool bigHouse = false)
+        {
+            BigHouse = bigHouse;
+            File = file;
+            DisplayName = displayName;
+            Role = role;
+            Weight = weight;
+            Density = density;
+            Debris = debris;
+            HouseMin = houseMin;
+            HouseMax = houseMax;
+            Chests = chests;
+            TractorMin = tractorMin;
+            TractorMax = tractorMax;
+            Farms = farms;
+        }
+
+        public string File { get; }
+        public string DisplayName { get; }
+        public MapBlockRole Role { get; }
+        public float Weight { get; }
+        public float Density { get; }
+        public DebrisPick[] Debris { get; }
+        public int HouseMin { get; }
+        public int HouseMax { get; }
+        public int Chests { get; }
+        public int TractorMin { get; }
+        public int TractorMax { get; }
+        public int Farms { get; }
+        public bool BigHouse { get; }
+    }
+
+    private static readonly DebrisPick[] SparseGrass =
+    {
+        new DebrisPick("obstacle.grass_1", 3f), new DebrisPick("obstacle.grass_2", 3f), new DebrisPick("obstacle.flower", 2f),
+        // 出生 / 村庄格也零星来几棵树和石头，别像被推平过。
+        new DebrisPick("obstacle.tree", 1f, 2.4f), new DebrisPick("obstacle.tree_2", 0.6f, 2.8f), new DebrisPick("obstacle.rock", 0.6f, 2.6f),
+    };
+
+    private static readonly DebrisPick[] ForestA =
+    {
+        // 树的 clearance 决定树与树的最小间距（默认 4.5/6 太稀）；石头用它的默认 3.2，和树拉开。
+        new DebrisPick("obstacle.tree", 5f, 2.6f), new DebrisPick("obstacle.tree_2", 4f, 3.2f), new DebrisPick("obstacle.rock", 1f, 3.2f),
+        new DebrisPick("obstacle.bush_1", 1.5f, 2.4f), new DebrisPick("obstacle.bush_2", 1.5f, 2.4f),
+    };
+
+    private static readonly DebrisPick[] ForestB =
+    {
+        new DebrisPick("obstacle.tree", 4f, 2.6f), new DebrisPick("obstacle.tree_2", 5f, 3.2f), new DebrisPick("obstacle.rock", 0.8f, 3.2f),
+        new DebrisPick("obstacle.pebble", 1f, 2f), new DebrisPick("obstacle.bush_1", 1.5f, 2.4f),
+    };
+
+    private static readonly DebrisPick[] PlainsGrass =
+    {
+        new DebrisPick("obstacle.grass_1", 6f), new DebrisPick("obstacle.grass_2", 6f), new DebrisPick("obstacle.grass_3", 6f),
+        new DebrisPick("obstacle.flower", 5f), new DebrisPick("obstacle.flower_daisy", 5f), new DebrisPick("obstacle.flower_cluster", 3f),
+        new DebrisPick("obstacle.bush_1", 2f), new DebrisPick("obstacle.bush_2", 2f),
+        new DebrisPick("obstacle.tree", 4f, 2.2f), new DebrisPick("obstacle.tree_2", 2.5f, 2.6f),
+    };
+
+    private static readonly DebrisPick[] PlainsRock =
+    {
+        new DebrisPick("obstacle.pebble", 5f), new DebrisPick("obstacle.rock", 3f, 2.4f), new DebrisPick("obstacle.grass_1", 2f),
+        new DebrisPick("obstacle.barrel", 0.5f), new DebrisPick("obstacle.tree", 3f, 2.2f), new DebrisPick("obstacle.tree_2", 2f, 2.6f),
+    };
+
+    private static readonly BlockSpec[] BlockSpecs =
+    {
+        new BlockSpec("block.spawn", "出生点", MapBlockRole.Spawn, 1f, 0.45f, SparseGrass),
+        new BlockSpec("block.forest_a", "森林 A", MapBlockRole.Forest, 1f, 3.5f, ForestA),
+        new BlockSpec("block.forest_b", "森林 B", MapBlockRole.Forest, 1f, 4f, ForestB),
+        new BlockSpec("block.plains_grass", "平原·草", MapBlockRole.Plains, 1f, 0.9f, PlainsGrass, farms: 3),
+        new BlockSpec("block.plains_rock", "平原·石", MapBlockRole.Plains, 1f, 0.9f, PlainsRock, farms: 2),
+        new BlockSpec("block.village_small", "村庄·小房子", MapBlockRole.Village, 1f, 0.6f, SparseGrass, houseMin: 4, houseMax: 5, chests: 3, tractorMin: 1, tractorMax: 2, bigHouse: false),
+        new BlockSpec("block.village_big", "村庄·大房子", MapBlockRole.Village, 1f, 0.6f, SparseGrass, houseMin: 3, houseMax: 4, chests: 3, tractorMin: 1, tractorMax: 2, bigHouse: true),
+    };
 
     private static readonly Vector2[] TutorialSheepPositions =
     {
@@ -98,6 +196,7 @@ public static class AlphaFlockExpansionSceneSetup
         "WorldSeed",
         "WorldDebrisSpawner",
         "WorldLandmarkSpawner",
+        "MapLayoutBuilder",
         "BorderFence",
         "TutorialPen",
         "AlphaCanvas",
@@ -282,7 +381,8 @@ public static class AlphaFlockExpansionSceneSetup
         CameraFollow2D cameraFollow = ConfigureCamera(scene, flockObject.transform, out Camera gameplayCamera);
         ConfigureLighting(scene);
         ProgressiveSheepSpawner sheepSpawner = CreateSheepSpawner(scene, flock, namePool, gameplayCamera, worldSeed);
-        CreateLandmarkSpawner(scene, worldSeed, sheepSpawner, fencePrefab, fenceDefinition);
+        WorldLandmarkSpawner landmarks = CreateLandmarkSpawner(scene, worldSeed, sheepSpawner, fencePrefab, fenceDefinition);
+        CreateMapLayout(scene, worldSeed, borderRing, tutorialPen, flockObject, cameraFollow, debris, landmarks);
         CreateWolfSystem(scene, flock, wolfPrefab.GetComponent<Wolf>(), out WolfSpawner wolfSpawner, out WolfEventDirector director);
         LevelUi ui = CreateLevelUi(scene);
         CreateGameController(
@@ -299,13 +399,16 @@ public static class AlphaFlockExpansionSceneSetup
             tutorialPen,
             ui);
 
+        // 宝通寺 / 真结局的引用挂在 Setup 重建的对象上，重建后必须重新接一次。
+        TrueEndingSetup.Wire();
+
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene);
         AssetDatabase.SaveAssets();
         Debug.Log(
             $"Alpha 羊群扩张场景已生成：{ScenePath}。" +
-            $"地图 {WorldRect.width}x{WorldRect.height}，出生羊圈 6 只教程羊，狼在 {WolfUnlockFlockSize} 只后出现，" +
-            $"历史最高 {ExitUnlockFlockSize} 只后解锁出口，冲刺时当前羊数达标才能撞开外围围栏。");
+            $"地图 {WorldRect.width}x{WorldRect.height}（{MapColumns}x{MapRows} 区块，出生格随机），出生羊圈 6 只教程羊，狼在 {WolfUnlockFlockSize} 只后出现，" +
+            $"历史最高 {ExitUnlockFlockSize} 只后解锁冲出地图，冲刺时当前羊数达标才能撞开外围围栏。");
     }
 
     // ------------------------------------------------------------------ scene
@@ -352,6 +455,8 @@ public static class AlphaFlockExpansionSceneSetup
             bool managed = ManagedRootNames.Contains(root.name)
                 || root.name.StartsWith("Sheep_")
                 || root.name.StartsWith("TutorialSheep_")
+                // 早期版本把羊圈栅栏直接生成在场景根节点；这些孤儿 PenFence_* 不在任何管理根下，每次 Setup 都会残留。
+                || root.name.StartsWith("PenFence")
                 || root.name.StartsWith("Wolf_")
                 || root.name.StartsWith("AlphaWildSheep_");
             if (managed)
@@ -382,7 +487,8 @@ public static class AlphaFlockExpansionSceneSetup
         Sprite grass = LoadGrassSprite();
         GameObject background = new GameObject("GrassBackground");
         background.transform.SetParent(world.transform, false);
-        background.transform.position = new Vector3(WorldRect.center.x, WorldRect.center.y, 0f);
+        Rect grassRect = Expand(WorldRect, EscapeBoundsExpansion);
+        background.transform.position = new Vector3(grassRect.center.x, grassRect.center.y, 0f);
         SpriteRenderer renderer = background.AddComponent<SpriteRenderer>();
         renderer.sprite = grass;
         // 放在 Background 排序层最底下：碎掉的围栏 / 木桶会切到 Background 层（order 10），要能画在草地上面。
@@ -392,7 +498,7 @@ public static class AlphaFlockExpansionSceneSetup
         {
             renderer.drawMode = SpriteDrawMode.Tiled;
             renderer.tileMode = SpriteTileMode.Continuous;
-            renderer.size = WorldRect.size;
+            renderer.size = grassRect.size;
         }
         else
         {
@@ -400,15 +506,24 @@ public static class AlphaFlockExpansionSceneSetup
         }
     }
 
-    /// <summary>草原背景需要 Full Rect 网格才能平铺；不是的话改导入设置后重新导入。</summary>
     private static Sprite LoadGrassSprite()
     {
-        TextureImporter importer = AssetImporter.GetAtPath(GrassBackgroundPath) as TextureImporter;
-        if (importer == null)
-        {
+        Sprite grass = LoadTiledSprite(GrassBackgroundPath, optional: false);
+        if (grass == null)
             Debug.LogWarning($"找不到草原背景 {GrassBackgroundPath}，改用纯色。");
+        return grass;
+    }
+
+    /// <summary>可平铺的草地贴图需要 Sprite + Full Rect 网格 + Repeat；不是的话改导入设置后重新导入。</summary>
+    private static Sprite LoadTiledSprite(string path, bool optional)
+    {
+        if (!System.IO.File.Exists(path))
             return null;
-        }
+
+        AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
+        TextureImporter importer = AssetImporter.GetAtPath(path) as TextureImporter;
+        if (importer == null)
+            return null;
 
         bool changed = false;
         if (importer.textureType != TextureImporterType.Sprite)
@@ -432,12 +547,21 @@ public static class AlphaFlockExpansionSceneSetup
             changed = true;
         }
 
+        if (importer.spriteImportMode != SpriteImportMode.Single)
+        {
+            importer.spriteImportMode = SpriteImportMode.Single;
+            changed = true;
+        }
+
         if (changed)
         {
             importer.SaveAndReimport();
         }
 
-        return AssetDatabase.LoadAssetAtPath<Sprite>(GrassBackgroundPath);
+        Sprite sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
+        if (sprite == null && !optional)
+            Debug.LogWarning($"Tiled sprite not found: {path}");
+        return sprite;
     }
 
     private static WorldSeed CreateWorldSeed(Scene scene)
@@ -704,6 +828,122 @@ public static class AlphaFlockExpansionSceneSetup
         zones.GetArrayElementAtIndex(0).rectValue = Expand(PenRect, 5f);
         serialized.ApplyModifiedPropertiesWithoutUndo();
         return spawner;
+    }
+
+    // ------------------------------------------------------------------ map blocks
+
+    /// <summary>
+    /// 区块布局器：运行时按种子分配 3×2 格子并把出生羊圈挪到随机格。
+    /// 它依赖的对象（羊圈、羊群、初始羊、相机、两个撒点器）都已在此之前创建。
+    /// </summary>
+    private static MapLayoutBuilder CreateMapLayout(
+        Scene scene,
+        WorldSeed worldSeed,
+        BorderFenceRing borderRing,
+        TutorialPen tutorialPen,
+        GameObject flockObject,
+        CameraFollow2D cameraFollow,
+        WorldDebrisSpawner debris,
+        WorldLandmarkSpawner landmarks)
+    {
+        GameObject builderObject = new GameObject("MapLayoutBuilder");
+        SceneManager.MoveGameObjectToScene(builderObject, scene);
+        MapLayoutBuilder builder = builderObject.AddComponent<MapLayoutBuilder>();
+        MapBlockDefinition[] pool = EnsureBlockDefinitions();
+        GameObject initialSheep = FindNamedObjectInScene(scene, "Sheep_Initial");
+
+        SerializedObject serialized = new SerializedObject(builder);
+        serialized.FindProperty("worldSeed").objectReferenceValue = worldSeed;
+        serialized.FindProperty("borderRing").objectReferenceValue = borderRing;
+        serialized.FindProperty("tutorialPen").objectReferenceValue = tutorialPen;
+        serialized.FindProperty("flockRoot").objectReferenceValue = flockObject.transform;
+        serialized.FindProperty("initialSheep").objectReferenceValue = initialSheep != null ? initialSheep.transform : null;
+        serialized.FindProperty("gameplayCamera").objectReferenceValue = cameraFollow != null ? cameraFollow.transform : null;
+        serialized.FindProperty("debrisSpawner").objectReferenceValue = debris;
+        serialized.FindProperty("landmarkSpawner").objectReferenceValue = landmarks;
+        serialized.FindProperty("columns").intValue = MapColumns;
+        serialized.FindProperty("rows").intValue = MapRows;
+        serialized.FindProperty("worldRect").rectValue = WorldRect;
+        SerializedProperty poolProperty = serialized.FindProperty("blockPool");
+        poolProperty.arraySize = pool.Length;
+        for (int index = 0; index < pool.Length; index++)
+            poolProperty.GetArrayElementAtIndex(index).objectReferenceValue = pool[index];
+        serialized.ApplyModifiedPropertiesWithoutUndo();
+
+        // 两个撒点器改为按格生成；大房子 / 拖拉机没有美术时保持为空，运行时自动退回小房子 / 不放拖拉机。
+        SerializedObject debrisSerialized = new SerializedObject(debris);
+        debrisSerialized.FindProperty("layout").objectReferenceValue = builder;
+        // 保留全局安全上限；按格密度决定目标数量，补撒只恢复到该目标，不会无限增长。
+        debrisSerialized.FindProperty("maximumCount").intValue = 520;
+        debrisSerialized.FindProperty("minimumSpacing").floatValue = 2.2f;
+        // 森林接近满铺时随机落点大多会撞到已放下的树，尝试次数太少会让实际数量远低于目标。
+        debrisSerialized.FindProperty("placementAttemptsPerItem").intValue = 32;
+        debrisSerialized.ApplyModifiedPropertiesWithoutUndo();
+
+        SerializedObject landmarkSerialized = new SerializedObject(landmarks);
+        landmarkSerialized.FindProperty("layout").objectReferenceValue = builder;
+        landmarkSerialized.FindProperty("bigHouseDefinition").objectReferenceValue =
+            AssetDatabase.LoadAssetAtPath<ObstacleDefinition>(WorldObstaclePrefabBuilder.BigHouseDefinitionPath);
+        landmarkSerialized.FindProperty("bigHouseSprite").objectReferenceValue =
+            WorldObstaclePrefabBuilder.LoadBuildingSprite("大房子", optional: true);
+        landmarkSerialized.FindProperty("tractorPrefab").objectReferenceValue =
+            AssetDatabase.LoadAssetAtPath<GameObject>(WorldObstaclePrefabBuilder.TractorPrefabPath);
+        landmarkSerialized.ApplyModifiedPropertiesWithoutUndo();
+        return builder;
+    }
+
+    /// <summary>
+    /// 按 BlockSpecs 创建缺失的区块定义资产。已经存在的资产视为策划配置源，
+    /// 重跑场景 Setup 时不覆盖手工调参，也不删除规格表之外的扩展定义。
+    /// </summary>
+    private static MapBlockDefinition[] EnsureBlockDefinitions()
+    {
+        WorldObstaclePrefabBuilder.EnsureFolder(BlockDefinitionFolder);
+        List<MapBlockDefinition> result = new List<MapBlockDefinition>(BlockSpecs.Length);
+        foreach (BlockSpec spec in BlockSpecs)
+        {
+            string path = $"{BlockDefinitionFolder}/{spec.File}.asset";
+            MapBlockDefinition definition = AssetDatabase.LoadAssetAtPath<MapBlockDefinition>(path);
+            if (definition == null)
+            {
+                definition = ScriptableObject.CreateInstance<MapBlockDefinition>();
+                AssetDatabase.CreateAsset(definition, path);
+                SerializedObject serialized = new SerializedObject(definition);
+                serialized.FindProperty("blockId").stringValue = spec.File;
+                serialized.FindProperty("displayName").stringValue = spec.DisplayName;
+                serialized.FindProperty("role").intValue = (int)spec.Role;
+                serialized.FindProperty("weight").floatValue = spec.Weight;
+                serialized.FindProperty("debrisDensityPer100SquareUnits").floatValue = spec.Density;
+                SerializedProperty debris = serialized.FindProperty("debris");
+                debris.arraySize = 0;
+                foreach (DebrisPick pick in spec.Debris)
+                {
+                    WorldObstaclePrefabBuilder.DebrisSpec debrisSpec = WorldObstaclePrefabBuilder.DebrisSpecs
+                        .FirstOrDefault(item => item.Id == pick.Id);
+                    GameObject prefab = debrisSpec != null ? AssetDatabase.LoadAssetAtPath<GameObject>(debrisSpec.PrefabPath) : null;
+                    if (prefab == null)
+                        continue;   // 对应美术还没到（例如新树），这条先跳过。
+
+                    debris.arraySize++;
+                    SerializedProperty entry = debris.GetArrayElementAtIndex(debris.arraySize - 1);
+                    entry.FindPropertyRelative("prefab").objectReferenceValue = prefab;
+                    entry.FindPropertyRelative("weight").floatValue = pick.Weight;
+                    entry.FindPropertyRelative("clearance").floatValue = pick.Clearance > 0f ? pick.Clearance : debrisSpec.Clearance;
+                }
+                serialized.FindProperty("minimumHouseCount").intValue = spec.HouseMin;
+                serialized.FindProperty("maximumHouseCount").intValue = spec.HouseMax;
+                serialized.FindProperty("fixedRedChestCount").intValue = spec.Chests;
+                serialized.FindProperty("minimumTractorCount").intValue = spec.TractorMin;
+                serialized.FindProperty("maximumTractorCount").intValue = spec.TractorMax;
+                serialized.FindProperty("farmClusterCount").intValue = spec.Farms;
+                serialized.FindProperty("allowBigHouse").boolValue = spec.BigHouse;
+                serialized.ApplyModifiedPropertiesWithoutUndo();
+            }
+            result.Add(definition);
+        }
+
+        AssetDatabase.SaveAssets();
+        return result.ToArray();
     }
 
     // ------------------------------------------------------------------ flock & spawners
@@ -1254,6 +1494,7 @@ public static class AlphaFlockExpansionSceneSetup
         serialized.FindProperty("resultPanelPrefab").objectReferenceValue = ui.ResultPanelPrefab;
         serialized.FindProperty("wolfUnlockFlockSize").intValue = WolfUnlockFlockSize;
         serialized.FindProperty("exitUnlockFlockSize").intValue = ExitUnlockFlockSize;
+        serialized.FindProperty("exitBoundsExpansion").floatValue = EscapeBoundsExpansion;
         serialized.ApplyModifiedPropertiesWithoutUndo();
     }
 

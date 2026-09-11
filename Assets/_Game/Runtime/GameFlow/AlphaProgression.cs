@@ -3,7 +3,7 @@ using UnityEngine;
 
 /// <summary>
 /// 羊群扩张的阶段推进（纯 C#，可测）：按本局历史最高羊数解锁阶段，只升不降；
-/// 历史最高达到出口门槛后永久解锁“冲出地图”。
+/// 历史最高达到门槛后永久解锁“冲出地图”。
 /// </summary>
 public sealed class AlphaProgression
 {

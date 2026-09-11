@@ -63,6 +63,32 @@ public sealed class TutorialPen : MonoBehaviour
         RefreshTutorialStage();
     }
 
+    /// <summary>把羊圈整体挪到新的中心（围栏、教程羊、标识都是子物体，随根节点走）。</summary>
+    public void Relocate(Vector2 center)
+    {
+        Vector2 delta = center - penRect.center;
+        transform.position += (Vector3)delta;
+        penRect.position += delta;
+        // 围栏和教程羊都带 Rigidbody2D：只改父节点的 Transform，物理体会在下一步把旧位置写回去，
+        // 表现就是"羊圈留在原地"。这里把每个刚体的位置显式同步到新 Transform。
+        SyncBodies(transform);
+    }
+
+    /// <summary>把 root 下所有 Rigidbody2D 的物理位置同步到当前 Transform。</summary>
+    public static void SyncBodies(Transform root)
+    {
+        if (root == null)
+            return;
+
+        foreach (Rigidbody2D body in root.GetComponentsInChildren<Rigidbody2D>(true))
+        {
+            body.position = body.transform.position;
+            body.rotation = body.transform.eulerAngles.z;
+        }
+
+        Physics2D.SyncTransforms();
+    }
+
     public void BindFlock(FlockController controller)
     {
         UnsubscribeFromFlock();

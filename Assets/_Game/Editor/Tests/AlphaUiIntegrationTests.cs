@@ -245,6 +245,42 @@ public sealed class AlphaUiIntegrationTests
             Assert.That(controllerData.FindProperty("pauseManager").objectReferenceValue, Is.Not.Null);
             Assert.That(controllerData.FindProperty("bannerView").objectReferenceValue, Is.Not.Null);
 
+            MapLayoutBuilder layout = objects
+                .Select(item => item.GetComponent<MapLayoutBuilder>())
+                .FirstOrDefault(item => item != null);
+            Assert.That(layout, Is.Not.Null);
+            SerializedObject layoutData = new SerializedObject(layout);
+            SerializedProperty blockPool = layoutData.FindProperty("blockPool");
+            Assert.That(blockPool.arraySize, Is.EqualTo(7));
+            for (int index = 0; index < blockPool.arraySize; index++)
+            {
+                MapBlockDefinition definition =
+                    (MapBlockDefinition)blockPool.GetArrayElementAtIndex(index).objectReferenceValue;
+                Assert.That(definition, Is.Not.Null, $"Map block {index} is missing.");
+            }
+            Assert.That(layoutData.FindProperty("arrowSprite"), Is.Null,
+                "The removed dedicated exit must not return as a serialized arrow field.");
+            Assert.That(
+                AssetDatabase.LoadAssetAtPath<MapBlockDefinition>(
+                    "Assets/_Game/Content/Data/World/Blocks/block.exit.asset"),
+                Is.Null,
+                "The removed dedicated exit block must not remain in the project.");
+            Assert.That(layoutData.FindProperty("roadWidth"), Is.Null);
+            Assert.That(layoutData.FindProperty("riverSprite"), Is.Null);
+            Assert.That(layoutData.FindProperty("truckSprite"), Is.Null);
+
+            SpriteRenderer grassBackground = objects
+                .Where(item => item.name == "GrassBackground")
+                .Select(item => item.GetComponent<SpriteRenderer>())
+                .FirstOrDefault(item => item != null);
+            Assert.That(grassBackground, Is.Not.Null);
+            Rect worldRect = layoutData.FindProperty("worldRect").rectValue;
+            float escapeExpansion = controllerData.FindProperty("exitBoundsExpansion").floatValue;
+            Assert.That(grassBackground.size.x,
+                Is.EqualTo(worldRect.width + escapeExpansion * 2f).Within(0.001f));
+            Assert.That(grassBackground.size.y,
+                Is.EqualTo(worldRect.height + escapeExpansion * 2f).Within(0.001f));
+
             MvpHudView hud = objects
                 .Select(item => item.GetComponent<MvpHudView>())
                 .FirstOrDefault(item => item != null);

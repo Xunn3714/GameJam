@@ -18,7 +18,7 @@ public enum WolfEventPhase
 
 /// <summary>
 /// 狼群进攻节奏控制：
-/// 生长空挡(15~20s) → 狼嚎提示(3s) → 开始攻击(由狼决定) → 事件结束 → 重新计时。
+/// 生长空挡(12~16s) → 狼嚎提示(3s) → 开始攻击(由狼决定) → 事件结束 → 重新计时。
 /// 每一轮通过 <see cref="WolfSpawner.SpawnWolf"/> 放出一只狼，自身不负责狼的行为。
 /// </summary>
 [DisallowMultipleComponent]
@@ -34,9 +34,9 @@ public sealed class WolfEventDirector : MonoBehaviour
 
     [Header("Rhythm (seconds)")]
     [Tooltip("生长空挡的最短时长。")]
-    [SerializeField, Min(0f)] private float calmDurationMin = 15f;
+    [SerializeField, Min(0f)] private float calmDurationMin = 12f;
     [Tooltip("生长空挡的最长时长。")]
-    [SerializeField, Min(0f)] private float calmDurationMax = 20f;
+    [SerializeField, Min(0f)] private float calmDurationMax = 16f;
     [Tooltip("狼嚎提示时长。")]
     [SerializeField, Min(0f)] private float howlDuration = 3f;
     [Tooltip("“攻击结束 狼跑路”停留多久再重新计时。")]

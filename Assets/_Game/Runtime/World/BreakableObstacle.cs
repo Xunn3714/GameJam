@@ -64,7 +64,9 @@ public sealed class BreakableObstacle : MonoBehaviour
             ? definition.BreakRule
             : ObstacleBreakRule.OnAnyContact;
 
-        if (rule != ObstacleBreakRule.OnAnyContact)
+        if (rule == ObstacleBreakRule.RequireCountAndInteract)
+            return;
+        if (rule == ObstacleBreakRule.ContactWhenCountElseInteract && !MeetsCount(other))
             return;
 
         if (IsFlockContact(other))
@@ -82,6 +84,20 @@ public sealed class BreakableObstacle : MonoBehaviour
     {
         SheepMember member = other.GetComponentInParent<SheepMember>();
         return member != null && member.Flock != null;
+    }
+
+    /// <summary>接触者所属羊群的数量（按定义的 CountSource）是否达到 RequiredFlockCount。</summary>
+    private bool MeetsCount(Collider2D other)
+    {
+        SheepMember member = other.GetComponentInParent<SheepMember>();
+        FlockController flock = member != null ? member.Flock : null;
+        if (flock == null || definition == null)
+            return false;
+
+        int count = definition.CountSource == ObstacleCountSource.HighestFlockCountThisRun
+            ? flock.HighestMemberCount
+            : flock.MemberCount;
+        return count >= definition.RequiredFlockCount;
     }
 
     /// <summary>

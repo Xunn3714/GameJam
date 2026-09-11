@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// 屏幕上方的提示横幅：排队显示“阶段升级 / 狼群来袭 / 出口解锁 / 特殊羊加入”等短消息，自动淡入淡出。
+/// 屏幕上方的提示横幅：排队显示“阶段升级 / 狼群来袭 / 冲出地图解锁 / 特殊羊加入”等短消息，自动淡入淡出。
 /// 挂在 Canvas 下的 RectTransform 上，子元素留空会自动创建。
 /// </summary>
 [DisallowMultipleComponent]

@@ -168,6 +168,7 @@ public class TaskChecklistView : MonoBehaviour
         TMP_Text progressText,
         MvpObjectiveSnapshot objective)
     {
+        EnsureCounterIsFullyVisible(progressText);
         if (icon != null)
         {
             icon.gameObject.SetActive(!objective.IsCounter);

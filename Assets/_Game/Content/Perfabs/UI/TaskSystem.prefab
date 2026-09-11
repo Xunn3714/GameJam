@@ -1940,12 +1940,15 @@ MonoBehaviour:
   taskRow02: {fileID: 5844370186019482558}
   checkIcon02: {fileID: 5833099581700423998}
   progress02: {fileID: 7265074516088986459}
+  taskTitle02: {fileID: 4656146520801413743}
   taskRow03: {fileID: 7136458966757707893}
   checkIcon03: {fileID: 663654347352343372}
   progress03: {fileID: 7588721562571395939}
+  taskTitle03: {fileID: 7130978155008927403}
   taskRow04: {fileID: 6688166682366035910}
   checkIcon04: {fileID: 7134128751533658686}
   progress04: {fileID: 332738852081768744}
+  taskTitle04: {fileID: 8855463125039180916}
   groupCountText: {fileID: 3890980880785995115}
   uncheckedSprite: {fileID: 21300000, guid: 4cb0ad96cee784a48bcf2dff57cfe376, type: 3}
   checkedSprite: {fileID: 21300000, guid: f1707894acefef04fa216119d23f9260, type: 3}

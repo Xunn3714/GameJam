@@ -47,6 +47,22 @@ public sealed class WorldObstacleVfxTests
         }
     }
 
+    [Test]
+    public void TreeDefinitionsRequireTwentySheepAndAnExplicitDash()
+    {
+        foreach (WorldObstaclePrefabBuilder.DebrisSpec spec in WorldObstaclePrefabBuilder.DebrisSpecs)
+        {
+            if (spec.Id != "obstacle.tree" && spec.Id != "obstacle.tree_2")
+                continue;
+
+            ObstacleDefinition definition = AssetDatabase.LoadAssetAtPath<ObstacleDefinition>(spec.DefinitionPath);
+            Assert.IsNotNull(definition, spec.DefinitionPath);
+            Assert.AreEqual(ObstacleBreakRule.RequireCountAndInteract, definition.BreakRule, spec.DefinitionPath);
+            Assert.AreEqual(20, definition.RequiredFlockCount, spec.DefinitionPath);
+            Assert.AreEqual(1, definition.RequiredDashHits, spec.DefinitionPath);
+        }
+    }
+
     private static void AssertPrefabVfx(
         string prefabPath,
         string expectedFragmentPath,
