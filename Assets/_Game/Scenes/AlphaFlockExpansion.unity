@@ -170,7 +170,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 7834967329673026373, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: requiredCountOverride
       value: 6
@@ -791,7 +791,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 7834967329673026373, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: requiredCountOverride
       value: 6
@@ -957,7 +957,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 8559083962977576086, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: m_Name
       value: PenFence_Right_00
@@ -1093,7 +1093,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 7834967329673026373, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: requiredCountOverride
       value: 6
@@ -1380,7 +1380,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 7834967329673026373, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: requiredCountOverride
       value: 6
@@ -1461,7 +1461,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 8559083962977576086, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: m_Name
       value: PenFence_Top_04
@@ -1607,7 +1607,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 8559083962977576086, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: m_Name
       value: PenFence_Bottom_01
@@ -1971,7 +1971,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 8559083962977576086, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: m_Name
       value: PenFence_Bottom_04
@@ -2771,7 +2771,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 7834967329673026373, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: requiredCountOverride
       value: 6
@@ -3345,7 +3345,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 7834967329673026373, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: requiredCountOverride
       value: 6
@@ -3851,7 +3851,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 7834967329673026373, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: requiredCountOverride
       value: 6
@@ -4017,7 +4017,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 7834967329673026373, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: requiredCountOverride
       value: 6
@@ -4219,7 +4219,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 8559083962977576086, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: m_Name
       value: PenFence_Top_06
@@ -4450,7 +4450,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 7834967329673026373, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: requiredCountOverride
       value: 6
@@ -5434,7 +5434,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 7834967329673026373, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: requiredCountOverride
       value: 6
@@ -5600,7 +5600,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 8559083962977576086, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: m_Name
       value: PenFence_Top_08
@@ -6546,7 +6546,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 7834967329673026373, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: requiredCountOverride
       value: 6
@@ -7454,7 +7454,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 7834967329673026373, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: requiredCountOverride
       value: 6
@@ -7943,7 +7943,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 8559083962977576086, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: m_Name
       value: PenFence_Right_01
@@ -9253,7 +9253,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 8559083962977576086, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: m_Name
       value: PenFence_Top_07
@@ -9314,7 +9314,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 7834967329673026373, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: requiredCountOverride
       value: 6
@@ -11442,7 +11442,7 @@ MonoBehaviour:
   haystackPrefab: {fileID: 6772962434580481586, guid: b248cd3cf32957b40be9ed6ec232de74, type: 3}
   barrelPrefab: {fileID: 1211418967172175065, guid: 48bf27d9b2753b24b87864dd87aeea0e, type: 3}
   fencePrefab: {fileID: 8559083962977576086, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
-  penFenceDefinition: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+  penFenceDefinition: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
   redChestDefinition: {fileID: 11400000, guid: 278a85176361dbe4091c5d13684b691b, type: 2}
   houseDefinition: {fileID: 11400000, guid: 03c877cb40c85e44a9b3cc0753c52a6d, type: 2}
   redChestSprite: {fileID: 21300000, guid: 637264717e1c90c4890311d51c4ae6ad, type: 3}
@@ -11835,7 +11835,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 7834967329673026373, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: requiredCountOverride
       value: 6
@@ -12331,7 +12331,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 7834967329673026373, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: requiredCountOverride
       value: 6
@@ -12970,7 +12970,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 8559083962977576086, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: m_Name
       value: PenFence_Right_03
@@ -14358,7 +14358,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 7834967329673026373, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: requiredCountOverride
       value: 6
@@ -14439,7 +14439,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 7834967329673026373, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: requiredCountOverride
       value: 6
@@ -14605,7 +14605,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 8559083962977576086, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: m_Name
       value: PenFence_Bottom_06
@@ -16021,7 +16021,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 7834967329673026373, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: requiredCountOverride
       value: 6
@@ -16652,7 +16652,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 8559083962977576086, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: m_Name
       value: PenFence_Bottom_07
@@ -17201,7 +17201,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 8559083962977576086, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: m_Name
       value: PenFence_Left_02
@@ -17347,7 +17347,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 8559083962977576086, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: m_Name
       value: PenFence_Top_00
@@ -17519,7 +17519,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 8559083962977576086, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: m_Name
       value: PenFence_Right_04
@@ -17580,7 +17580,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 8559083962977576086, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: m_Name
       value: PenFence_Bottom_00
@@ -19087,7 +19087,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 8559083962977576086, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: m_Name
       value: PenFence_Left_01
@@ -19639,7 +19639,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 7834967329673026373, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: requiredCountOverride
       value: 6
@@ -20396,7 +20396,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 8559083962977576086, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: m_Name
       value: PenFence_Top_05
@@ -20712,7 +20712,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 7834967329673026373, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: requiredCountOverride
       value: 6
@@ -20793,7 +20793,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 8559083962977576086, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: m_Name
       value: PenFence_Top_03
@@ -20854,7 +20854,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 7834967329673026373, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: requiredCountOverride
       value: 6
@@ -21190,7 +21190,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 7834967329673026373, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: requiredCountOverride
       value: 6
@@ -21391,7 +21391,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 8559083962977576086, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: m_Name
       value: PenFence_Left_03
@@ -21633,7 +21633,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 8559083962977576086, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: m_Name
       value: PenFence_Left_00
@@ -21926,7 +21926,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 8559083962977576086, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: m_Name
       value: PenFence_Right_02
@@ -22885,7 +22885,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 7834967329673026373, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: requiredCountOverride
       value: 6
@@ -23051,7 +23051,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 8559083962977576086, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: m_Name
       value: PenFence_Bottom_05
@@ -23282,7 +23282,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 7834967329673026373, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: requiredCountOverride
       value: 6
@@ -23873,7 +23873,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 8559083962977576086, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: m_Name
       value: PenFence_Bottom_02
@@ -24284,7 +24284,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 7834967329673026373, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: requiredCountOverride
       value: 6
@@ -25898,7 +25898,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 7834967329673026373, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: requiredCountOverride
       value: 6
@@ -25979,7 +25979,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 7834967329673026373, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: requiredCountOverride
       value: 6
@@ -27312,7 +27312,7 @@ PrefabInstance:
     - target: {fileID: 6409431693580361984, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: definition
       value: 
-      objectReference: {fileID: 11400000, guid: 28f324b99380331419f59d33e9f578db, type: 2}
+      objectReference: {fileID: 11400000, guid: 47c8f48cb48ed684e9e5058f070d72ad, type: 2}
     - target: {fileID: 7834967329673026373, guid: 69eb9dfcba8e14b41a401278dbdf5a88, type: 3}
       propertyPath: requiredCountOverride
       value: 6

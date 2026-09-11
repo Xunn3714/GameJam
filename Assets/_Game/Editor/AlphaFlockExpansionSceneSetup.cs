@@ -257,7 +257,7 @@ public static class AlphaFlockExpansionSceneSetup
         GameObject wolfPrefab = LoadRequired<GameObject>(WolfPrefabPath);
         GameObject fencePrefab = LoadRequired<GameObject>(WorldObstaclePrefabBuilder.FencePrefabPath);
         SheepNamePool namePool = LoadRequired<SheepNamePool>(NamePoolPath);
-        ObstacleDefinition penFenceDefinition = LoadRequired<ObstacleDefinition>(WorldObstaclePrefabBuilder.PenFenceDefinitionPath);
+        ObstacleDefinition fenceDefinition = LoadRequired<ObstacleDefinition>(WorldObstaclePrefabBuilder.FenceDefinitionPath);
         ObstacleDefinition borderFenceDefinition = LoadRequired<ObstacleDefinition>(WorldObstaclePrefabBuilder.BorderFenceDefinitionPath);
 
         ClearManagedObjects(scene);
@@ -267,7 +267,7 @@ public static class AlphaFlockExpansionSceneSetup
         CreateWorld(scene);
         WorldSeed worldSeed = CreateWorldSeed(scene);
         BorderFenceRing borderRing = CreateBorderFence(scene, fencePrefab, borderFenceDefinition);
-        TutorialPen tutorialPen = CreateTutorialPen(scene, fencePrefab, penFenceDefinition, recruitablePrefab);
+        TutorialPen tutorialPen = CreateTutorialPen(scene, fencePrefab, fenceDefinition, recruitablePrefab);
         WorldDebrisSpawner debris = CreateDebrisSpawner(scene, worldSeed);
 
         GameObject flockObject = CreateFlock(
@@ -282,7 +282,7 @@ public static class AlphaFlockExpansionSceneSetup
         CameraFollow2D cameraFollow = ConfigureCamera(scene, flockObject.transform, out Camera gameplayCamera);
         ConfigureLighting(scene);
         ProgressiveSheepSpawner sheepSpawner = CreateSheepSpawner(scene, flock, namePool, gameplayCamera, worldSeed);
-        CreateLandmarkSpawner(scene, worldSeed, sheepSpawner, fencePrefab, penFenceDefinition);
+        CreateLandmarkSpawner(scene, worldSeed, sheepSpawner, fencePrefab, fenceDefinition);
         CreateWolfSystem(scene, flock, wolfPrefab.GetComponent<Wolf>(), out WolfSpawner wolfSpawner, out WolfEventDirector director);
         LevelUi ui = CreateLevelUi(scene);
         CreateGameController(
@@ -672,7 +672,7 @@ public static class AlphaFlockExpansionSceneSetup
         WorldSeed worldSeed,
         ProgressiveSheepSpawner sheepSpawner,
         GameObject fencePrefab,
-        ObstacleDefinition penFenceDefinition)
+        ObstacleDefinition fenceDefinition)
     {
         GameObject spawnerObject = new GameObject("WorldLandmarkSpawner");
         SceneManager.MoveGameObjectToScene(spawnerObject, scene);
@@ -688,7 +688,7 @@ public static class AlphaFlockExpansionSceneSetup
         serialized.FindProperty("barrelPrefab").objectReferenceValue =
             LoadRequired<GameObject>(WorldObstaclePrefabBuilder.PrefabFolder + "/Obstacle_Barrel.prefab");
         serialized.FindProperty("fencePrefab").objectReferenceValue = fencePrefab;
-        serialized.FindProperty("penFenceDefinition").objectReferenceValue = penFenceDefinition;
+        serialized.FindProperty("fenceDefinition").objectReferenceValue = fenceDefinition;
         serialized.FindProperty("redChestDefinition").objectReferenceValue =
             LoadRequired<ObstacleDefinition>(WorldObstaclePrefabBuilder.RedChestDefinitionPath);
         serialized.FindProperty("houseDefinition").objectReferenceValue =

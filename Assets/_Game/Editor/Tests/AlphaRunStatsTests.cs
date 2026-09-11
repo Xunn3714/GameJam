@@ -70,6 +70,33 @@ public sealed class AlphaRunStatsTests
         StringAssert.Contains("黑羊 1", report);
         StringAssert.Contains("普通羊 1", report);
         StringAssert.Contains("被狼抓走（0）：无", report);
+        StringAssert.Contains("破坏得分：0", report);
+    }
+
+    [Test]
+    public void DestructionTracksScoreCountAndMergedDisplayNames()
+    {
+        AlphaRunStats stats = new AlphaRunStats();
+        stats.RecordDestruction("obstacle.grass_1", "小草", 1);
+        stats.RecordDestruction("obstacle.grass_2", "小草", 1);
+        stats.RecordDestruction("obstacle.fence", "围栏", 6);
+
+        Assert.That(stats.DestructionScore, Is.EqualTo(8));
+        Assert.That(stats.TotalDestroyed, Is.EqualTo(3));
+        Assert.That(stats.DestroyedByType["obstacle.fence"].Score, Is.EqualTo(6));
+        Assert.That(stats.BuildDestructionSummary(), Does.Contain("破坏得分：8"));
+        Assert.That(stats.BuildDestructionSummary(), Does.Contain("小草 ×2"));
+        Assert.That(stats.BuildDestructionSummary(), Does.Contain("围栏 ×1"));
+    }
+
+    [Test]
+    public void DestructionScoreHasMinimumOfOne()
+    {
+        AlphaRunStats stats = new AlphaRunStats();
+        stats.RecordDestruction(null, null, 0);
+
+        Assert.That(stats.DestructionScore, Is.EqualTo(1));
+        Assert.That(stats.TotalDestroyed, Is.EqualTo(1));
     }
 
     [Test]
