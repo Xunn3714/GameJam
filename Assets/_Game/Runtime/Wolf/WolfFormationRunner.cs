@@ -77,6 +77,19 @@ public sealed class WolfFormationRunner : MonoBehaviour
         Current = null;
     }
 
+    /// <summary>禁止已经生成的编队狼继续攻击羊群，但不改变它们的移动状态。</summary>
+    public void DisableAttackInteractions()
+    {
+        for (int index = activeWolves.Count - 1; index >= 0; index--)
+        {
+            Wolf wolf = activeWolves[index];
+            if (wolf == null)
+                activeWolves.RemoveAt(index);
+            else
+                wolf.DisableAttackInteraction();
+        }
+    }
+
     /// <summary>停止继续放狼，并让已经生成的狼停止命中后安全离场。</summary>
     public void AbortAndRetreat()
     {
@@ -112,11 +125,11 @@ public sealed class WolfFormationRunner : MonoBehaviour
                 yield return RunPerpendicularChain(formation);
                 break;
             case WolfFormationType.SingleLong:
-            {
-                Wolf longPrefab = formation.longWolfPrefab != null ? formation.longWolfPrefab : formation.wolfPrefab;
-                Track(SpawnLane(longPrefab, RandomDirection(), 0f));
-                break;
-            }
+                {
+                    Wolf longPrefab = formation.longWolfPrefab != null ? formation.longWolfPrefab : formation.wolfPrefab;
+                    Track(SpawnLane(longPrefab, RandomDirection(), 0f));
+                    break;
+                }
             default:
                 Track(spawner.SpawnWolf());
                 break;

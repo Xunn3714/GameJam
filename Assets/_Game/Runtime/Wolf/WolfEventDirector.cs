@@ -174,6 +174,16 @@ public sealed class WolfEventDirector : MonoBehaviour
         EnterPhase(HasReachedStartCondition() ? WolfEventPhase.Calm : WolfEventPhase.Dormant);
     }
 
+    /// <summary>禁止当前已经生成的狼继续攻击羊群，但不改变它们的移动状态。</summary>
+    public void DisableAttackInteractions()
+    {
+        if (activeWolf != null)
+            activeWolf.DisableAttackInteraction();
+
+        if (formationRunner != null)
+            formationRunner.DisableAttackInteractions();
+    }
+
     /// <summary>停止节奏（例如游戏结束）。已在场上的狼不受影响。</summary>
     public void Stop()
     {
