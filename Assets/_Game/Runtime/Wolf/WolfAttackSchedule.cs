@@ -1,9 +1,10 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// 正式关卡的狼群节奏表：按羊群规模分阶段，每次攻击前先抽"一只狼 / 多只狼 / 本场损失最多的攻击"，
-/// 再按阶段抽具体的攻击方式。默认数值来自策划表，可在 Inspector 调整。
+/// 正式关卡的狼袭配置。阶段只控制节奏与强度倾向，攻击条目独立声明解锁阶段和基础权重。
+/// 运行时由 <see cref="WolfAttackSelectionState"/> 根据新鲜度调整权重，避免为每个阶段重复维护整张概率表。
 /// </summary>
 [CreateAssetMenu(fileName = "WolfAttackSchedule", menuName = "Game/Wolf Attack Schedule")]
 public sealed class WolfAttackSchedule : ScriptableObject
@@ -12,66 +13,74 @@ public sealed class WolfAttackSchedule : ScriptableObject
     public sealed class Stage
     {
         public string displayName = "阶段";
-        [Tooltip("羊群至少多少只进入这个阶段（按当前羊数）。")]
+        [Tooltip("羊群至少多少只进入这个阶段。狼袭只会升级，不会因暂时减员降级。")]
         [Min(0)] public int minMemberCount;
 
         [Header("Rhythm (seconds)")]
-        [Tooltip("本阶段攻击结束后，到下一次狼嚎前的最短空挡。0 表示使用阶段默认值。")]
         [Min(0f)] public float calmDurationMin;
-        [Tooltip("本阶段攻击结束后，到下一次狼嚎前的最长空挡。0 表示使用阶段默认值。")]
         [Min(0f)] public float calmDurationMax;
 
         [Header("Long Wolf")]
-        [Tooltip("长狼身体宽度倍率。0 或 1 表示原宽度。")]
-        [Min(0f)] public float longWolfWidthMultiplier = 1f;
+        [Tooltip("长狼身体宽度倍率。")]
+        [Min(0.01f)] public float longWolfWidthMultiplier = 1f;
 
-        [Header("大类权重（一只狼 / 多只狼 / 本场损失最多的攻击）")]
-        [Min(0f)] public float singleWeight = 100f;
-        [Min(0f)] public float packWeight;
-        [Min(0f)] public float mostLossWeight;
+        [Header("Threat intensity weights")]
+        [Tooltip("基础袭击 / 阵型袭击 / 大型袭击的相对抽取权重。")]
+        [Min(0f)] public float basicIntensityWeight = 1f;
+        [Min(0f)] public float formationIntensityWeight;
+        [Min(0f)] public float majorIntensityWeight;
 
-        [Header("一只狼：直冲 / 聪明 / 长狼")]
-        [Min(0f)] public float straightWolfWeight = 100f;
-        [Min(0f)] public float smartWolfWeight;
-        [Min(0f)] public float longWolfWeight;
-
-        [Header("多只狼：并排轮冲 / 并排齐冲 / 直角连击 / 包夹 / 五角星")]
-        [Min(0f)] public float parallelSequentialWeight;
-        [Min(0f)] public float parallelSimultaneousWeight;
-        [Min(0f)] public float perpendicularChainWeight;
-        [Min(0f)] public float escortsWeight;
-        [Min(0f)] public float pentagramWeight;
-
-        public bool HasAnyAttack => singleWeight + packWeight + mostLossWeight > 0f;
-
-        public float[] CategoryWeights => new[] { singleWeight, packWeight, mostLossWeight };
-        public float[] SingleWeights => new[] { straightWolfWeight, smartWolfWeight, longWolfWeight };
-        public float[] PackWeights => new[]
+        public float[] IntensityWeights => new[]
         {
-            parallelSequentialWeight, parallelSimultaneousWeight, perpendicularChainWeight, escortsWeight, pentagramWeight,
+            basicIntensityWeight,
+            formationIntensityWeight,
+            majorIntensityWeight,
         };
     }
 
+    [Serializable]
+    public sealed class AttackDefinition
+    {
+        public WolfAttackType type;
+        [Tooltip("达到哪个阶段下标后解锁。")]
+        [Min(0)] public int unlockStageIndex;
+        public WolfAttackIntensity intensity;
+        [Tooltip("同一强度档内的基础权重；实际权重还会受新鲜度影响。")]
+        [Min(0f)] public float baseWeight = 1f;
+        [Tooltip("关闭后保留实现与配置，但运行时不会抽到。")]
+        public bool enabled = true;
+    }
+
     [SerializeField] private Stage[] stages = CreateDefaultStages();
+    [SerializeField] private AttackDefinition[] attacks = CreateDefaultAttacks();
+
+    [Header("Freshness")]
+    [Tooltip("刚在上一波出现的攻击仍可再次出现，但会乘以这个权重，避免两种攻击变成固定交替。")]
+    [SerializeField, Range(0f, 1f)] private float repeatedAttackWeightMultiplier = 0.3f;
+    [Tooltip("一种攻击每缺席一波增加的权重倍率。")]
+    [SerializeField, Min(0f)] private float freshnessWeightPerMiss = 0.3f;
+    [Tooltip("新鲜度最多累计多少波。")]
+    [SerializeField, Min(0)] private int maxFreshnessRounds = 4;
+    [Tooltip("大型袭击后，下一波只从已解锁的基础袭击中抽取。")]
+    [SerializeField] private bool forceBasicAfterMajor = true;
 
     [Header("Scared Wolf (被吓跑的狼)")]
-    [Tooltip("羊群超过这么多只后，抽到普通狼（直冲 / 聪明）时狼只会预警、露面、掉头逃跑。")]
+    [Tooltip("羊群超过这么多只后，抽到直冲狼时狼只会预警、露面、掉头逃跑。")]
     [SerializeField, Min(0)] private int scareThreshold = 50;
 
-    [Header("Pentagram Trigger")]
-    [Tooltip("进入第几个阶段（下标）时立刻触发一次五角星围猎；-1 = 不触发。")]
-    [SerializeField] private int pentagramOnEnterStage = 4;
-
     [Header("Wolf Speed")]
-    [Tooltip("狼速度随羊群倍率增长的指数：>1 表示狼比羊涨得快。狼倍率 = 羊群倍率 ^ 指数。")]
+    [Tooltip("狼速度随羊群倍率增长的指数：狼倍率 = 羊群倍率 ^ 指数。")]
     [SerializeField, Min(0f)] private float wolfSpeedExponent = 1.3f;
 
     public Stage[] Stages => stages;
+    public AttackDefinition[] Attacks => attacks;
+    public float RepeatedAttackWeightMultiplier => repeatedAttackWeightMultiplier;
+    public float FreshnessWeightPerMiss => freshnessWeightPerMiss;
+    public int MaxFreshnessRounds => maxFreshnessRounds;
+    public bool ForceBasicAfterMajor => forceBasicAfterMajor;
     public int ScareThreshold => scareThreshold;
-    public int PentagramOnEnterStage => pentagramOnEnterStage;
     public float WolfSpeedExponent => wolfSpeedExponent;
 
-    /// <summary>羊数对应的阶段下标（取 minMemberCount 不大于羊数的最后一个）。</summary>
     public int GetStageIndex(int memberCount)
     {
         return WolfAttackPlanner.GetStageIndex(stages, memberCount);
@@ -79,44 +88,39 @@ public sealed class WolfAttackSchedule : ScriptableObject
 
     public Stage GetStage(int memberCount)
     {
-        int index = GetStageIndex(memberCount);
-        return index >= 0 && index < stages.Length ? stages[index] : null;
+        return GetStageByIndex(GetStageIndex(memberCount));
     }
 
-    /// <summary>按当前阶段取得狼嚎前空挡；130 只以上固定 5 秒。</summary>
+    public Stage GetStageByIndex(int stageIndex)
+    {
+        return stages != null && stageIndex >= 0 && stageIndex < stages.Length ? stages[stageIndex] : null;
+    }
+
     public Vector2 GetCalmDurationRange(int memberCount)
     {
-        if (memberCount >= 130)
-            return new Vector2(5f, 5f);
-
-        int stageIndex = GetStageIndex(memberCount);
-        Stage stage = GetStage(memberCount);
-        float minimum = stage != null ? stage.calmDurationMin : 0f;
-        float maximum = stage != null ? stage.calmDurationMax : 0f;
-        if (minimum > 0f || maximum > 0f)
-            return new Vector2(Mathf.Max(0f, minimum), Mathf.Max(minimum, maximum));
-
-        // 兼容尚未重新保存的旧 Schedule 资产。
-        switch (stageIndex)
-        {
-            case 1: return new Vector2(8f, 10f);
-            case 2: return new Vector2(6f, 10f);
-            default: return new Vector2(6f, 8f);
-        }
+        return GetCalmDurationRangeForStage(GetStageIndex(memberCount));
     }
 
-    /// <summary>第二阶段之后（阶段三起）长狼逐级变粗；旧资产也适用该默认值。</summary>
+    public Vector2 GetCalmDurationRangeForStage(int stageIndex)
+    {
+        Stage stage = GetStageByIndex(stageIndex);
+        if (stage == null)
+            return Vector2.zero;
+
+        return new Vector2(
+            Mathf.Max(0f, stage.calmDurationMin),
+            Mathf.Max(stage.calmDurationMin, stage.calmDurationMax));
+    }
+
     public float GetLongWolfWidthMultiplier(int memberCount)
     {
-        if (memberCount >= 130)
-            return 1.65f;
+        return GetLongWolfWidthMultiplierForStage(GetStageIndex(memberCount));
+    }
 
-        int stageIndex = GetStageIndex(memberCount);
-        Stage stage = GetStage(memberCount);
-        if (stage != null && stage.longWolfWidthMultiplier > 1.001f)
-            return stage.longWolfWidthMultiplier;
-
-        return stageIndex >= 4 ? 1.5f : stageIndex >= 3 ? 1.35f : 1f;
+    public float GetLongWolfWidthMultiplierForStage(int stageIndex)
+    {
+        Stage stage = GetStageByIndex(stageIndex);
+        return stage != null ? Mathf.Max(0.01f, stage.longWolfWidthMultiplier) : 1f;
     }
 
     public static Stage[] CreateDefaultStages()
@@ -125,46 +129,72 @@ public sealed class WolfAttackSchedule : ScriptableObject
         {
             new Stage
             {
-                displayName = "阶段0 教学", minMemberCount = 0,
+                displayName = "蛰伏", minMemberCount = 0,
                 calmDurationMin = 0f, calmDurationMax = 0f,
-                singleWeight = 0f, packWeight = 0f, mostLossWeight = 0f,
+                basicIntensityWeight = 0f,
             },
             new Stage
             {
-                displayName = "阶段一", minMemberCount = 6,
-                calmDurationMin = 8f, calmDurationMax = 10f,
-                singleWeight = 100f, packWeight = 0f, mostLossWeight = 0f,
-                straightWolfWeight = 100f, smartWolfWeight = 0f, longWolfWeight = 0f,
-            },
-            new Stage
-            {
-                displayName = "阶段二", minMemberCount = 20,
+                displayName = "基础袭击", minMemberCount = 20,
                 calmDurationMin = 6f, calmDurationMax = 10f,
-                singleWeight = 60f, packWeight = 40f, mostLossWeight = 0f,
-                straightWolfWeight = 10f, smartWolfWeight = 45f, longWolfWeight = 45f,
-                parallelSequentialWeight = 40f, parallelSimultaneousWeight = 40f,
-                perpendicularChainWeight = 15f, escortsWeight = 5f, pentagramWeight = 0f,
+                longWolfWidthMultiplier = 1f,
+                basicIntensityWeight = 1f,
             },
             new Stage
             {
-                displayName = "阶段三", minMemberCount = 50,
+                displayName = "阵型袭击", minMemberCount = 50,
                 calmDurationMin = 6f, calmDurationMax = 8f,
                 longWolfWidthMultiplier = 1.35f,
-                singleWeight = 20f, packWeight = 80f, mostLossWeight = 0f,
-                straightWolfWeight = 0f, smartWolfWeight = 50f, longWolfWeight = 50f,
-                parallelSequentialWeight = 30f, parallelSimultaneousWeight = 30f,
-                perpendicularChainWeight = 25f, escortsWeight = 15f, pentagramWeight = 0f,
+                basicIntensityWeight = 3f, formationIntensityWeight = 4f,
             },
             new Stage
             {
-                displayName = "阶段四", minMemberCount = 90,
+                displayName = "大型袭击", minMemberCount = 90,
                 calmDurationMin = 6f, calmDurationMax = 8f,
                 longWolfWidthMultiplier = 1.5f,
-                singleWeight = 20f, packWeight = 65f, mostLossWeight = 15f,
-                straightWolfWeight = 0f, smartWolfWeight = 45f, longWolfWeight = 55f,
-                parallelSequentialWeight = 20f, parallelSimultaneousWeight = 20f,
-                perpendicularChainWeight = 30f, escortsWeight = 30f, pentagramWeight = 5f,
+                basicIntensityWeight = 2f, formationIntensityWeight = 4f, majorIntensityWeight = 3f,
             },
+            new Stage
+            {
+                displayName = "强化袭击", minMemberCount = 130,
+                calmDurationMin = 5f, calmDurationMax = 5f,
+                longWolfWidthMultiplier = 1.65f,
+                basicIntensityWeight = 2f, formationIntensityWeight = 3f, majorIntensityWeight = 4f,
+            },
+        };
+    }
+
+    public static AttackDefinition[] CreateDefaultAttacks()
+    {
+        return new[]
+        {
+            Attack(WolfAttackType.StraightWolf, 1, WolfAttackIntensity.Basic, 5f),
+            // 暂时下线：保留 SmartWolf 的代码、Prefab 与配置入口，启用后即可重新加入抽取池。
+            Attack(WolfAttackType.SmartWolf, 1, WolfAttackIntensity.Basic, 4f, false),
+            // 开局基础袭击只放普通单狼；长条身体作为阵型阶段的新威胁再引入。
+            Attack(WolfAttackType.LongWolf, 2, WolfAttackIntensity.Basic, 3f),
+            Attack(WolfAttackType.ParallelSequential, 2, WolfAttackIntensity.Formation, 4f),
+            Attack(WolfAttackType.PerpendicularChain, 2, WolfAttackIntensity.Formation, 3f),
+            Attack(WolfAttackType.ParallelSimultaneous, 3, WolfAttackIntensity.Major, 4f),
+            Attack(WolfAttackType.LongWolfWithEscorts, 3, WolfAttackIntensity.Major, 3f),
+            Attack(WolfAttackType.Pentagram, 3, WolfAttackIntensity.Major, 1f),
+        };
+    }
+
+    private static AttackDefinition Attack(
+        WolfAttackType type,
+        int unlockStageIndex,
+        WolfAttackIntensity intensity,
+        float baseWeight,
+        bool enabled = true)
+    {
+        return new AttackDefinition
+        {
+            type = type,
+            unlockStageIndex = unlockStageIndex,
+            intensity = intensity,
+            baseWeight = baseWeight,
+            enabled = enabled,
         };
     }
 
@@ -172,10 +202,173 @@ public sealed class WolfAttackSchedule : ScriptableObject
     {
         if (stages == null || stages.Length == 0)
             stages = CreateDefaultStages();
+        if (attacks == null || attacks.Length == 0)
+            attacks = CreateDefaultAttacks();
+
+        foreach (Stage stage in stages)
+        {
+            if (stage == null)
+                continue;
+            stage.calmDurationMax = Mathf.Max(stage.calmDurationMin, stage.calmDurationMax);
+            stage.longWolfWidthMultiplier = Mathf.Max(0.01f, stage.longWolfWidthMultiplier);
+        }
     }
 }
 
-/// <summary>抽取逻辑（纯 C#，可测）。</summary>
+/// <summary>狼袭抽取状态：阶段只升不降，并记录最近使用情况以形成自然的强弱起伏。</summary>
+public sealed class WolfAttackSelectionState
+{
+    private readonly Dictionary<WolfAttackType, int> missedRounds = new Dictionary<WolfAttackType, int>();
+    private int pendingDebutStageIndex = -1;
+
+    public int HighestStageIndex { get; private set; } = -1;
+    public WolfAttackType? LastAttack { get; private set; }
+    public WolfAttackIntensity? LastIntensity { get; private set; }
+
+    public void Reset()
+    {
+        missedRounds.Clear();
+        pendingDebutStageIndex = -1;
+        HighestStageIndex = -1;
+        LastAttack = null;
+        LastIntensity = null;
+    }
+
+    public void ObserveStage(WolfAttackSchedule schedule, int stageIndex)
+    {
+        if (schedule == null || schedule.Stages == null || stageIndex <= HighestStageIndex)
+            return;
+
+        HighestStageIndex = Mathf.Min(stageIndex, schedule.Stages.Length - 1);
+        pendingDebutStageIndex = HighestStageIndex;
+    }
+
+    public WolfAttackType? Pick(WolfAttackSchedule schedule, Func<float> roll01)
+    {
+        if (schedule == null || roll01 == null || HighestStageIndex < 0)
+            return null;
+
+        List<WolfAttackSchedule.AttackDefinition> unlocked = GetUnlocked(schedule);
+        if (unlocked.Count == 0)
+            return null;
+
+        WolfAttackSchedule.AttackDefinition selected = PickDebut(schedule, unlocked, roll01);
+        if (selected == null)
+            selected = PickRegular(schedule, unlocked, roll01);
+        if (selected == null)
+            return null;
+
+        RegisterSelection(unlocked, selected);
+        return selected.type;
+    }
+
+    private WolfAttackSchedule.AttackDefinition PickDebut(
+        WolfAttackSchedule schedule,
+        List<WolfAttackSchedule.AttackDefinition> unlocked,
+        Func<float> roll01)
+    {
+        if (pendingDebutStageIndex < 0)
+            return null;
+
+        int debutStage = pendingDebutStageIndex;
+        pendingDebutStageIndex = -1;
+        List<WolfAttackSchedule.AttackDefinition> candidates = unlocked.FindAll(
+            attack => attack.unlockStageIndex == debutStage);
+        return PickAttack(schedule, candidates, roll01());
+    }
+
+    private WolfAttackSchedule.AttackDefinition PickRegular(
+        WolfAttackSchedule schedule,
+        List<WolfAttackSchedule.AttackDefinition> unlocked,
+        Func<float> roll01)
+    {
+        List<WolfAttackSchedule.AttackDefinition> candidates = unlocked;
+        if (schedule.ForceBasicAfterMajor && LastIntensity == WolfAttackIntensity.Major)
+        {
+            List<WolfAttackSchedule.AttackDefinition> basic = unlocked.FindAll(
+                attack => attack.intensity == WolfAttackIntensity.Basic);
+            if (basic.Count > 0)
+                candidates = basic;
+        }
+
+        WolfAttackSchedule.Stage stage = schedule.GetStageByIndex(HighestStageIndex);
+        if (stage == null)
+            return null;
+
+        float[] intensityWeights = stage.IntensityWeights;
+        for (int intensityIndex = 0; intensityIndex < intensityWeights.Length; intensityIndex++)
+        {
+            WolfAttackIntensity intensity = (WolfAttackIntensity)intensityIndex;
+            if (!candidates.Exists(attack => attack.intensity == intensity))
+                intensityWeights[intensityIndex] = 0f;
+        }
+
+        int pickedIntensity = WolfAttackPlanner.WeightedIndex(intensityWeights, roll01());
+        if (pickedIntensity < 0)
+            return null;
+
+        List<WolfAttackSchedule.AttackDefinition> sameIntensity = candidates.FindAll(
+            attack => attack.intensity == (WolfAttackIntensity)pickedIntensity);
+        return PickAttack(schedule, sameIntensity, roll01());
+    }
+
+    private WolfAttackSchedule.AttackDefinition PickAttack(
+        WolfAttackSchedule schedule,
+        List<WolfAttackSchedule.AttackDefinition> candidates,
+        float roll)
+    {
+        if (candidates == null || candidates.Count == 0)
+            return null;
+
+        float[] weights = new float[candidates.Count];
+        for (int index = 0; index < candidates.Count; index++)
+        {
+            WolfAttackSchedule.AttackDefinition candidate = candidates[index];
+            missedRounds.TryGetValue(candidate.type, out int misses);
+            float freshness = 1f + Mathf.Min(misses, schedule.MaxFreshnessRounds) * schedule.FreshnessWeightPerMiss;
+            float repeatPenalty = LastAttack == candidate.type ? schedule.RepeatedAttackWeightMultiplier : 1f;
+            weights[index] = candidate.baseWeight * freshness * repeatPenalty;
+        }
+
+        int pickedIndex = WolfAttackPlanner.WeightedIndex(weights, roll);
+        return pickedIndex >= 0 ? candidates[pickedIndex] : null;
+    }
+
+    private List<WolfAttackSchedule.AttackDefinition> GetUnlocked(WolfAttackSchedule schedule)
+    {
+        List<WolfAttackSchedule.AttackDefinition> result = new List<WolfAttackSchedule.AttackDefinition>();
+        if (schedule.Attacks == null)
+            return result;
+
+        foreach (WolfAttackSchedule.AttackDefinition attack in schedule.Attacks)
+        {
+            if (attack != null
+                && attack.enabled
+                && attack.baseWeight > 0f
+                && attack.unlockStageIndex <= HighestStageIndex)
+            {
+                result.Add(attack);
+            }
+        }
+        return result;
+    }
+
+    private void RegisterSelection(
+        List<WolfAttackSchedule.AttackDefinition> unlocked,
+        WolfAttackSchedule.AttackDefinition selected)
+    {
+        foreach (WolfAttackSchedule.AttackDefinition attack in unlocked)
+        {
+            missedRounds.TryGetValue(attack.type, out int misses);
+            missedRounds[attack.type] = attack.type == selected.type ? 0 : misses + 1;
+        }
+
+        LastAttack = selected.type;
+        LastIntensity = selected.intensity;
+    }
+}
+
+/// <summary>不持有运行时状态的基础抽取工具。</summary>
 public static class WolfAttackPlanner
 {
     public static int GetStageIndex(WolfAttackSchedule.Stage[] stages, int memberCount)
@@ -192,47 +385,6 @@ public static class WolfAttackPlanner
         return result;
     }
 
-    /// <summary>
-    /// 先抽大类，再抽具体攻击。<paramref name="mostLoss"/> 为 null（本场还没丢过羊）时，
-    /// "损失最多"这一类的权重按比例并回一只狼 / 多只狼。抽不到任何攻击返回 null。
-    /// </summary>
-    public static WolfAttackType? Pick(WolfAttackSchedule.Stage stage, WolfAttackType? mostLoss, Func<float> roll01)
-    {
-        if (stage == null || roll01 == null)
-            return null;
-
-        WolfAttackCategory? category = PickCategory(stage, mostLoss.HasValue, roll01);
-        if (!category.HasValue)
-            return null;
-
-        switch (category.Value)
-        {
-            case WolfAttackCategory.MostLoss:
-                return mostLoss;
-            case WolfAttackCategory.Single:
-            {
-                int index = WeightedIndex(stage.SingleWeights, roll01());
-                return index < 0 ? null : WolfAttackTypes.SingleTypes[index];
-            }
-            default:
-            {
-                int index = WeightedIndex(stage.PackWeights, roll01());
-                return index < 0 ? null : WolfAttackTypes.PackTypes[index];
-            }
-        }
-    }
-
-    public static WolfAttackCategory? PickCategory(WolfAttackSchedule.Stage stage, bool hasMostLoss, Func<float> roll01)
-    {
-        float[] weights = stage.CategoryWeights;
-        if (!hasMostLoss)
-            weights[2] = 0f;
-
-        int index = WeightedIndex(weights, roll01());
-        return index < 0 ? null : (WolfAttackCategory)index;
-    }
-
-    /// <summary>按权重抽下标；roll 为 [0,1)。总权重为 0 返回 -1。</summary>
     public static int WeightedIndex(float[] weights, float roll)
     {
         if (weights == null)

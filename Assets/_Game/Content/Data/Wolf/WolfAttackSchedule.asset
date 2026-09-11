@@ -13,71 +13,90 @@ MonoBehaviour:
   m_Name: WolfAttackSchedule
   m_EditorClassIdentifier: Assembly-CSharp::WolfAttackSchedule
   stages:
-  - displayName: "\u9636\u6BB50 \u6559\u5B66"
+  - displayName: "\u86F0\u4F0F"
     minMemberCount: 0
-    singleWeight: 0
-    packWeight: 0
-    mostLossWeight: 0
-    straightWolfWeight: 100
-    smartWolfWeight: 0
-    longWolfWeight: 0
-    parallelSequentialWeight: 0
-    parallelSimultaneousWeight: 0
-    perpendicularChainWeight: 0
-    escortsWeight: 0
-    pentagramWeight: 0
-  - displayName: "\u9636\u6BB5\u4E00"
-    minMemberCount: 6
-    singleWeight: 100
-    packWeight: 0
-    mostLossWeight: 0
-    straightWolfWeight: 100
-    smartWolfWeight: 0
-    longWolfWeight: 0
-    parallelSequentialWeight: 0
-    parallelSimultaneousWeight: 0
-    perpendicularChainWeight: 0
-    escortsWeight: 0
-    pentagramWeight: 0
-  - displayName: "\u9636\u6BB5\u4E8C"
+    calmDurationMin: 0
+    calmDurationMax: 0
+    longWolfWidthMultiplier: 1
+    basicIntensityWeight: 0
+    formationIntensityWeight: 0
+    majorIntensityWeight: 0
+  - displayName: "\u57FA\u7840\u88AD\u51FB"
     minMemberCount: 20
-    singleWeight: 60
-    packWeight: 40
-    mostLossWeight: 0
-    straightWolfWeight: 10
-    smartWolfWeight: 45
-    longWolfWeight: 45
-    parallelSequentialWeight: 40
-    parallelSimultaneousWeight: 40
-    perpendicularChainWeight: 15
-    escortsWeight: 5
-    pentagramWeight: 0
-  - displayName: "\u9636\u6BB5\u4E09"
+    calmDurationMin: 6
+    calmDurationMax: 10
+    longWolfWidthMultiplier: 1
+    basicIntensityWeight: 1
+    formationIntensityWeight: 0
+    majorIntensityWeight: 0
+  - displayName: "\u9635\u578B\u88AD\u51FB"
     minMemberCount: 50
-    singleWeight: 20
-    packWeight: 80
-    mostLossWeight: 0
-    straightWolfWeight: 0
-    smartWolfWeight: 50
-    longWolfWeight: 50
-    parallelSequentialWeight: 30
-    parallelSimultaneousWeight: 30
-    perpendicularChainWeight: 25
-    escortsWeight: 15
-    pentagramWeight: 0
-  - displayName: "\u9636\u6BB5\u56DB"
+    calmDurationMin: 6
+    calmDurationMax: 8
+    longWolfWidthMultiplier: 1.35
+    basicIntensityWeight: 3
+    formationIntensityWeight: 4
+    majorIntensityWeight: 0
+  - displayName: "\u5927\u578B\u88AD\u51FB"
     minMemberCount: 90
-    singleWeight: 20
-    packWeight: 65
-    mostLossWeight: 15
-    straightWolfWeight: 0
-    smartWolfWeight: 45
-    longWolfWeight: 55
-    parallelSequentialWeight: 20
-    parallelSimultaneousWeight: 20
-    perpendicularChainWeight: 30
-    escortsWeight: 30
-    pentagramWeight: 5
+    calmDurationMin: 6
+    calmDurationMax: 8
+    longWolfWidthMultiplier: 1.5
+    basicIntensityWeight: 2
+    formationIntensityWeight: 4
+    majorIntensityWeight: 3
+  - displayName: "\u5F3A\u5316\u88AD\u51FB"
+    minMemberCount: 130
+    calmDurationMin: 5
+    calmDurationMax: 5
+    longWolfWidthMultiplier: 1.65
+    basicIntensityWeight: 2
+    formationIntensityWeight: 3
+    majorIntensityWeight: 4
+  attacks:
+  - type: 0
+    unlockStageIndex: 1
+    intensity: 0
+    baseWeight: 5
+    enabled: 1
+  - type: 1
+    unlockStageIndex: 1
+    intensity: 0
+    baseWeight: 4
+    enabled: 0
+  - type: 2
+    unlockStageIndex: 2
+    intensity: 0
+    baseWeight: 3
+    enabled: 1
+  - type: 3
+    unlockStageIndex: 2
+    intensity: 1
+    baseWeight: 4
+    enabled: 1
+  - type: 5
+    unlockStageIndex: 2
+    intensity: 1
+    baseWeight: 3
+    enabled: 1
+  - type: 4
+    unlockStageIndex: 3
+    intensity: 2
+    baseWeight: 4
+    enabled: 1
+  - type: 6
+    unlockStageIndex: 3
+    intensity: 2
+    baseWeight: 3
+    enabled: 1
+  - type: 7
+    unlockStageIndex: 3
+    intensity: 2
+    baseWeight: 1
+    enabled: 1
+  repeatedAttackWeightMultiplier: 0.3
+  freshnessWeightPerMiss: 0.3
+  maxFreshnessRounds: 4
+  forceBasicAfterMajor: 1
   scareThreshold: 50
-  pentagramOnEnterStage: 4
   wolfSpeedExponent: 1.3

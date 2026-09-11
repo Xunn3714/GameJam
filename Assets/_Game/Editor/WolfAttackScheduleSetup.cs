@@ -38,25 +38,34 @@ public static class WolfAttackScheduleSetup
             stage.FindPropertyRelative("calmDurationMin").floatValue = source.calmDurationMin;
             stage.FindPropertyRelative("calmDurationMax").floatValue = source.calmDurationMax;
             stage.FindPropertyRelative("longWolfWidthMultiplier").floatValue = source.longWolfWidthMultiplier;
-            stage.FindPropertyRelative("singleWeight").floatValue = source.singleWeight;
-            stage.FindPropertyRelative("packWeight").floatValue = source.packWeight;
-            stage.FindPropertyRelative("mostLossWeight").floatValue = source.mostLossWeight;
-            stage.FindPropertyRelative("straightWolfWeight").floatValue = source.straightWolfWeight;
-            stage.FindPropertyRelative("smartWolfWeight").floatValue = source.smartWolfWeight;
-            stage.FindPropertyRelative("longWolfWeight").floatValue = source.longWolfWeight;
-            stage.FindPropertyRelative("parallelSequentialWeight").floatValue = source.parallelSequentialWeight;
-            stage.FindPropertyRelative("parallelSimultaneousWeight").floatValue = source.parallelSimultaneousWeight;
-            stage.FindPropertyRelative("perpendicularChainWeight").floatValue = source.perpendicularChainWeight;
-            stage.FindPropertyRelative("escortsWeight").floatValue = source.escortsWeight;
-            stage.FindPropertyRelative("pentagramWeight").floatValue = source.pentagramWeight;
+            stage.FindPropertyRelative("basicIntensityWeight").floatValue = source.basicIntensityWeight;
+            stage.FindPropertyRelative("formationIntensityWeight").floatValue = source.formationIntensityWeight;
+            stage.FindPropertyRelative("majorIntensityWeight").floatValue = source.majorIntensityWeight;
         }
+
+        WolfAttackSchedule.AttackDefinition[] defaultAttacks = WolfAttackSchedule.CreateDefaultAttacks();
+        SerializedProperty attacks = serialized.FindProperty("attacks");
+        attacks.arraySize = defaultAttacks.Length;
+        for (int index = 0; index < defaultAttacks.Length; index++)
+        {
+            SerializedProperty attack = attacks.GetArrayElementAtIndex(index);
+            WolfAttackSchedule.AttackDefinition source = defaultAttacks[index];
+            attack.FindPropertyRelative("type").enumValueIndex = (int)source.type;
+            attack.FindPropertyRelative("unlockStageIndex").intValue = source.unlockStageIndex;
+            attack.FindPropertyRelative("intensity").enumValueIndex = (int)source.intensity;
+            attack.FindPropertyRelative("baseWeight").floatValue = source.baseWeight;
+            attack.FindPropertyRelative("enabled").boolValue = source.enabled;
+        }
+        serialized.FindProperty("repeatedAttackWeightMultiplier").floatValue = 0.3f;
+        serialized.FindProperty("freshnessWeightPerMiss").floatValue = 0.3f;
+        serialized.FindProperty("maxFreshnessRounds").intValue = 4;
+        serialized.FindProperty("forceBasicAfterMajor").boolValue = true;
         serialized.FindProperty("scareThreshold").intValue = 50;
-        serialized.FindProperty("pentagramOnEnterStage").intValue = 4;
         serialized.FindProperty("wolfSpeedExponent").floatValue = 1.3f;
         serialized.ApplyModifiedPropertiesWithoutUndo();
         EditorUtility.SetDirty(schedule);
         AssetDatabase.SaveAssets();
-        Debug.Log($"Wolf attack schedule ready at {SchedulePath} ({defaults.Length} stages, default weights from the design sheet).");
+        Debug.Log($"Wolf attack schedule ready at {SchedulePath} ({defaults.Length} stages, {defaultAttacks.Length} attacks).");
         return schedule;
     }
 

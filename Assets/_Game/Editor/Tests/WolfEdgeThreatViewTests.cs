@@ -70,6 +70,32 @@ public sealed class WolfEdgeThreatViewTests
     }
 
     [Test]
+    public void TryCalculateDirectionEdgePosition_UsesDirectionOfVisibleLogicalSpawnPoint()
+    {
+        bool found = WolfEdgeThreatView.TryCalculateDirectionEdgePosition(
+            new Rect(0f, 0f, 1920f, 1080f),
+            new Vector2(0.75f, 0.5f),
+            74f,
+            out Vector2 position,
+            out Vector2 inward);
+
+        Assert.That(found, Is.True);
+        Assert.That(position.x, Is.EqualTo(886f).Within(0.01f));
+        Assert.That(position.y, Is.EqualTo(0f).Within(0.01f));
+        Assert.That(inward.x, Is.EqualTo(-1f).Within(0.001f));
+        Assert.That(inward.y, Is.EqualTo(0f).Within(0.001f));
+    }
+
+    [Test]
+    public void AdvancePulsePhase_FrequencyChangeAdvancesWithoutAbsoluteTimeJump()
+    {
+        float phase = WolfEdgeThreatView.AdvancePulsePhase(0.2f, 1f, 0.1f);
+        phase = WolfEdgeThreatView.AdvancePulsePhase(phase, 8f, 0.01f);
+
+        Assert.That(phase, Is.EqualTo(0.38f).Within(0.0001f));
+    }
+
+    [Test]
     public void WolfPrefab_ProvidesThreatIndicatorPortrait()
     {
         GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(WolfPrefabPath);
@@ -98,5 +124,16 @@ public sealed class WolfEdgeThreatViewTests
         {
             Object.DestroyImmediate(instance);
         }
+    }
+
+    [Test]
+    public void Wolf_WarningDurationCompensatesForHigherStageSpeed()
+    {
+        float openingDuration = Wolf.CalculateWarningDuration(1.2f, 0.8f, 2f, 0.35f);
+        float lateDuration = Wolf.CalculateWarningDuration(1.2f, 0.8f, 4f, 0.35f);
+
+        Assert.That(openingDuration, Is.GreaterThan(lateDuration));
+        Assert.That(lateDuration, Is.GreaterThan(1f),
+            "Speed compensation should preserve a readable warning instead of removing reaction time.");
     }
 }

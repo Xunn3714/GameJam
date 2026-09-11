@@ -54,9 +54,23 @@ public sealed class WolfSpawner : MonoBehaviour
         SpeedScale = Mathf.Max(0.1f, scale);
     }
     public bool IsSpawning { get; private set; } = true;
-    public int AliveCount => aliveWolves.Count;
+    public int AliveCount
+    {
+        get
+        {
+            PruneDestroyedWolves();
+            return aliveWolves.Count;
+        }
+    }
     public int SpawnedCount { get; private set; }
-    public IReadOnlyList<Wolf> AliveWolves => aliveWolves;
+    public IReadOnlyList<Wolf> AliveWolves
+    {
+        get
+        {
+            PruneDestroyedWolves();
+            return aliveWolves;
+        }
+    }
 
     public event Action<Wolf> WolfSpawned;
 
@@ -69,6 +83,8 @@ public sealed class WolfSpawner : MonoBehaviour
     {
         if (!IsSpawning || flock == null || wolfPrefab == null || Time.timeScale == 0f)
             return;
+
+        PruneDestroyedWolves();
 
         timer -= Time.deltaTime;
         if (timer > 0f)
@@ -109,27 +125,80 @@ public sealed class WolfSpawner : MonoBehaviour
         if (camera == null || !camera.orthographic || outward.sqrMagnitude < 0.0001f)
             return spawnDistance;
 
-        outward.Normalize();
         float halfHeight = camera.orthographicSize;
         float halfWidth = halfHeight * camera.aspect;
         Vector2 center = camera.transform.position;
+        Rect viewRect = new Rect(
+            center.x - halfWidth,
+            center.y - halfHeight,
+            halfWidth * 2f,
+            halfHeight * 2f);
+        return CalculateOffscreenDistance(viewRect, from, outward, spawnDistance, offscreenMargin);
+    }
 
-        float exitX = float.PositiveInfinity;
-        if (Mathf.Abs(outward.x) > 0.0001f)
-        {
-            float edge = outward.x > 0f ? center.x + halfWidth : center.x - halfWidth;
-            exitX = (edge - from.x) / outward.x;
-        }
-        float exitY = float.PositiveInfinity;
-        if (Mathf.Abs(outward.y) > 0.0001f)
-        {
-            float edge = outward.y > 0f ? center.y + halfHeight : center.y - halfHeight;
-            exitY = (edge - from.y) / outward.y;
-        }
+    /// <summary>
+    /// 沿射线寻找安全画外点。即使核心点已经在画外、但反向延长线会重新穿过镜头，
+    /// 也会越过另一侧后再生成，避免狼或占位点意外落进屏幕。
+    /// </summary>
+    public static float CalculateOffscreenDistance(
+        Rect viewRect,
+        Vector2 from,
+        Vector2 outward,
+        float minimumDistance,
+        float margin)
+    {
+        float minimum = Mathf.Max(0f, minimumDistance);
+        if (outward.sqrMagnitude < 0.0001f)
+            return minimum;
 
-        // 起点已经在某个轴的画面外时对应距离为负，取 0。
-        float exit = Mathf.Max(0f, Mathf.Min(exitX, exitY));
-        return Mathf.Max(spawnDistance, exit + offscreenMargin);
+        Vector2 direction = outward.normalized;
+        float safeMargin = Mathf.Max(0f, margin);
+        Rect safeRect = Rect.MinMaxRect(
+            viewRect.xMin - safeMargin,
+            viewRect.yMin - safeMargin,
+            viewRect.xMax + safeMargin,
+            viewRect.yMax + safeMargin);
+        if (!TryGetForwardRayInterval(safeRect, from, direction, out _, out float exitDistance)
+            || minimum > exitDistance)
+            return minimum;
+
+        return Mathf.Max(minimum, exitDistance + 0.001f);
+    }
+
+    private static bool TryGetForwardRayInterval(
+        Rect rect,
+        Vector2 origin,
+        Vector2 direction,
+        out float enter,
+        out float exit)
+    {
+        enter = float.NegativeInfinity;
+        exit = float.PositiveInfinity;
+        if (!ClipRayAxis(origin.x, direction.x, rect.xMin, rect.xMax, ref enter, ref exit)
+            || !ClipRayAxis(origin.y, direction.y, rect.yMin, rect.yMax, ref enter, ref exit))
+            return false;
+
+        return exit >= Mathf.Max(0f, enter);
+    }
+
+    private static bool ClipRayAxis(
+        float origin,
+        float direction,
+        float minimum,
+        float maximum,
+        ref float enter,
+        ref float exit)
+    {
+        if (Mathf.Abs(direction) <= 0.0001f)
+            return origin >= minimum && origin <= maximum;
+
+        float first = (minimum - origin) / direction;
+        float second = (maximum - origin) / direction;
+        if (first > second)
+            (first, second) = (second, first);
+        enter = Mathf.Max(enter, first);
+        exit = Mathf.Min(exit, second);
+        return enter <= exit;
     }
 
     public Wolf SpawnWolf()
@@ -150,8 +219,15 @@ public sealed class WolfSpawner : MonoBehaviour
             direction = Vector2.right;
         }
 
-        Vector2 position = flock.Center + direction * GetSpawnDistance(flock.Center, direction);
+        Vector2 center = flock.Center;
+        float approachDistance = GetSpawnDistance(center, direction);
+        Vector2 chargeDirection = -direction;
+        float departureDistance = GetSpawnDistance(center, chargeDirection);
+        Vector2 position = center + direction * approachDistance;
         Wolf wolf = Register(Instantiate(wolfPrefab, position, Quaternion.identity));
+        wolf.SetLogicalRoute(
+            approachDistance,
+            approachDistance + departureDistance + wolf.ChargeOverrun);
         if (scared)
             wolf.LaunchScared(flock, DodgeMemory);
         else
@@ -162,6 +238,7 @@ public sealed class WolfSpawner : MonoBehaviour
 
     /// <summary>
     /// 编队用：在 <paramref name="origin"/> 生成一只狼，沿 <paramref name="direction"/> 直冲 <paramref name="travelDistance"/>。
+    /// 普通路线应传从来袭侧画外到离场侧画外的完整距离；显式 coreRoute 只供五角星等固定核心几何使用。
     /// <paramref name="prefab"/> 为空时用默认狼。
     /// </summary>
     public Wolf SpawnWolfAlong(
@@ -170,14 +247,28 @@ public sealed class WolfSpawner : MonoBehaviour
         Vector2 direction,
         float travelDistance,
         float warningDurationOverride = 0f,
-        float chargeSpeedOverride = 0f)
+        float chargeSpeedOverride = 0f,
+        float coreRouteStartOffset = 0f,
+        float coreRouteLength = 0f)
     {
         Wolf source = prefab != null ? prefab : wolfPrefab;
         if (source == null || flock == null)
             return null;
 
+        Vector2 coreRoute = coreRouteLength > 0f
+            ? new Vector2(Mathf.Max(0f, coreRouteStartOffset), coreRouteLength + source.ChargeOverrun)
+            : new Vector2(0f, Mathf.Max(0f, travelDistance) + source.ChargeOverrun);
+
         Wolf wolf = Register(Instantiate(source, origin, Quaternion.identity));
-        wolf.LaunchAlong(flock, direction, travelDistance, DodgeMemory, warningDurationOverride, chargeSpeedOverride);
+        wolf.LaunchAlong(
+            flock,
+            direction,
+            travelDistance,
+            DodgeMemory,
+            warningDurationOverride,
+            chargeSpeedOverride,
+            coreRoute.x,
+            coreRoute.y);
         WolfSpawned?.Invoke(wolf);
         return wolf;
     }
@@ -196,5 +287,14 @@ public sealed class WolfSpawner : MonoBehaviour
     private void HandleWolfFinished(Wolf wolf)
     {
         aliveWolves.Remove(wolf);
+    }
+
+    private void PruneDestroyedWolves()
+    {
+        for (int index = aliveWolves.Count - 1; index >= 0; index--)
+        {
+            if (aliveWolves[index] == null)
+                aliveWolves.RemoveAt(index);
+        }
     }
 }

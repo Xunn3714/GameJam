@@ -38,6 +38,8 @@ public sealed class Wolf : MonoBehaviour
     [SerializeField] private Color warningColor = new Color(1f, 0.2f, 0.1f, 0.3f);
     [SerializeField] private Color warningFlashColor = new Color(1f, 0.2f, 0.1f, 0.65f);
     [SerializeField, Min(0f)] private float warningFlashFrequency = 5f;
+    [Tooltip("阶段提速后适度缩短预警，避免更快的羊群在同一预警时间内横移得更远。0 = 不补偿。")]
+    [SerializeField, Range(0f, 0.75f)] private float warningSpeedCompensation = 0.35f;
     [Tooltip("勾选后预警期间会持续瞄准羊群中心；不勾选则预警一出现路线就锁定，玩家可以躲开。")]
     [SerializeField] private bool aimFollowsFlockDuringWarning;
 
@@ -76,7 +78,7 @@ public sealed class Wolf : MonoBehaviour
     [SerializeField, Min(0f)] private float carriedSheepDistance = 0.75f;
 
     [Header("Sheep Contact (羊主动碰狼)")]
-    [Tooltip("预警 / 撤退期间羊主动碰到狼也会结算：狼嘴里有羊 → 把碰上来的羊踢开（散落，可捡回）；嘴里没羊 → 叼走碰上来的那只。玩家没有救羊的手段。")]
+    [Tooltip("冲锋 / 撤退期间羊主动碰到狼也会结算：狼嘴里有羊 → 把碰上来的羊踢开（散落，可捡回）；嘴里没羊 → 叼走碰上来的那只。预警阶段不碰撞。")]
     [SerializeField] private bool sheepContactInteraction = true;
 
     [Header("Scared (被吓跑的狼)")]
@@ -102,6 +104,7 @@ public sealed class Wolf : MonoBehaviour
     private Vector2 chargeOrigin;
     private Vector2 chargeDirection = Vector2.right;
     private float chargeLength;
+    private Vector2 warningAimPoint;
     private float chargeTravelled;
     private bool attackResolved;
     private bool hasCapturedMember;
@@ -119,6 +122,11 @@ public sealed class Wolf : MonoBehaviour
     private bool fixedRoute;
     private Vector2 fixedRouteDirection = Vector2.right;
     private float fixedRouteTravel;
+    private float fixedRouteCoreStartOffset;
+    private float fixedRouteCoreLength;
+    private Vector2 fixedRouteCoreWorldStart;
+    private float logicalLaunchDistance;
+    private float logicalChargeLength;
     private float activeWarningDuration;
     private float additionalWarningLeadTime;
     private float activeChargeSpeed;
@@ -126,6 +134,7 @@ public sealed class Wolf : MonoBehaviour
     private bool predictionAllowed = true;
     private bool scared;
     private bool scaredTurned;
+    private bool attackInteractionEnabled = true;
     private float kickedTimer;
     private LongWolfSweep longSweep;
 
@@ -153,11 +162,29 @@ public sealed class Wolf : MonoBehaviour
         ? idleSprite
         : (bodyRenderer != null ? bodyRenderer.sprite : null);
     /// <summary>用于统计归属的攻击方式（由生成方设置）。</summary>
-    public WolfAttackType AttackType { get; set; } = WolfAttackType.SmartWolf;
+    public WolfAttackType AttackType { get; set; } = WolfAttackType.StraightWolf;
     /// <summary>这只狼是否走编队指定的固定路线（不瞄准羊群、不做预判）。</summary>
     public bool IsOnFixedRoute => fixedRoute;
     public float ChargeOverrun => chargeOverrun;
+    public Vector2 ChargeOrigin => chargeOrigin;
     public Vector2 ChargeDirection => chargeDirection;
+    /// <summary>
+    /// 屏幕边缘头像使用的来袭侧方向点。它始终位于锁定红线的反方向，
+    /// 即使五角星的真实核心起点已经在画面内，也不会把头像投到错误的一侧。
+    /// </summary>
+    public Vector2 ThreatWorldPosition
+    {
+        get
+        {
+            if (state != State.Warning)
+                return transform.position;
+            float indicatorDistance = Mathf.Max(
+                1f,
+                logicalLaunchDistance,
+                fixedRouteCoreStartOffset);
+            return chargeOrigin - chargeDirection * indicatorDistance;
+        }
+    }
     /// <summary>本次进攻实际使用的冲锋速度（编队可以覆盖 prefab 的值，再乘以速度倍率）。</summary>
     public float ChargeSpeed => (activeChargeSpeed > 0f ? activeChargeSpeed : chargeSpeed) * speedScale;
     public float SpeedScale => speedScale;
@@ -168,10 +195,27 @@ public sealed class Wolf : MonoBehaviour
         speedScale = Mathf.Max(0.1f, scale);
     }
 
-    /// <summary>统一延长冲锋前的预警窗口，不改变原始 prefab / 编队覆盖值。</summary>
+    /// <summary>统一延长冲锋前的预警窗口；最终时长仍会做阶段速度补偿。</summary>
     public void SetAdditionalWarningLeadTime(float seconds)
     {
         additionalWarningLeadTime = Mathf.Max(0f, seconds);
+    }
+
+    /// <summary>兼容旧调用：只指定逻辑进场距离，冲锋距离沿用进场距离加默认余程。</summary>
+    public void SetLogicalLaunchDistance(float distance)
+    {
+        logicalLaunchDistance = Mathf.Max(0f, distance);
+        logicalChargeLength = 0f;
+    }
+
+    /// <summary>
+    /// 指定与预警共用的真实路线：从瞄准点后方 approachDistance 开始，
+    /// 沿锁定方向实际移动 totalTravelDistance。用于从屏幕一侧画外完整穿到另一侧画外。
+    /// </summary>
+    public void SetLogicalRoute(float approachDistance, float totalTravelDistance)
+    {
+        logicalLaunchDistance = Mathf.Max(0f, approachDistance);
+        logicalChargeLength = Mathf.Max(0f, totalTravelDistance);
     }
 
     /// <summary>冲锋阶段已经冲出的距离（不在冲锋时为 0）。</summary>
@@ -209,9 +253,25 @@ public sealed class Wolf : MonoBehaviour
     public float PredictionStrength => predictionStrength;
     public float PredictionMaxDegrees => predictionMaxDegrees;
     public float PredictionLeadTime => predictionLeadTime;
-    /// <summary>本次进攻实际使用的预警时长（编队可以覆盖 prefab 的值）。</summary>
-    public float WarningDuration => (activeWarningDuration > 0f ? activeWarningDuration : warningDuration)
-        + additionalWarningLeadTime;
+    /// <summary>本次进攻实际使用的预警时长（编队可以覆盖 prefab，并随阶段速度温和缩短）。</summary>
+    public float WarningDuration => CalculateWarningDuration(
+        activeWarningDuration > 0f ? activeWarningDuration : warningDuration,
+        additionalWarningLeadTime,
+        speedScale,
+        warningSpeedCompensation);
+
+    public static float CalculateWarningDuration(
+        float baseDuration,
+        float extraLeadTime,
+        float attackSpeedScale,
+        float compensationExponent)
+    {
+        float unscaled = Mathf.Max(0f, baseDuration) + Mathf.Max(0f, extraLeadTime);
+        float compensation = Mathf.Pow(
+            Mathf.Max(0.1f, attackSpeedScale),
+            -Mathf.Clamp(compensationExponent, 0f, 0.75f));
+        return unscaled * compensation;
+    }
     /// <summary>预警阶段已经过去的秒数（不在预警时为 0）。</summary>
     public float WarningElapsed => state == State.Warning ? stateTimer : 0f;
 
@@ -273,14 +333,16 @@ public sealed class Wolf : MonoBehaviour
     public void Launch(FlockController target)
     {
         fixedRoute = false;
+        fixedRouteCoreStartOffset = 0f;
+        fixedRouteCoreLength = 0f;
         activeWarningDuration = 0f;
         activeChargeSpeed = 0f;
         LaunchInternal(target);
     }
 
     /// <summary>
-    /// 编队进攻：从当前位置沿 <paramref name="direction"/> 直冲，冲过 <paramref name="travelDistance"/>（通常是到羊群那条横线的距离）
-    /// 之后再加自己的 chargeOverrun。不瞄准羊群、不做预判、不记录躲避角度，路线完全由编队决定。
+    /// 编队进攻：从当前位置沿 <paramref name="direction"/> 直冲指定距离，再加自己的 chargeOverrun。
+    /// 普通编队传入完整跨屏距离；五角星可以另传固定核心段。不瞄准羊群、不做预判、不记录躲避角度。
     /// </summary>
     /// <param name="warningDurationOverride">大于 0 时覆盖 prefab 的预警时长（例如包夹里的长狼要预警更久）。</param>
     /// <param name="chargeSpeedOverride">大于 0 时覆盖 prefab 的冲锋速度（例如五角星要慢一点让图形停留更久）。</param>
@@ -290,12 +352,16 @@ public sealed class Wolf : MonoBehaviour
         float travelDistance,
         WolfDodgeMemory memory = null,
         float warningDurationOverride = 0f,
-        float chargeSpeedOverride = 0f)
+        float chargeSpeedOverride = 0f,
+        float coreRouteStartOffset = 0f,
+        float coreRouteLength = 0f)
     {
         dodgeMemory = memory;
         fixedRoute = true;
         fixedRouteDirection = direction.sqrMagnitude > 0.0001f ? direction.normalized : Vector2.right;
         fixedRouteTravel = Mathf.Max(0f, travelDistance);
+        fixedRouteCoreStartOffset = Mathf.Max(0f, coreRouteStartOffset);
+        fixedRouteCoreLength = Mathf.Max(0f, coreRouteLength);
         activeWarningDuration = Mathf.Max(0f, warningDurationOverride);
         activeChargeSpeed = Mathf.Max(0f, chargeSpeedOverride);
         LaunchInternal(target);
@@ -315,10 +381,16 @@ public sealed class Wolf : MonoBehaviour
         stateTimer = 0f;
         attackResolved = false;
         hasCapturedMember = false;
+        attackInteractionEnabled = true;
         predictionApplied = false;
         dodgeRecorded = false;
         appliedPredictionDegrees = 0f;
-        if (longSweep != null) longSweep.Prepare();
+        if (fixedRoute && fixedRouteCoreLength > 0f)
+            fixedRouteCoreWorldStart = (Vector2)transform.position + fixedRouteDirection * fixedRouteCoreStartOffset;
+        if (longSweep != null)
+        {
+            longSweep.Prepare();
+        }
         if (fixedRoute)
         {
             AimAlongFixedRoute();
@@ -399,7 +471,7 @@ public sealed class Wolf : MonoBehaviour
 
                 float step = ChargeSpeed * deltaTime;
                 Vector2 nextPosition = body.position + chargeDirection * step;
-                if (longSweep != null)
+                if (longSweep != null && attackInteractionEnabled)
                     longSweep.Sweep(this, flock, body.position, nextPosition, chargeDirection);
                 body.MovePosition(nextPosition);
                 chargeTravelled += step;
@@ -433,7 +505,7 @@ public sealed class Wolf : MonoBehaviour
                     ? ChargeSpeed
                     : scared ? ScaredFleeSpeed() : fleeSpeed * speedScale;
                 Vector2 fleePosition = body.position + chargeDirection * (currentFleeSpeed * deltaTime);
-                if (longSweep != null)
+                if (longSweep != null && attackInteractionEnabled)
                     longSweep.Sweep(this, flock, body.position, fleePosition, chargeDirection);
                 body.MovePosition(fleePosition);
                 break;
@@ -590,11 +662,11 @@ public sealed class Wolf : MonoBehaviour
         predictionApplied = true;
         predictionStartTime = stateTimer;
 
-        chargeOrigin = transform.position;
-        Vector2 toCenter = flock.Center - chargeOrigin;
+        warningAimPoint = flock.Center;
+        Vector2 toCenter = warningAimPoint - (Vector2)transform.position;
         float distance = toCenter.magnitude;
         Vector2 aim = distance > 0.001f ? toCenter / distance : chargeDirection;
-        chargeLength = distance + chargeOverrun;
+        UpdateNonFixedChargeRoute();
 
         float degrees = PreviewPredictionDegrees(dodgeMemory);
         appliedPredictionDegrees = degrees;
@@ -625,7 +697,10 @@ public sealed class Wolf : MonoBehaviour
         chargeDirection = new Vector2(Mathf.Cos(radians), Mathf.Sin(radians));
         if (longSweep != null)
             longSweep.SetDirection(chargeDirection);
-        UpdateWarningShape();
+        if (!fixedRoute && state == State.Warning)
+            UpdateNonFixedChargeRoute();
+        else
+            UpdateWarningShape();
     }
 
     /// <summary>
@@ -647,9 +722,17 @@ public sealed class Wolf : MonoBehaviour
 
     private void AimAlongFixedRoute()
     {
-        chargeOrigin = transform.position;
         chargeDirection = fixedRouteDirection;
-        chargeLength = fixedRouteTravel + chargeOverrun;
+        if (fixedRouteCoreLength > 0f)
+        {
+            chargeOrigin = fixedRouteCoreWorldStart;
+            chargeLength = fixedRouteCoreLength;
+        }
+        else
+        {
+            chargeOrigin = transform.position;
+            chargeLength = fixedRouteTravel + chargeOverrun;
+        }
         if (longSweep != null)
             longSweep.SetDirection(chargeDirection);
         UpdateWarningShape();
@@ -657,14 +740,56 @@ public sealed class Wolf : MonoBehaviour
 
     private void AimAtFlock()
     {
-        chargeOrigin = transform.position;
-        Vector2 toCenter = flock.Center - chargeOrigin;
+        Vector2 visualOrigin = transform.position;
+        warningAimPoint = flock.Center;
+        Vector2 toCenter = warningAimPoint - visualOrigin;
         float distance = toCenter.magnitude;
         chargeDirection = distance > 0.001f ? toCenter / distance : Vector2.right;
-        chargeLength = distance + chargeOverrun;
         if (longSweep != null)
             longSweep.SetDirection(chargeDirection);
+        UpdateNonFixedChargeRoute();
+    }
+
+    /// <summary>
+    /// 根据生成时锁定的瞄准点建立逻辑路线。起点只沿同一条直线投影，绝不在冲锋开始时
+    /// 跟着之后的羊群中心重新平移；红色预警、边缘图标和正式冲锋始终指向同一条线。
+    /// </summary>
+    private void UpdateNonFixedChargeRoute()
+    {
+        Vector2 visualOrigin = transform.position;
+        if (logicalLaunchDistance > 0f)
+        {
+            chargeOrigin = CalculateLogicalRouteStart(
+                visualOrigin,
+                chargeDirection,
+                warningAimPoint,
+                logicalLaunchDistance);
+            chargeLength = logicalChargeLength > 0f
+                ? logicalChargeLength
+                : logicalLaunchDistance + chargeOverrun;
+        }
+        else
+        {
+            chargeOrigin = visualOrigin;
+            chargeLength = Vector2.Distance(visualOrigin, warningAimPoint) + chargeOverrun;
+        }
         UpdateWarningShape();
+    }
+
+    /// <summary>
+    /// 在不改变原路线的前提下，取离路线最近的瞄准点投影，并向后保留固定进场距离。
+    /// 预判偏转后路线可以从羊群侧面擦过，而不会被“重新对准中心”抵消。
+    /// </summary>
+    public static Vector2 CalculateLogicalRouteStart(
+        Vector2 visualOrigin,
+        Vector2 direction,
+        Vector2 aimPoint,
+        float approachDistance)
+    {
+        Vector2 forward = direction.sqrMagnitude > 0.0001f ? direction.normalized : Vector2.right;
+        Vector2 closestPoint = visualOrigin
+            + forward * Vector2.Dot(aimPoint - visualOrigin, forward);
+        return closestPoint - forward * Mathf.Max(0f, approachDistance);
     }
 
     private void UpdateWarningShape()
@@ -674,9 +799,13 @@ public sealed class Wolf : MonoBehaviour
 
         Transform warningTransform = warningRenderer.transform;
         Vector2 span = longSweep != null
-            ? longSweep.GetWarningSpan(transform.position, chargeDirection, chargeLength)
-            : new Vector2(0f, chargeLength);
-        warningTransform.position = transform.position + (Vector3)(chargeDirection * span.x);
+            ? longSweep.GetWarningSpan(chargeOrigin, chargeDirection, chargeLength)
+            : LongWolfSweep.CalculateWarningSpan(
+                Camera.main,
+                chargeOrigin,
+                chargeDirection,
+                chargeLength);
+        warningTransform.position = chargeOrigin + chargeDirection * span.x;
         warningTransform.rotation = Quaternion.Euler(
             0f,
             0f,
@@ -688,7 +817,7 @@ public sealed class Wolf : MonoBehaviour
     {
         UpdateBodyVisual();
         // Refresh the visible span as the camera follows/zooms, without changing the locked aim.
-        if (longSweep != null && state == State.Warning)
+        if (state == State.Warning)
             UpdateWarningShape();
     }
 
@@ -725,12 +854,21 @@ public sealed class Wolf : MonoBehaviour
             SetChargeAngle(predictionTargetAngle);
         }
 
+        // 记录玩家实际看到并最终生效的预警路线，而不是预警第一帧的临时方向。
+        warnedOrigin = chargeOrigin;
+        warnedDirection = chargeDirection;
         state = State.Charging;
         chargeTravelled = 0f;
+        if (fixedRouteCoreLength > 0f || (!fixedRoute && logicalLaunchDistance > 0f))
+        {
+            // 通常 chargeOrigin 就是画外生成点；显式核心编队（五角星）才会沿同一条线跳到核心起点。
+            body.position = chargeOrigin;
+            transform.position = chargeOrigin;
+        }
         if (longSweep != null)
         {
             longSweep.ConfigureCharge(body.position, chargeDirection, ChargeSpeed);
-            // Keep the same speed until the tail has cleared the launch-time viewport.
+            // 保证固定长度的尾部走完起步点；镜头尺寸不参与冲锋距离。
             chargeLength = Mathf.Max(chargeLength, longSweep.ClearTravelDistance);
         }
         if (warningRenderer != null)
@@ -745,7 +883,10 @@ public sealed class Wolf : MonoBehaviour
     {
         if (longSweep != null)
             return;
-        if (state == State.Idle || state == State.Kicked || flock == null || Time.timeScale == 0f)
+        if (!attackInteractionEnabled
+            || (state != State.Charging && state != State.Fleeing)
+            || flock == null
+            || Time.timeScale == 0f)
             return;
 
         // The flock root is a control marker, not a sheep. Only an actual active member can be caught.
@@ -772,7 +913,7 @@ public sealed class Wolf : MonoBehaviour
             return;
         }
 
-        // 预警 / 撤退期间是羊主动撞上来：嘴里有羊 → 把这只羊踢开；嘴里没羊 → 叼走这只。
+        // 撤退仍是实际移动路径：嘴里有羊 → 把这只羊踢开；嘴里没羊 → 叼走这只。
         ResolveSheepInitiatedContact(contactMember);
     }
 
@@ -895,6 +1036,30 @@ public sealed class Wolf : MonoBehaviour
         Attacked?.Invoke(this, new WolfAttackResult(false, Array.Empty<SheepMember>(), sheep));
     }
 
+    /// <summary>
+    /// 攻击超时后的安全撤离：停止预警和所有新命中，已经叼走的羊保持结算，狼沿远离羊群的方向离场。
+    /// </summary>
+    public void ForceRetreat()
+    {
+        if (finished || state == State.Idle || state == State.Kicked)
+            return;
+
+        attackInteractionEnabled = false;
+        dodgeRecorded = true;
+        if (warningRenderer != null)
+            warningRenderer.enabled = false;
+
+        if (state == State.Warning)
+        {
+            Vector2 away = flock != null
+                ? (Vector2)transform.position - flock.Center
+                : -chargeDirection;
+            if (away.sqrMagnitude > 0.0001f)
+                chargeDirection = away.normalized;
+        }
+        state = State.Fleeing;
+    }
+
     private float SignedDistanceToChargeLine(Vector2 point)
     {
         Vector2 perpendicular = new Vector2(-chargeDirection.y, chargeDirection.x);
@@ -912,6 +1077,8 @@ public sealed class Wolf : MonoBehaviour
         Finished = null;
         ChargeStarted = null;
         Attacked = null;
+        Scared = null;
+        Kicked = null;
         Destroy(gameObject);
     }
 

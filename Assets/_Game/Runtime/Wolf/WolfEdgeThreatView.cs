@@ -8,6 +8,7 @@ using UnityEngine.UI;
 /// </summary>
 [DisallowMultipleComponent]
 [RequireComponent(typeof(RectTransform), typeof(CanvasGroup))]
+[DefaultExecutionOrder(100)]
 public sealed class WolfEdgeThreatView : MonoBehaviour
 {
     private const string ViewName = "WolfEdgeThreats";
@@ -27,7 +28,8 @@ public sealed class WolfEdgeThreatView : MonoBehaviour
     [SerializeField] private Color retreatColor = new Color(0.48f, 0.52f, 0.58f, 1f);
     [SerializeField, Min(0.1f)] private float earlyFlashFrequency = 1.6f;
     [SerializeField, Min(0.1f)] private float imminentFlashFrequency = 8.5f;
-    [SerializeField, Min(0f)] private float inwardPulseDistance = 10f;
+    [Tooltip("边缘位置跟随速度。过滤镜头震动，但仍快速响应来袭方向变化。")]
+    [SerializeField, Min(0.1f)] private float edgeFollowSpeed = 24f;
     [SerializeField, Min(0.1f)] private float fadeSpeed = 8f;
     [SerializeField, Min(0.1f)] private float retreatFadeSpeed = 3.5f;
     [SerializeField, Min(0f)] private float retreatSlideSpeed = 42f;
@@ -43,6 +45,8 @@ public sealed class WolfEdgeThreatView : MonoBehaviour
         public Vector2 Inward = Vector2.up;
         public float Alpha;
         public float Scale = 1f;
+        public float PulsePhase;
+        public bool HasEdgePosition;
         public bool HasEnteredViewport;
         public bool Retiring;
     }
@@ -131,7 +135,7 @@ public sealed class WolfEdgeThreatView : MonoBehaviour
         subscribed = false;
     }
 
-    private void Update()
+    private void LateUpdate()
     {
         if (rootCanvasGroup == null)
             return;
@@ -183,6 +187,8 @@ public sealed class WolfEdgeThreatView : MonoBehaviour
         indicator.Wolf = wolf;
         indicator.Alpha = 0f;
         indicator.Scale = 0.82f;
+        indicator.PulsePhase = 0f;
+        indicator.HasEdgePosition = false;
         indicator.HasEnteredViewport = false;
         indicator.Retiring = false;
         Sprite portrait = director != null ? director.ThreatIndicatorSprite : null;
@@ -235,11 +241,36 @@ public sealed class WolfEdgeThreatView : MonoBehaviour
         bool inside = projected.z >= 0f && IsInsideViewport(viewport);
         indicator.HasEnteredViewport |= inside;
 
-        if (!indicator.HasEnteredViewport
-            && TryCalculateEdgePosition(root.rect, viewport, edgeInset, out Vector2 edge, out Vector2 inward))
+        Vector3 threatProjected = camera.WorldToViewportPoint(wolf.ThreatWorldPosition);
+        Vector2 threatViewport = new Vector2(threatProjected.x, threatProjected.y);
+        if ((threatViewport - Vector2.one * 0.5f).sqrMagnitude <= 0.0001f)
         {
-            indicator.EdgePosition = edge;
-            indicator.Inward = inward;
+            Vector2 fallbackPoint = wolf.ThreatWorldPosition - wolf.ChargeDirection;
+            Vector3 fallbackProjected = camera.WorldToViewportPoint(fallbackPoint);
+            threatViewport = new Vector2(fallbackProjected.x, fallbackProjected.y);
+        }
+        if (!indicator.HasEnteredViewport
+            && TryCalculateDirectionEdgePosition(
+                root.rect,
+                threatViewport,
+                edgeInset,
+                out Vector2 edge,
+                out Vector2 inward))
+        {
+            if (!indicator.HasEdgePosition)
+            {
+                indicator.EdgePosition = edge;
+                indicator.Inward = inward;
+                indicator.HasEdgePosition = true;
+            }
+            else
+            {
+                float follow = 1f - Mathf.Exp(-edgeFollowSpeed * deltaTime);
+                indicator.EdgePosition = Vector2.Lerp(indicator.EdgePosition, edge, follow);
+                Vector2 smoothedInward = Vector2.Lerp(indicator.Inward, inward, follow);
+                if (smoothedInward.sqrMagnitude > 0.0001f)
+                    indicator.Inward = smoothedInward.normalized;
+            }
         }
 
         bool threatening = wolf.IsWarning || wolf.IsCharging;
@@ -253,7 +284,8 @@ public sealed class WolfEdgeThreatView : MonoBehaviour
             ? Mathf.Clamp01(wolf.WarningElapsed / Mathf.Max(0.01f, wolf.WarningDuration))
             : CalculateOffscreenUrgency(viewport);
         float frequency = Mathf.Lerp(earlyFlashFrequency, imminentFlashFrequency, urgency);
-        float pulse01 = 0.5f + 0.5f * Mathf.Sin(Time.time * frequency * Mathf.PI * 2f);
+        indicator.PulsePhase = AdvancePulsePhase(indicator.PulsePhase, frequency, deltaTime);
+        float pulse01 = 0.5f + 0.5f * Mathf.Sin(indicator.PulsePhase * Mathf.PI * 2f);
         float targetAlpha = indicator.HasEnteredViewport
             ? 0f
             : Mathf.Lerp(0.68f, 1f, pulse01);
@@ -264,9 +296,15 @@ public sealed class WolfEdgeThreatView : MonoBehaviour
         indicator.Scale = Mathf.MoveTowards(indicator.Scale, targetScale, 5f * deltaTime);
 
         Color color = Color.Lerp(earlyWarningColor, imminentColor, urgency);
-        Vector2 pulsePosition = indicator.EdgePosition
-            + indicator.Inward * (pulse01 * inwardPulseDistance);
-        ApplyVisual(indicator, color, indicator.Alpha, indicator.Scale, pulsePosition);
+        ApplyVisual(indicator, color, indicator.Alpha, indicator.Scale, indicator.EdgePosition);
+    }
+
+    /// <summary>
+    /// 用增量相位驱动变频闪烁。不能用 Time.time * frequency：frequency 每帧变化时会直接跳相位。
+    /// </summary>
+    public static float AdvancePulsePhase(float phase, float frequency, float deltaTime)
+    {
+        return Mathf.Repeat(phase + Mathf.Max(0f, frequency) * Mathf.Max(0f, deltaTime), 1f);
     }
 
     private static float CalculateOffscreenUrgency(Vector2 viewport)
@@ -396,9 +434,35 @@ public sealed class WolfEdgeThreatView : MonoBehaviour
         out Vector2 localPosition,
         out Vector2 inwardDirection)
     {
+        if (IsInsideViewport(viewport))
+        {
+            localPosition = Vector2.zero;
+            inwardDirection = Vector2.up;
+            return false;
+        }
+
+        return TryCalculateDirectionEdgePosition(
+            canvasRect,
+            viewport,
+            inset,
+            out localPosition,
+            out inwardDirection);
+    }
+
+    /// <summary>
+    /// 把目标相对画面中心的方向投到 UI 边缘。目标本身即使已位于视口内，也仍可用于表示
+    /// 狼正式出现的方向；是否隐藏提示由狼当前可见位置单独决定。
+    /// </summary>
+    public static bool TryCalculateDirectionEdgePosition(
+        Rect canvasRect,
+        Vector2 viewport,
+        float inset,
+        out Vector2 localPosition,
+        out Vector2 inwardDirection)
+    {
         localPosition = Vector2.zero;
         inwardDirection = Vector2.up;
-        if (canvasRect.width <= 0f || canvasRect.height <= 0f || IsInsideViewport(viewport))
+        if (canvasRect.width <= 0f || canvasRect.height <= 0f)
             return false;
 
         Vector2 fromCenter = new Vector2(

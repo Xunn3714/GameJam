@@ -16,8 +16,22 @@ public sealed class WolfFormationRunner : MonoBehaviour
     private Coroutine running;
     private bool launching;
 
-    public bool IsRunning => launching || activeWolves.Count > 0;
-    public int ActiveCount => activeWolves.Count;
+    public bool IsRunning
+    {
+        get
+        {
+            PruneDestroyedWolves();
+            return running != null || launching || activeWolves.Count > 0;
+        }
+    }
+    public int ActiveCount
+    {
+        get
+        {
+            PruneDestroyedWolves();
+            return activeWolves.Count;
+        }
+    }
     public WolfFormation Current { get; private set; }
 
     /// <summary>编队里每只狼被放出来时触发。</summary>
@@ -31,6 +45,11 @@ public sealed class WolfFormationRunner : MonoBehaviour
         {
             spawner = GetComponent<WolfSpawner>();
         }
+    }
+
+    private void OnDisable()
+    {
+        Stop();
     }
 
     public void Play(WolfFormation formation)
@@ -55,6 +74,21 @@ public sealed class WolfFormationRunner : MonoBehaviour
             running = null;
         }
         launching = false;
+        Current = null;
+    }
+
+    /// <summary>停止继续放狼，并让已经生成的狼停止命中后安全离场。</summary>
+    public void AbortAndRetreat()
+    {
+        Stop();
+        for (int index = activeWolves.Count - 1; index >= 0; index--)
+        {
+            Wolf wolf = activeWolves[index];
+            if (wolf == null)
+                activeWolves.RemoveAt(index);
+            else
+                wolf.ForceRetreat();
+        }
     }
 
     private IEnumerator Run(WolfFormation formation)
@@ -88,15 +122,18 @@ public sealed class WolfFormationRunner : MonoBehaviour
                 break;
         }
         launching = false;
-        running = null;
 
         // 等最后一只狼离场。
         while (activeWolves.Count > 0)
+        {
+            PruneDestroyedWolves();
             yield return null;
+        }
 
-        WolfFormation finished = Current;
-        Current = null;
-        Completed?.Invoke(finished);
+        if (Current == formation)
+            Current = null;
+        running = null;
+        Completed?.Invoke(formation);
     }
 
     // ------------------------------------------------------------ formations
@@ -150,9 +187,14 @@ public sealed class WolfFormationRunner : MonoBehaviour
         foreach (float angle in fanAngles)
         {
             Vector2 chargeDirection = Rotate(inward, angle);
-            float distance = spawner.GetSpawnDistance(playerPosition, -chargeDirection);
-            Vector2 origin = playerPosition - chargeDirection * distance;
-            Track(spawner.SpawnWolfAlong(formation.wolfPrefab, origin, chargeDirection, distance));
+            float approachDistance = spawner.GetSpawnDistance(playerPosition, -chargeDirection);
+            float departureDistance = spawner.GetSpawnDistance(playerPosition, chargeDirection);
+            Vector2 origin = playerPosition - chargeDirection * approachDistance;
+            Track(spawner.SpawnWolfAlong(
+                formation.wolfPrefab,
+                origin,
+                chargeDirection,
+                approachDistance + departureDistance));
         }
     }
 
@@ -167,26 +209,15 @@ public sealed class WolfFormationRunner : MonoBehaviour
         return UnityEngine.Random.value < 0.5f ? -1f : 1f;
     }
 
-    /// <summary>五角星：顶点 0→2→4→1→3→0，每条狼从上一条的终点出发，依次放出。五个顶点都推到镜头外。</summary>
+    /// <summary>
+    /// 五角星：核心五个顶点始终使用固定世界半径，不随镜头缩放。
+    /// 狼的预警实体先放在画外以提供方向 UI；正式冲锋从核心顶点开始，镜头不改变进场时机或星形尺寸。
+    /// </summary>
     private IEnumerator RunPentagram(WolfFormation formation)
     {
         Vector2 center = spawner.Flock.Center;
         float baseAngle = UnityEngine.Random.Range(0f, 360f);
-        Vector2[] directions = new Vector2[5];
-        float radius = formation.pentagramRadius;
-        for (int index = 0; index < 5; index++)
-        {
-            float radians = (baseAngle + index * 72f) * Mathf.Deg2Rad;
-            directions[index] = new Vector2(Mathf.Cos(radians), Mathf.Sin(radians));
-            // 保持正五边形：取所有顶点里"出镜头"所需的最大距离。
-            radius = Mathf.Max(radius, spawner.GetSpawnDistance(center, directions[index]));
-        }
-
-        Vector2[] vertices = new Vector2[5];
-        for (int index = 0; index < 5; index++)
-        {
-            vertices[index] = center + directions[index] * radius;
-        }
+        Vector2[] vertices = CreatePentagramVertices(center, formation.pentagramRadius, baseAngle);
 
         int[] path = { 0, 2, 4, 1, 3 };
         Wolf prefab = formation.pentagramUsesLongWolves && formation.longWolfPrefab != null
@@ -198,9 +229,13 @@ public sealed class WolfFormationRunner : MonoBehaviour
             Vector2 from = vertices[path[step]];
             Vector2 to = vertices[path[(step + 1) % 5]];
             Vector2 edge = to - from;
+            Vector2 direction = edge.normalized;
+            float approachDistance = spawner.GetSpawnDistance(from, -direction);
+            Vector2 offscreenOrigin = from - direction * approachDistance;
             Track(spawner.SpawnWolfAlong(
-                prefab, from, edge.normalized, edge.magnitude,
-                formation.pentagramWarningDuration, formation.pentagramChargeSpeed));
+                prefab, offscreenOrigin, direction, approachDistance + edge.magnitude,
+                formation.pentagramWarningDuration, formation.pentagramChargeSpeed,
+                approachDistance, edge.magnitude));
             if (step < 4 && formation.pentagramStagger > 0f)
                 yield return new WaitForSeconds(formation.pentagramStagger);
         }
@@ -229,9 +264,9 @@ public sealed class WolfFormationRunner : MonoBehaviour
             // 上一条冲锋开始时刻 + 冲出 handoff 距离所需时间 = 下一条冲锋开始时刻；再减去下一条的预警时长就是它的生成时刻。
             float chargeStart = Time.time + wolf.WarningDuration;
             float handoffSeconds = wolf.ChargeSpeed > 0f ? formation.chainHandoffDistance / wolf.ChargeSpeed : 0f;
-            float nextWarning = prefab != null
-                ? prefab.WarningDuration + spawner.AdditionalWarningLeadTime
-                : wolf.WarningDuration;
+            // 下一条使用同一 prefab、阶段速度与统一提前量，直接沿用本条的有效预警时长；
+            // 这样阶段速度补偿后直角交接仍落在同一时刻。
+            float nextWarning = wolf.WarningDuration;
             float nextSpawnTime = chargeStart + handoffSeconds - nextWarning;
 
             bool finished = false;
@@ -252,9 +287,15 @@ public sealed class WolfFormationRunner : MonoBehaviour
         Vector2 center = spawner.Flock.Center;
         Vector2 perpendicular = new Vector2(-direction.y, direction.x);
         Vector2 laneCenter = center + perpendicular * lateralOffset;
-        float distance = spawner.GetSpawnDistance(laneCenter, -direction);
-        Vector2 origin = laneCenter - direction * distance;
-        return spawner.SpawnWolfAlong(prefab, origin, direction, distance, warningDurationOverride);
+        float approachDistance = spawner.GetSpawnDistance(laneCenter, -direction);
+        float departureDistance = spawner.GetSpawnDistance(laneCenter, direction);
+        Vector2 origin = laneCenter - direction * approachDistance;
+        return spawner.SpawnWolfAlong(
+            prefab,
+            origin,
+            direction,
+            approachDistance + departureDistance,
+            warningDurationOverride);
     }
 
     private void Track(Wolf wolf)
@@ -272,6 +313,15 @@ public sealed class WolfFormationRunner : MonoBehaviour
         activeWolves.Remove(wolf);
     }
 
+    private void PruneDestroyedWolves()
+    {
+        for (int index = activeWolves.Count - 1; index >= 0; index--)
+        {
+            if (activeWolves[index] == null)
+                activeWolves.RemoveAt(index);
+        }
+    }
+
     private static Vector2 RandomDirection()
     {
         Vector2 direction = UnityEngine.Random.insideUnitCircle.normalized;
@@ -284,6 +334,18 @@ public sealed class WolfFormationRunner : MonoBehaviour
         float cos = Mathf.Cos(radians);
         float sin = Mathf.Sin(radians);
         return new Vector2(vector.x * cos - vector.y * sin, vector.x * sin + vector.y * cos);
+    }
+
+    public static Vector2[] CreatePentagramVertices(Vector2 center, float radius, float baseAngle)
+    {
+        radius = Mathf.Max(1f, radius);
+        Vector2[] vertices = new Vector2[5];
+        for (int index = 0; index < vertices.Length; index++)
+        {
+            float radians = (baseAngle + index * 72f) * Mathf.Deg2Rad;
+            vertices[index] = center + new Vector2(Mathf.Cos(radians), Mathf.Sin(radians)) * radius;
+        }
+        return vertices;
     }
 
     private static void Shuffle(int[] values)

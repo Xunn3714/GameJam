@@ -2,8 +2,9 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Optional long-wolf attack. A swept rectangular body captures every active sheep it touches.
-/// Designer edits length/width on LongWolf.prefab; runtime reads them without changing configuration.
+/// Long-wolf attack with fixed world-space gameplay dimensions.
+/// The camera is only used to extend the warning visual; zoom never changes capture geometry.
+/// Every part of the body's actual swept path can hit sheep. The warning strip is visual only.
 /// </summary>
 [DisallowMultipleComponent]
 [RequireComponent(typeof(Wolf))]
@@ -11,12 +12,9 @@ public sealed class LongWolfSweep : MonoBehaviour
 {
     [SerializeField, Min(0.5f)] private float bodyLength = 7f;
     [SerializeField, Min(0.1f)] private float bodyWidth = 0.8f;
-    [Header("Screen Coverage Growth")]
-    [Tooltip("Optional gameplay camera. Falls back to the tagged main camera at launch.")]
+    [Header("Warning Visual Only")]
+    [Tooltip("只用于把预警线延伸到屏幕两端，不参与身体长度或抓羊判定。留空使用 MainCamera。")]
     [SerializeField] private Camera coverageCamera;
-    [SerializeField] private bool scaleLengthToScreen = true;
-    [SerializeField, Min(0f)] private float minCoverageSeconds = 0.8f;
-    [SerializeField, Min(0f)] private float maxCoverageSeconds = 1.2f;
     [Tooltip("Unit body: local X from -1 to 0, local Y from -0.5 to 0.5.")]
     [SerializeField] private Transform bodyVisual;
     [SerializeField] private Transform headVisual;
@@ -27,13 +25,13 @@ public sealed class LongWolfSweep : MonoBehaviour
     public int SelectedSkinIndex { get; private set; } = -1;
 
     private readonly List<SheepMember> candidates = new List<SheepMember>();
-    private float runtimeLength;
     private float runtimeWidthMultiplier = 1f;
-    public float BodyLength => runtimeLength > 0f ? runtimeLength : bodyLength;
+    private Vector2 currentDirection = Vector2.right;
+    private bool hasDirection;
+    public float BodyLength => bodyLength;
     public float BodyWidth => bodyWidth * runtimeWidthMultiplier;
     public int CapturedCount { get; private set; }
-    public float CoverageSeconds { get; private set; }
-    public float ClearTravelDistance { get; private set; }
+    public float ClearTravelDistance => BodyLength + BodyWidth;
 
     public void Prepare()
     {
@@ -43,20 +41,15 @@ public sealed class LongWolfSweep : MonoBehaviour
             SelectedSkinIndex = Random.Range(0, skins.Length);
             skinRenderer.sprite = skins[SelectedSkinIndex];
         }
-        runtimeLength = 0f;
+        CapturedCount = 0;
         runtimeWidthMultiplier = 1f;
-        ClearTravelDistance = 0f;
-        CoverageSeconds = Random.Range(minCoverageSeconds, maxCoverageSeconds);
+        hasDirection = false;
         if (coverageCamera == null) coverageCamera = Camera.main;
     }
 
+    /// <summary>冲锋开始时只锁定朝向；实体尺寸始终使用 Prefab 的世界单位配置。</summary>
     public void ConfigureCharge(Vector2 origin, Vector2 direction, float speed)
     {
-        if (!scaleLengthToScreen || speed <= 0f || !TryGetScreenSpan(origin, direction, out float min, out float max))
-            return;
-
-        runtimeLength = CalculateCoverageLength(max - min, speed, CoverageSeconds);
-        ClearTravelDistance = Mathf.Max(0f, max) + runtimeLength + BodyWidth;
         SetDirection(direction);
     }
 
@@ -64,29 +57,49 @@ public sealed class LongWolfSweep : MonoBehaviour
     public void SetRuntimeWidthMultiplier(float multiplier)
     {
         runtimeWidthMultiplier = Mathf.Max(0.1f, multiplier);
+        if (hasDirection)
+            SetDirection(currentDirection);
     }
 
     // Visual only: extend both ends beyond the viewport without changing the attack duration.
     public Vector2 GetWarningSpan(Vector2 origin, Vector2 direction, float fallbackLength)
     {
-        if (!TryGetScreenSpan(origin, direction, out float min, out float max))
-            return new Vector2(0f, fallbackLength);
+        return CalculateWarningSpan(coverageCamera, origin, direction, fallbackLength);
+    }
+
+    /// <summary>
+    /// 让方向预警覆盖整块可见画面。返回值是相对 origin 沿 direction 的起止距离，
+    /// 只控制表现，不扩大或缩小实际碰撞路径。
+    /// </summary>
+    public static Vector2 CalculateWarningSpan(
+        Camera camera,
+        Vector2 origin,
+        Vector2 direction,
+        float fallbackLength)
+    {
+        if (!TryGetScreenSpan(camera, origin, direction, out float min, out float max))
+            return new Vector2(0f, Mathf.Max(0f, fallbackLength));
         const float screenMargin = 2f;
         return new Vector2(Mathf.Min(0f, min - screenMargin), Mathf.Max(fallbackLength, max + screenMargin));
     }
 
-    private bool TryGetScreenSpan(Vector2 origin, Vector2 direction, out float min, out float max)
+    private static bool TryGetScreenSpan(
+        Camera camera,
+        Vector2 origin,
+        Vector2 direction,
+        out float min,
+        out float max)
     {
         min = float.PositiveInfinity;
         max = float.NegativeInfinity;
-        if (coverageCamera == null || !coverageCamera.orthographic || direction.sqrMagnitude < 0.0001f)
+        if (camera == null || !camera.orthographic || direction.sqrMagnitude < 0.0001f)
             return false;
         // Project the viewport onto the attack axis. This also covers diagonal attacks.
         Plane gamePlane = new Plane(Vector3.forward, Vector3.zero);
         for (int y = 0; y < 2; y++)
         for (int x = 0; x < 2; x++)
         {
-            Ray ray = coverageCamera.ViewportPointToRay(new Vector3(x, y, 0f));
+            Ray ray = camera.ViewportPointToRay(new Vector3(x, y, 0f));
             if (!gamePlane.Raycast(ray, out float distance)) return false;
             float along = Vector2.Dot((Vector2)ray.GetPoint(distance) - origin, direction.normalized);
             min = Mathf.Min(min, along);
@@ -95,12 +108,14 @@ public sealed class LongWolfSweep : MonoBehaviour
         return true;
     }
 
-    public static float CalculateCoverageLength(float screenSpan, float speed, float seconds)
-        => Mathf.Max(0.5f, Mathf.Max(0f, screenSpan) + Mathf.Max(0f, speed) * Mathf.Max(0f, seconds));
-
     public void SetDirection(Vector2 direction)
     {
-        Quaternion rotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg);
+        currentDirection = direction.sqrMagnitude > 0.0001f ? direction.normalized : Vector2.right;
+        hasDirection = true;
+        Quaternion rotation = Quaternion.Euler(
+            0f,
+            0f,
+            Mathf.Atan2(currentDirection.y, currentDirection.x) * Mathf.Rad2Deg);
         if (skinRenderer != null && skinRenderer.sprite != null)
         {
             if (bodyVisual != null) bodyVisual.gameObject.SetActive(false);
@@ -108,13 +123,13 @@ public sealed class LongWolfSweep : MonoBehaviour
             float height = skinRenderer.sprite.rect.height / skinRenderer.sprite.pixelsPerUnit;
             float scale = BodyWidth / Mathf.Max(0.001f, height);
             skinRenderer.transform.localRotation = rotation;
-            skinRenderer.transform.localPosition = (Vector3)(-direction.normalized * BodyLength * 0.5f);
+            skinRenderer.transform.localPosition = (Vector3)(-currentDirection * BodyLength * 0.5f);
             skinRenderer.transform.localScale = Vector3.one * scale;
             skinRenderer.drawMode = SpriteDrawMode.Tiled;
             skinRenderer.tileMode = SpriteTileMode.Continuous;
             skinRenderer.size = new Vector2(BodyLength / scale, height);
             // Keep paws below the body when the attack comes from the right.
-            skinRenderer.flipY = direction.x < 0f;
+            skinRenderer.flipY = currentDirection.x < 0f;
             return;
         }
         if (bodyVisual != null)
@@ -174,7 +189,5 @@ public sealed class LongWolfSweep : MonoBehaviour
     {
         bodyLength = Mathf.Max(0.5f, bodyLength);
         bodyWidth = Mathf.Max(0.1f, bodyWidth);
-        minCoverageSeconds = Mathf.Max(0f, minCoverageSeconds);
-        maxCoverageSeconds = Mathf.Max(minCoverageSeconds, maxCoverageSeconds);
     }
 }
