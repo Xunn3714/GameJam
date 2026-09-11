@@ -29,6 +29,8 @@ public sealed class AlphaUiIntegrationTests
         "Assets/_Game/Content/Perfabs/UI/SettingPanel.prefab";
     private const string CollectionPanelPrefabPath =
         "Assets/_Game/Content/Perfabs/UI/CollectionPanel.prefab";
+    private const string CreditsScenePrefabPath =
+        "Assets/_Game/Content/Perfabs/UI/CreditsScene.prefab";
     private const string SheepCardPrefabPath =
         "Assets/_Game/Content/Perfabs/UI/SheepCard.prefab";
     private const string FenceSpritePath =
@@ -330,7 +332,17 @@ public sealed class AlphaUiIntegrationTests
             Assert.That(sharedCollectionPrefab, Is.Not.Null);
             Assert.That(AssetDatabase.GetAssetPath(sharedCollectionPrefab),
                 Is.EqualTo(CollectionPanelPrefabPath));
-            Assert.That(menu.creditsPanel, Is.Not.Null);
+            Assert.That(menu.creditsPanel, Is.Null);
+            Assert.That(menu.developersPanel, Is.Null);
+            Object creditsScenePrefab =
+                menuData.FindProperty("creditsScenePrefab").objectReferenceValue;
+            Assert.That(creditsScenePrefab, Is.Not.Null);
+            Assert.That(AssetDatabase.GetAssetPath(creditsScenePrefab),
+                Is.EqualTo(CreditsScenePrefabPath));
+            Assert.That(scene.GetRootGameObjects()
+                .SelectMany(root => root.GetComponentsInChildren<Transform>(true))
+                .Any(item => item.name == "CreditsPanel" || item.name == "DevelopersPanel"),
+                Is.False);
             Button developers = scene.GetRootGameObjects()
                 .SelectMany(root => root.GetComponentsInChildren<Button>(true))
                 .First(button => button.gameObject.name == "Btn_Developers");

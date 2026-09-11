@@ -24,7 +24,7 @@ public static class UiScreenshotCapture
     public static void CaptureStatistics() => Capture("Assets/_Game/Scenes/MainMenu.unity", "statistics", "ui-statistics.png");
 
     [MenuItem("Game Jam/UI/Capture Credits")]
-    public static void CaptureCredits() => Capture("Assets/_Game/Scenes/MainMenu.unity", "credits", "ui-credits.png");
+    public static void CaptureCredits() => CaptureCreditsScenePreview();
 
     [MenuItem("Game Jam/UI/Capture Main Menu Ultrawide")]
     public static void CaptureMainMenuUltrawide() => Capture("Assets/_Game/Scenes/MainMenu.unity", "main", "ui-main-menu-ultrawide.png", 1600, 720);
@@ -43,6 +43,76 @@ public static class UiScreenshotCapture
 
     [MenuItem("Game Jam/UI/Capture Alpha Result")]
     public static void CaptureAlphaResult() => Capture("Assets/_Game/Scenes/AlphaFlockExpansion.unity", "result", "ui-alpha-result.png");
+
+    public static void CaptureCreditsScenePreview()
+    {
+        const string scenePath = "Assets/_Game/Scenes/Credits.unity";
+        Scene previousActive = SceneManager.GetActiveScene();
+        Scene scene = SceneManager.GetSceneByPath(scenePath);
+        bool openedForCapture = !scene.IsValid() || !scene.isLoaded;
+        if (openedForCapture)
+            scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Additive);
+
+          Camera camera = scene.GetRootGameObjects()
+              .SelectMany(root => root.GetComponentsInChildren<Camera>(true))
+              .First();
+          CreditsSceneController controller = scene.GetRootGameObjects()
+              .SelectMany(root => root.GetComponentsInChildren<CreditsSceneController>(true))
+              .First();
+        RenderTexture target = new RenderTexture(DefaultWidth, DefaultHeight, 24, RenderTextureFormat.ARGB32);
+        Texture2D image = new Texture2D(DefaultWidth, DefaultHeight, TextureFormat.RGB24, false);
+        RenderTexture previousTarget = camera.targetTexture;
+        Vector3 previousCameraPosition = camera.transform.position;
+        List<CanvasState> canvasStates = new List<CanvasState>();
+        try
+        {
+            foreach (Canvas canvas in scene.GetRootGameObjects()
+                         .SelectMany(root => root.GetComponentsInChildren<Canvas>(true)))
+            {
+                canvasStates.Add(new CanvasState(canvas));
+                canvas.renderMode = RenderMode.ScreenSpaceCamera;
+                canvas.worldCamera = camera;
+                canvas.planeDistance = 1f;
+            }
+
+            Canvas.ForceUpdateCanvases();
+            camera.targetTexture = target;
+            string directory = Path.Combine(Path.GetTempPath(), "GameJamUiReviews");
+            Directory.CreateDirectory(directory);
+
+              float startY = controller.StartMarker.position.y;
+              float endY = controller.EndMarker.position.y;
+              float[] cameraPositions = { startY, Mathf.Lerp(startY, endY, 0.5f), endY };
+            string[] fileNames = { "ui-credits.png", "ui-credits-mid.png", "ui-credits-end.png" };
+            for (int index = 0; index < cameraPositions.Length; index++)
+            {
+                Vector3 position = camera.transform.position;
+                position.y = cameraPositions[index];
+                camera.transform.position = position;
+                camera.Render();
+                RenderTexture.active = target;
+                image.ReadPixels(new Rect(0, 0, DefaultWidth, DefaultHeight), 0, 0);
+                image.Apply();
+                File.WriteAllBytes(Path.Combine(directory, fileNames[index]), image.EncodeToPNG());
+            }
+
+            Debug.Log($"Credits screenshots captured: {directory}");
+        }
+        finally
+        {
+            foreach (CanvasState state in canvasStates)
+                state.Restore();
+            camera.transform.position = previousCameraPosition;
+            camera.targetTexture = previousTarget;
+            RenderTexture.active = null;
+            Object.DestroyImmediate(target);
+            Object.DestroyImmediate(image);
+            if (openedForCapture)
+                EditorSceneManager.CloseScene(scene, true);
+            if (previousActive.IsValid() && previousActive.isLoaded)
+                SceneManager.SetActiveScene(previousActive);
+        }
+    }
 
     private static void Capture(string scenePath, string mode, string fileName, int width = DefaultWidth, int height = DefaultHeight)
     {
@@ -113,7 +183,7 @@ public static class UiScreenshotCapture
 
     private static void PrepareView(Scene scene, string mode)
     {
-        if (mode == "main" || mode == "collection" || mode == "statistics" || mode == "credits")
+        if (mode == "main" || mode == "collection" || mode == "statistics")
         {
             MainMenuController menu = scene.GetRootGameObjects()
                 .SelectMany(root => root.GetComponentsInChildren<MainMenuController>(true))
@@ -122,7 +192,6 @@ public static class UiScreenshotCapture
             {
                 if (mode == "collection") menu.ShowCollection();
                 else if (mode == "statistics") menu.ShowStatistics();
-                else if (mode == "credits") menu.ShowCredits();
                 else menu.ShowMenu();
             }
 

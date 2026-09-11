@@ -13,6 +13,7 @@
 - 输入：Unity Input System；WASD 控制羊群，E 触发整群后退蓄势冲刺，Space 触发整群由内向外依次拉屎，鼠标滚轮调整显示范围
 - 当前入口：`Assets/_Game/Scenes/MainMenu.unity`
 - 当前关卡：`Assets/_Game/Scenes/AlphaFlockExpansion.unity`
+- 制作人员：主菜单创建独立运行时 `Credits` 场景；可在 `Assets/_Game/Scenes/Credits.unity` 直接预览
 - 首轮目标平台：Windows（WASD + E + Space + 鼠标滚轮）
 
 ## 当前玩法方向
@@ -101,6 +102,7 @@ Assets/
 │  │  └─ Prefabs/
 │  └─ Scenes/
 │     ├─ MainMenu.unity
+│     ├─ Credits.unity
 │     ├─ AlphaFlockExpansion.unity
 │     └─ Old/
 │        ├─ Legacy/

@@ -589,7 +589,11 @@ Ending
 
 # 14\. Credits 制作人员名单
 
-Credits 使用多个独立的 TextMeshPro 文本块。
+当前主菜单的“制作人员”按钮会打开独立的运行时 `Credits` 场景。场景内容由
+`Assets/_Game/Content/Perfabs/UI/CreditsScene.prefab` 提供，编辑预览入口为
+`Assets/_Game/Scenes/Credits.unity`。
+
+Credits 使用多个独立的世界空间 TextMeshPro 文本块，不再使用一张纵向大图。
 
 推荐结构：
 
@@ -605,16 +609,15 @@ CreditsContent
 └── Txt\_Thanks
 ```
 
-当前 Credits 类别包含：
+当前 Credits 采用“章节标题 → 职能 → 成员名字”三级层级，成员名字固定为 36 号字。
+章节分类为：
 
 ```text
-PROJECT MANAGER
-GAME DESIGN
-PROGRAMMING
-2D-ARTIST
-MUSIC DESIGNER
-SOUND EFFECT DESIGNER
-THANK YOU FOR PLAYING
+制作与设计：游戏设计负责人、项目统筹、游戏设计、关卡设计、剧情文案
+技术开发：技术负责人、程序开发
+美术设计：美术负责人、2D 美术
+音乐与音效：音乐设计、音效设计、曲目提供
+测试与鸣谢：内部测试、特别感谢
 ```
 
 \---
@@ -624,45 +627,22 @@ THANK YOU FOR PLAYING
 当前滚动由：
 
 ```text
-CreditsScroller.cs
+CreditsSceneController.cs
 ```
 
 控制。
 
-最终需求：
+当前流程：
 
 ```text
-Credits 从下方开始
+镜头位于场景顶部
       ↓
-缓慢向上滚动
+延迟后向下移动
       ↓
-滚到编辑器中预设的最终位置
+到达 ScrollEnd
       ↓
 停止
 ```
-
-不是全部滚出屏幕。
-
-现在：
-
-```text
-Ending Scene 中 CreditsContent 保存的位置
-=
-Credits 最终停止位置
-```
-
-因此可以把最终画面摆成：
-
-```text
-GAME TITLE
-
-PROJECT MANAGER
-...
-
-THANK YOU FOR PLAYING
-```
-
-然后运行时 Credits 滚到这个位置后停止。
 
 Credits 使用：
 
@@ -678,12 +658,17 @@ Time.timeScale
 
 影响。
 
-推荐速度：
+开场会停留 `2.25` 秒，默认速度为 `3.6` 世界单位/秒。按住空格或 Enter 时以 3 倍速度移动；Esc
+或右上角“返回”按钮回到主菜单。滚动到结尾后保留最终画面，不自动退出。
+
+由于仓库规则不修改 `ProjectSettings/`，主菜单会从同一 Prefab 创建一个独立的
+运行时 Scene；因此无需把预览场景加入 Build Profile，编辑器预览和玩家构建仍共用
+同一份内容。
+
+场景或名单需要重建时运行：
 
 ```text
-40–50  较慢
-60     正常
-80+    较快
+Game Jam → UI → Build Credits Scene
 ```
 
 \---
