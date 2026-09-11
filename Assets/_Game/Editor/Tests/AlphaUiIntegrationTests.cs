@@ -330,12 +330,13 @@ public sealed class AlphaUiIntegrationTests
             Assert.That(sharedCollectionPrefab, Is.Not.Null);
             Assert.That(AssetDatabase.GetAssetPath(sharedCollectionPrefab),
                 Is.EqualTo(CollectionPanelPrefabPath));
-            Assert.That(menu.creditsPanel, Is.Not.Null);
+            Assert.That(menu.developersPanel, Is.Not.Null);
             Button developers = scene.GetRootGameObjects()
                 .SelectMany(root => root.GetComponentsInChildren<Button>(true))
                 .First(button => button.gameObject.name == "Btn_Developers");
             Assert.That(developers.onClick.GetPersistentEventCount(), Is.EqualTo(1));
-            Assert.That(developers.onClick.GetPersistentMethodName(0), Is.EqualTo(nameof(MainMenuController.ShowCredits)));
+            Assert.That(developers.onClick.GetPersistentMethodName(0), Is.EqualTo(nameof(MainMenuController.ShowDevelopers)));
+            Assert.That(developers.onClick.GetPersistentTarget(0), Is.SameAs(menu));
         }
         finally
         {
