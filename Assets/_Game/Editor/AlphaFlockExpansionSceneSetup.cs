@@ -20,7 +20,7 @@ public static class AlphaFlockExpansionSceneSetup
     private const string ScenePath = SceneFolder + "/AlphaFlockExpansion.unity";
     private const string SceneTemplatePath = "Assets/Settings/Scenes/URP2DSceneTemplate.unity";
     private const string GrassBackgroundPath = "Assets/Art/WorldSprites/Tiles/草原_背景.png";
-    private const string WarningRectAssetPath = "Assets/_Game/Content/Art/Prototype/WolfWarningRect.asset";
+    private const string TutorialKeyArtFolder = "Assets/_Game/Content/Art/UI/TutorialKeys";
     private const string SheepMemberPrefabPath = "Assets/_Game/Content/Perfabs/Sheep/SheepMember.prefab";
     private const string RecruitableSheepPrefabPath = "Assets/_Game/Content/Perfabs/Sheep/RecruitableSheep.prefab";
     private const string WolfPrefabPath = "Assets/_Game/Content/Perfabs/Wolf/Wolf.prefab";
@@ -183,6 +183,103 @@ public static class AlphaFlockExpansionSceneSetup
         EditorSceneManager.SaveScene(scene);
         AssetDatabase.SaveAssets();
         Debug.Log("Alpha 顺序任务栏、教程羊与阶段门槛已更新。");
+    }
+
+    [MenuItem("Game Jam/Alpha Flock Expansion/Apply Tutorial Key Artwork")]
+    public static void ApplyTutorialKeyArtwork()
+    {
+        UiVisualPolish.ConfigureNewArtworkImporters();
+        Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+        TutorialPen pen = FindComponentInScene<TutorialPen>(scene);
+        if (pen == null)
+            throw new System.InvalidOperationException("Alpha scene is missing TutorialPen.");
+
+        Transform moveGroup = FindNamedObjectInScene(scene, "MoveTutorial")?.transform;
+        Transform recruitGroup = FindNamedObjectInScene(scene, "RecruitTutorial")?.transform;
+        Transform fenceGroup = FindNamedObjectInScene(scene, "FenceTutorial")?.transform;
+        if (moveGroup == null || recruitGroup == null || fenceGroup == null)
+            throw new System.InvalidOperationException("Alpha scene is missing a tutorial sign group.");
+
+        ApplyArtworkToExistingKey(moveGroup, TutorialKeyVisual.TutorialKey.W);
+        ApplyArtworkToExistingKey(moveGroup, TutorialKeyVisual.TutorialKey.A);
+        ApplyArtworkToExistingKey(moveGroup, TutorialKeyVisual.TutorialKey.S);
+        ApplyArtworkToExistingKey(moveGroup, TutorialKeyVisual.TutorialKey.D);
+        SetWorldText(moveGroup, "Move_Title", "移动");
+
+        SetWorldText(recruitGroup, "Recruit_Title", "找五个新伙伴", new Vector2(1.5f, 2.55f));
+        Transform existingSpace = recruitGroup.Find("Key_Space");
+        if (existingSpace != null)
+            Object.DestroyImmediate(existingSpace.gameObject);
+        Transform existingPoopHint = recruitGroup.Find("Poop_Hint");
+        if (existingPoopHint != null)
+            Object.DestroyImmediate(existingPoopHint.gameObject);
+        CreateArtworkKey(recruitGroup, TutorialKeyVisual.TutorialKey.Space, new Vector2(1.5f, 0.95f), 0.72f);
+        CreateWorldText(
+            recruitGroup,
+            "Poop_Hint",
+            "整群拉屎",
+            new Vector2(1.5f, -0.65f),
+            0.72f,
+            new Color(0.16f, 0.14f, 0.08f, 1f));
+
+        ApplyArtworkToExistingKey(fenceGroup, TutorialKeyVisual.TutorialKey.E);
+        EditorUtility.SetDirty(pen);
+        EditorSceneManager.MarkSceneDirty(scene);
+        EditorSceneManager.SaveScene(scene);
+        Debug.Log("Alpha 出生羊圈教程已替换为新键帽美术。");
+    }
+
+    private static void ApplyArtworkToExistingKey(
+        Transform group,
+        TutorialKeyVisual.TutorialKey key)
+    {
+        string assetName = key.ToString();
+        Transform cap = group.GetComponentsInChildren<Transform>(true)
+            .FirstOrDefault(item => item.name == $"Key_{assetName}");
+        if (cap == null)
+            throw new System.InvalidOperationException($"Missing tutorial key object Key_{assetName}.");
+
+        Sprite normal = AssetDatabase.LoadAssetAtPath<Sprite>($"{TutorialKeyArtFolder}/{assetName}.png");
+        Sprite pressed = AssetDatabase.LoadAssetAtPath<Sprite>($"{TutorialKeyArtFolder}/{assetName}Pressed.png");
+        if (normal == null || pressed == null)
+            throw new System.InvalidOperationException($"Missing tutorial key artwork for {assetName}.");
+
+        SpriteRenderer renderer = cap.GetComponentInChildren<SpriteRenderer>(true);
+        if (renderer == null)
+            renderer = cap.gameObject.AddComponent<SpriteRenderer>();
+        renderer.gameObject.SetActive(true);
+        renderer.transform.localPosition = Vector3.zero;
+        renderer.transform.localScale = Vector3.one;
+        renderer.sprite = normal;
+        renderer.color = Color.white;
+        renderer.sortingOrder = -50;
+
+        foreach (TMP_Text oldLetter in cap.GetComponentsInChildren<TMP_Text>(true))
+            oldLetter.gameObject.SetActive(false);
+
+        TutorialKeyVisual visual = cap.GetComponent<TutorialKeyVisual>();
+        if (visual == null)
+            visual = cap.gameObject.AddComponent<TutorialKeyVisual>();
+        visual.Configure(renderer, normal, pressed, key);
+        EditorUtility.SetDirty(renderer);
+        EditorUtility.SetDirty(visual);
+    }
+
+    private static void SetWorldText(
+        Transform group,
+        string objectName,
+        string text,
+        Vector2? worldPosition = null)
+    {
+        TMP_Text label = group.GetComponentsInChildren<TMP_Text>(true)
+            .FirstOrDefault(item => item.name == objectName);
+        if (label == null)
+            throw new System.InvalidOperationException($"Missing tutorial text {objectName}.");
+
+        label.text = text;
+        if (worldPosition.HasValue)
+            label.transform.position = worldPosition.Value;
+        EditorUtility.SetDirty(label);
     }
 
     [MenuItem("Game Jam/Alpha Flock Expansion/Apply Audio Integration")]
@@ -552,13 +649,12 @@ public static class AlphaFlockExpansionSceneSetup
         return pen;
     }
 
-    /// <summary>草地上的教程标识（占位：粉笔色文字 + 键帽方块；美术出图后替换 Sprite 即可）。</summary>
+    /// <summary>草地上的分阶段教程标识。</summary>
     private static TutorialSignGroups CreateTutorialSigns(Transform parent)
     {
         GameObject signs = new GameObject("TutorialSigns");
         signs.transform.SetParent(parent, false);
 
-        Sprite keycapSprite = AssetDatabase.LoadAllAssetsAtPath(WarningRectAssetPath).OfType<Sprite>().FirstOrDefault();
         Color chalk = new Color(0.16f, 0.14f, 0.08f, 1f);
 
         GameObject moveGroup = new GameObject("MoveTutorial");
@@ -570,20 +666,22 @@ public static class AlphaFlockExpansionSceneSetup
 
         // 1. 玩家开始移动前，只显示移动操作。
         Vector2 moveOrigin = new Vector2(-5.5f, -1.6f);
-        CreateWorldText(moveGroup.transform, "Move_Title", "WASD  移动", moveOrigin + new Vector2(0f, 2.2f), 1.05f, chalk);
-        CreateKeycap(moveGroup.transform, keycapSprite, "W", moveOrigin + new Vector2(0f, 0.9f), chalk);
-        CreateKeycap(moveGroup.transform, keycapSprite, "A", moveOrigin + new Vector2(-1.1f, -0.2f), chalk);
-        CreateKeycap(moveGroup.transform, keycapSprite, "S", moveOrigin + new Vector2(0f, -0.2f), chalk);
-        CreateKeycap(moveGroup.transform, keycapSprite, "D", moveOrigin + new Vector2(1.1f, -0.2f), chalk);
+        CreateWorldText(moveGroup.transform, "Move_Title", "移动", moveOrigin + new Vector2(0f, 2.2f), 1.05f, chalk);
+        CreateArtworkKey(moveGroup.transform, TutorialKeyVisual.TutorialKey.W, moveOrigin + new Vector2(0f, 0.9f));
+        CreateArtworkKey(moveGroup.transform, TutorialKeyVisual.TutorialKey.A, moveOrigin + new Vector2(-1.1f, -0.2f));
+        CreateArtworkKey(moveGroup.transform, TutorialKeyVisual.TutorialKey.S, moveOrigin + new Vector2(0f, -0.2f));
+        CreateArtworkKey(moveGroup.transform, TutorialKeyVisual.TutorialKey.D, moveOrigin + new Vector2(1.1f, -0.2f));
 
-        // 2. 开始移动后持续显示寻找目标，累计找到五只才收起。
+        // 2. 开始移动后持续显示寻找目标，并顺带提示仍然可用的空格技能。
         Vector2 recruitOrigin = new Vector2(1.5f, 1.1f);
-        CreateWorldText(recruitGroup.transform, "Recruit_Title", "找五个新伙伴", recruitOrigin + new Vector2(0f, 1.0f), 1.0f, chalk);
+        CreateWorldText(recruitGroup.transform, "Recruit_Title", "找五个新伙伴", recruitOrigin + new Vector2(0f, 1.45f), 1.0f, chalk);
+        CreateArtworkKey(recruitGroup.transform, TutorialKeyVisual.TutorialKey.Space, recruitOrigin + new Vector2(0f, -0.15f), 0.72f);
+        CreateWorldText(recruitGroup.transform, "Poop_Hint", "整群拉屎", recruitOrigin + new Vector2(0f, -1.75f), 0.72f, chalk);
 
         // 3. 羊群达到撞栏门槛后才显示 E。Q 不再出现在新手教程里。
         Vector2 fenceOrigin = new Vector2(4.7f, -2.7f);
         CreateWorldText(fenceGroup.transform, "Fence_Title", "撞开羊圈！", fenceOrigin + new Vector2(-0.5f, 1.25f), 1.05f, chalk);
-        CreateKeycap(fenceGroup.transform, keycapSprite, "E", fenceOrigin + new Vector2(-1.7f, 0f), chalk);
+        CreateArtworkKey(fenceGroup.transform, TutorialKeyVisual.TutorialKey.E, fenceOrigin + new Vector2(-1.7f, 0f));
         CreateWorldText(fenceGroup.transform, "Fence_Hint", "整群冲刺  →", fenceOrigin + new Vector2(0.45f, 0f), 0.78f, chalk);
 
         moveGroup.SetActive(true);
@@ -626,25 +724,28 @@ public static class AlphaFlockExpansionSceneSetup
         // 中文字形由 TMP Settings 中随仓库提交的 Noto Sans SC fallback 提供，Edit/Play 模式保持一致。
     }
 
-    private static void CreateKeycap(Transform parent, Sprite sprite, string letter, Vector2 position, Color color)
+    private static void CreateArtworkKey(
+        Transform parent,
+        TutorialKeyVisual.TutorialKey key,
+        Vector2 position,
+        float scale = 1f)
     {
-        GameObject cap = new GameObject($"Key_{letter}");
+        string assetName = key.ToString();
+        Sprite normal = AssetDatabase.LoadAssetAtPath<Sprite>($"{TutorialKeyArtFolder}/{assetName}.png");
+        Sprite pressed = AssetDatabase.LoadAssetAtPath<Sprite>($"{TutorialKeyArtFolder}/{assetName}Pressed.png");
+        if (normal == null || pressed == null)
+            throw new System.InvalidOperationException($"Missing tutorial key artwork for {assetName}.");
+
+        GameObject cap = new GameObject($"Key_{assetName}");
         cap.transform.SetParent(parent, false);
         cap.transform.position = new Vector3(position.x, position.y, 0f);
+        cap.transform.localScale = Vector3.one * scale;
 
-        if (sprite != null)
-        {
-            GameObject frame = new GameObject("Frame");
-            frame.transform.SetParent(cap.transform, false);
-            frame.transform.localPosition = new Vector3(-0.45f, 0f, 0f); // WolfWarningRect pivot 在左侧中点
-            frame.transform.localScale = new Vector3(0.9f, 0.9f, 1f);
-            SpriteRenderer renderer = frame.AddComponent<SpriteRenderer>();
-            renderer.sprite = sprite;
-            renderer.color = new Color(0.96f, 0.92f, 0.76f, 0.82f);
-            renderer.sortingOrder = -60;
-        }
-
-        CreateWorldText(cap.transform, "Letter", letter, position, 1f, color);
+        SpriteRenderer renderer = cap.AddComponent<SpriteRenderer>();
+        renderer.sprite = normal;
+        renderer.sortingOrder = -50;
+        TutorialKeyVisual visual = cap.AddComponent<TutorialKeyVisual>();
+        visual.Configure(renderer, normal, pressed, key);
     }
 
     // ------------------------------------------------------------------ debris

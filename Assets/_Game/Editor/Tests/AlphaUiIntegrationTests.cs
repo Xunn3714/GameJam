@@ -35,6 +35,10 @@ public sealed class AlphaUiIntegrationTests
         "Assets/Art/Debris/obstacle_fence_256x128.png";
     private const string CatalogPath =
         "Assets/_Game/Content/Data/Sheep/SpecialSheepCatalog.asset";
+    private const string MainMenuButtonArtFolder =
+        "Assets/_Game/Content/Art/UI/MainMenuButtons";
+    private const string TutorialKeyArtFolder =
+        "Assets/_Game/Content/Art/UI/TutorialKeys";
     private static readonly string[] SheepRecruitClipPaths =
     {
         "Assets/_Game/Content/Audio/SFX/sheep/sheep (1).wav",
@@ -306,6 +310,54 @@ public sealed class AlphaUiIntegrationTests
     }
 
     [Test]
+    public void MainMenuUsesNewArtworkAndPressedSprites()
+    {
+        Scene scene = EditorSceneManager.OpenScene(MainMenuScenePath, OpenSceneMode.Additive);
+        try
+        {
+            (string ObjectName, string AssetName)[] expected =
+            {
+                ("Btn_Start", "Start"),
+                ("Btn_Collection", "Collection"),
+                ("Btn_Statistics", "Statistics"),
+                ("Btn_Developers", "Credits"),
+            };
+
+            Button[] buttons = scene.GetRootGameObjects()
+                .SelectMany(root => root.GetComponentsInChildren<Button>(true))
+                .ToArray();
+            foreach ((string objectName, string assetName) in expected)
+            {
+                Button button = buttons.Single(item => item.name == objectName);
+                Assert.That(button.transition, Is.EqualTo(Selectable.Transition.SpriteSwap));
+                Assert.That(
+                    AssetDatabase.GetAssetPath(button.GetComponent<Image>().sprite),
+                    Is.EqualTo($"{MainMenuButtonArtFolder}/{assetName}.png"));
+                Assert.That(
+                    AssetDatabase.GetAssetPath(button.spriteState.pressedSprite),
+                    Is.EqualTo($"{MainMenuButtonArtFolder}/{assetName}Pressed.png"));
+                Assert.That(
+                    button.GetComponentsInChildren<TMP_Text>(true).All(label => !label.gameObject.activeSelf),
+                    Is.True,
+                    $"{objectName} should not draw a duplicate TMP label over its artwork.");
+            }
+
+            Image menuPanel = scene.GetRootGameObjects()
+                .SelectMany(root => root.GetComponentsInChildren<Image>(true))
+                .Single(image => image.name == "MenuPanel");
+            Assert.That(menuPanel.enabled, Is.False);
+            Transform backdropTint = scene.GetRootGameObjects()
+                .SelectMany(root => root.GetComponentsInChildren<Transform>(true))
+                .Single(item => item.name == "BackdropTint");
+            Assert.That(backdropTint.gameObject.activeSelf, Is.False);
+        }
+        finally
+        {
+            EditorSceneManager.CloseScene(scene, true);
+        }
+    }
+
+    [Test]
     public void MainMenuReplacesItsLegacyCatalogWithSharedGameplayPrefab()
     {
         GameObject root = new GameObject("MainMenuCatalogBindingTest");
@@ -556,6 +608,25 @@ public sealed class AlphaUiIntegrationTests
             Assert.That(moveTutorial.gameObject.activeSelf, Is.True);
             Assert.That(recruitTutorial.gameObject.activeSelf, Is.False);
             Assert.That(fenceTutorial.gameObject.activeSelf, Is.False);
+
+            TutorialKeyVisual[] keyVisuals = transforms
+                .Select(item => item.GetComponent<TutorialKeyVisual>())
+                .Where(item => item != null)
+                .ToArray();
+            Assert.That(keyVisuals, Has.Length.EqualTo(6));
+            foreach (TutorialKeyVisual visual in keyVisuals)
+            {
+                string assetName = visual.Key.ToString();
+                Assert.That(
+                    AssetDatabase.GetAssetPath(visual.NormalSprite),
+                    Is.EqualTo($"{TutorialKeyArtFolder}/{assetName}.png"));
+                Assert.That(
+                    AssetDatabase.GetAssetPath(visual.PressedSprite),
+                    Is.EqualTo($"{TutorialKeyArtFolder}/{assetName}Pressed.png"));
+            }
+
+            Assert.That(recruitTutorial.Find("Key_Space"), Is.Not.Null);
+            Assert.That(recruitTutorial.Find("Poop_Hint"), Is.Not.Null);
         }
         finally
         {

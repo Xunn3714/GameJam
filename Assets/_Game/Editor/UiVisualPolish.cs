@@ -41,6 +41,7 @@ public static class UiVisualPolish
     private const string TaskIconPath = "Assets/Art/UI/Icon/Icon_01.png";
     private const string RestartIconPath = "Assets/Art/UI/Icon/Icon_02.png";
     private const string SettingsIconPath = "Assets/Art/UI/Icon/Icon_03.png";
+    private const string NewMainMenuArtFolder = "Assets/_Game/Content/Art/UI/MainMenuButtons";
 
     private static readonly Color Ink = new Color32(65, 57, 39, 255);
     private static readonly Color MutedInk = new Color32(101, 88, 59, 255);
@@ -68,6 +69,63 @@ public static class UiVisualPolish
         StyleTaskPrefab();
         StyleBannerPrefab();
         StylePausePrefab();
+    }
+
+    [MenuItem("Game Jam/UI/Apply New Main Menu Artwork")]
+    public static void ApplyNewMainMenuArtwork()
+    {
+        ConfigureNewArtworkImporters();
+        Scene scene = EditorSceneManager.OpenScene(MainMenuScenePath, OpenSceneMode.Single);
+        ApplyNewMainMenuArtwork(scene);
+        EditorSceneManager.MarkSceneDirty(scene);
+        EditorSceneManager.SaveScene(scene);
+        Debug.Log("主菜单已替换为新按钮美术。");
+    }
+
+    [MenuItem("Game Jam/UI/Apply New Menu And Tutorial Artwork")]
+    public static void ApplyNewMenuAndTutorialArtwork()
+    {
+        ConfigureNewArtworkImporters();
+        ApplyNewMainMenuArtwork();
+        AlphaFlockExpansionSceneSetup.ApplyTutorialKeyArtwork();
+        AssetDatabase.SaveAssets();
+        Debug.Log("新主菜单按钮与出生羊圈教程美术已应用。");
+    }
+
+    public static void ConfigureNewArtworkImporters()
+    {
+        string[] folders =
+        {
+            NewMainMenuArtFolder,
+            "Assets/_Game/Content/Art/UI/TutorialKeys",
+        };
+
+        foreach (string guid in AssetDatabase.FindAssets("t:Texture2D", folders))
+        {
+            string path = AssetDatabase.GUIDToAssetPath(guid);
+            TextureImporter importer = AssetImporter.GetAtPath(path) as TextureImporter;
+            if (importer == null)
+                continue;
+
+            bool changed = importer.textureType != TextureImporterType.Sprite
+                || importer.spriteImportMode != SpriteImportMode.Single
+                || !Mathf.Approximately(importer.spritePixelsPerUnit, 100f)
+                || importer.mipmapEnabled
+                || importer.wrapMode != TextureWrapMode.Clamp
+                || importer.filterMode != FilterMode.Bilinear;
+            if (!changed)
+                continue;
+
+            importer.textureType = TextureImporterType.Sprite;
+            importer.spriteImportMode = SpriteImportMode.Single;
+            importer.spritePixelsPerUnit = 100f;
+            importer.spritePivot = new Vector2(0.5f, 0.5f);
+            importer.mipmapEnabled = false;
+            importer.alphaIsTransparency = true;
+            importer.wrapMode = TextureWrapMode.Clamp;
+            importer.filterMode = FilterMode.Bilinear;
+            importer.SaveAndReimport();
+        }
     }
 
     public static void ApplyTaskPrefab()
@@ -152,6 +210,8 @@ public static class UiVisualPolish
         GameObject developersButton = Find(scene, "Btn_Developers");
         StyleButton(developersButton, SmallButtonPath, "制作人员", new Vector2(116f, 62f), new Vector2(190f, 75f), 20f, new Vector2(0f, 0f));
 
+        ApplyNewMainMenuArtwork(scene);
+
         GameObject statistics = Find(scene, "StatisticsPanel");
         StyleStatistics(statistics);
 
@@ -192,6 +252,100 @@ public static class UiVisualPolish
         EditorSceneManager.SaveScene(scene);
         if (openedForEdit)
             EditorSceneManager.CloseScene(scene, true);
+    }
+
+    private static void ApplyNewMainMenuArtwork(Scene scene)
+    {
+        GameObject tint = Find(scene, "BackdropTint");
+        if (tint != null)
+            tint.SetActive(false);
+
+        GameObject menu = Find(scene, "MenuPanel");
+        if (menu != null)
+        {
+            DisableLayout(menu);
+            SetRect(menu, new Vector2(0.5f, 0.5f), new Vector2(0f, -4f), new Vector2(1120f, 900f));
+            Image panelImage = menu.GetComponent<Image>();
+            if (panelImage != null)
+                panelImage.enabled = false;
+
+            GameObject subtitle = Find(menu, "Subtitle");
+            if (subtitle != null)
+                subtitle.SetActive(false);
+
+            GameObject titleObject = Find(menu, "GameTitle");
+            if (titleObject != null)
+                SetRect(titleObject, new Vector2(0.5f, 0.5f), new Vector2(0f, 332f), new Vector2(760f, 96f));
+
+            StyleArtworkButton(
+                Find(menu, "Btn_Start"),
+                "Start",
+                new Vector2(0f, 142f),
+                new Vector2(520f, 276f));
+            StyleArtworkButton(
+                Find(menu, "Btn_Collection"),
+                "Collection",
+                new Vector2(-250f, -120f),
+                new Vector2(470f, 249f));
+            StyleArtworkButton(
+                Find(menu, "Btn_Statistics"),
+                "Statistics",
+                new Vector2(250f, -120f),
+                new Vector2(470f, 249f));
+        }
+
+        StyleArtworkButton(
+            Find(scene, "Btn_Developers"),
+            "Credits",
+            new Vector2(145f, 84f),
+            new Vector2(290f, 154f),
+            new Vector2(0f, 0f));
+    }
+
+    private static void StyleArtworkButton(
+        GameObject buttonObject,
+        string assetName,
+        Vector2 position,
+        Vector2 size,
+        Vector2? anchor = null)
+    {
+        if (buttonObject == null)
+            return;
+
+        Sprite normal = AssetDatabase.LoadAssetAtPath<Sprite>($"{NewMainMenuArtFolder}/{assetName}.png");
+        Sprite pressed = AssetDatabase.LoadAssetAtPath<Sprite>($"{NewMainMenuArtFolder}/{assetName}Pressed.png");
+        if (normal == null || pressed == null)
+            throw new System.InvalidOperationException($"Missing main-menu artwork for {assetName}.");
+
+        Vector2 resolvedAnchor = anchor ?? new Vector2(0.5f, 0.5f);
+        SetRect(buttonObject, resolvedAnchor, position, size);
+
+        Image image = buttonObject.GetComponent<Image>();
+        if (image == null)
+            image = buttonObject.AddComponent<Image>();
+        image.enabled = true;
+        image.sprite = normal;
+        // 新按钮使用与主菜单草地背景一致的色乘，消除原图草色底与场景背景的接缝。
+        image.color = new Color32(205, 226, 165, 255);
+        image.type = Image.Type.Simple;
+        image.preserveAspect = true;
+
+        Button button = buttonObject.GetComponent<Button>();
+        if (button == null)
+            button = buttonObject.AddComponent<Button>();
+        button.targetGraphic = image;
+        button.transition = Selectable.Transition.SpriteSwap;
+        SpriteState state = button.spriteState;
+        state.highlightedSprite = normal;
+        state.pressedSprite = pressed;
+        state.selectedSprite = normal;
+        button.spriteState = state;
+
+        foreach (TMP_Text label in buttonObject.GetComponentsInChildren<TMP_Text>(true))
+            label.gameObject.SetActive(false);
+
+        EditorUtility.SetDirty(image);
+        EditorUtility.SetDirty(button);
     }
 
     private static GameObject BuildCreditsPanel(Transform canvas, MainMenuController controller)
