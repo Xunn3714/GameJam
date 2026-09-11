@@ -77,6 +77,42 @@ public static class AlphaFlockExpansionSceneSetup
     private const int TutorialRequiredFlockSize = 6;
     private const int WolfUnlockFlockSize = 20;
 
+    // 区块网格：3×2 共 6 格，每格 80×70；区块定义资产由 Setup 生成到这个目录。
+    private const string BlockDefinitionFolder = "Assets/_Game/Content/Data/World/Blocks";
+    private const int MapColumns = 3;
+    private const int MapRows = 2;
+
+    private readonly struct BlockSpec
+    {
+        public BlockSpec(string file, string id, string displayName, MapBlockRole role, float weight = 1f)
+        {
+            File = file;
+            Id = id;
+            DisplayName = displayName;
+            Role = role;
+            Weight = weight;
+        }
+
+        public string File { get; }
+        public string Id { get; }
+        public string DisplayName { get; }
+        public MapBlockRole Role { get; }
+        public float Weight { get; }
+    }
+
+    private static readonly BlockSpec[] BlockSpecs =
+    {
+        new BlockSpec("block.spawn", "block.spawn", "出生点", MapBlockRole.Spawn, 0f),
+        new BlockSpec("block.pagoda", "block.pagoda", "宝通寺", MapBlockRole.Pagoda, 0f),
+        new BlockSpec("block.exit", "block.exit", "出口", MapBlockRole.Exit, 0f),
+        new BlockSpec("block.forest_a", "block.forest_a", "森林 A", MapBlockRole.Forest),
+        new BlockSpec("block.forest_b", "block.forest_b", "森林 B", MapBlockRole.Forest),
+        new BlockSpec("block.plains_grass", "block.plains_grass", "平原·草", MapBlockRole.Plains),
+        new BlockSpec("block.plains_rock", "block.plains_rock", "平原·石", MapBlockRole.Plains),
+        new BlockSpec("block.village_a", "block.village_a", "村庄 A", MapBlockRole.Village),
+        new BlockSpec("block.village_b", "block.village_b", "村庄 B", MapBlockRole.Village),
+    };
+
     private static readonly Vector2[] TutorialSheepPositions =
     {
         new Vector2(-6.8f, 3.3f),
@@ -98,6 +134,7 @@ public static class AlphaFlockExpansionSceneSetup
         "WorldSeed",
         "WorldDebrisSpawner",
         "WorldLandmarkSpawner",
+        "MapLayoutBuilder",
         "BorderFence",
         "TutorialPen",
         "AlphaCanvas",
@@ -282,7 +319,8 @@ public static class AlphaFlockExpansionSceneSetup
         CameraFollow2D cameraFollow = ConfigureCamera(scene, flockObject.transform, out Camera gameplayCamera);
         ConfigureLighting(scene);
         ProgressiveSheepSpawner sheepSpawner = CreateSheepSpawner(scene, flock, namePool, gameplayCamera, worldSeed);
-        CreateLandmarkSpawner(scene, worldSeed, sheepSpawner, fencePrefab, fenceDefinition);
+        WorldLandmarkSpawner landmarks = CreateLandmarkSpawner(scene, worldSeed, sheepSpawner, fencePrefab, fenceDefinition);
+        CreateMapLayout(scene, worldSeed, borderRing, tutorialPen, flockObject, cameraFollow, debris, landmarks);
         CreateWolfSystem(scene, flock, wolfPrefab.GetComponent<Wolf>(), out WolfSpawner wolfSpawner, out WolfEventDirector director);
         LevelUi ui = CreateLevelUi(scene);
         CreateGameController(
@@ -304,7 +342,7 @@ public static class AlphaFlockExpansionSceneSetup
         AssetDatabase.SaveAssets();
         Debug.Log(
             $"Alpha 羊群扩张场景已生成：{ScenePath}。" +
-            $"地图 {WorldRect.width}x{WorldRect.height}，出生羊圈 6 只教程羊，狼在 {WolfUnlockFlockSize} 只后出现，" +
+            $"地图 {WorldRect.width}x{WorldRect.height}（{MapColumns}x{MapRows} 区块，出生格随机），出生羊圈 6 只教程羊，狼在 {WolfUnlockFlockSize} 只后出现，" +
             $"历史最高 {ExitUnlockFlockSize} 只后解锁出口，冲刺时当前羊数达标才能撞开外围围栏。");
     }
 
@@ -704,6 +742,76 @@ public static class AlphaFlockExpansionSceneSetup
         zones.GetArrayElementAtIndex(0).rectValue = Expand(PenRect, 5f);
         serialized.ApplyModifiedPropertiesWithoutUndo();
         return spawner;
+    }
+
+    // ------------------------------------------------------------------ map blocks
+
+    /// <summary>
+    /// 区块布局器：运行时按种子分配 3×2 格子并把出生羊圈挪到随机格。
+    /// 它依赖的对象（羊圈、羊群、初始羊、相机、两个撒点器）都已在此之前创建。
+    /// </summary>
+    private static MapLayoutBuilder CreateMapLayout(
+        Scene scene,
+        WorldSeed worldSeed,
+        BorderFenceRing borderRing,
+        TutorialPen tutorialPen,
+        GameObject flockObject,
+        CameraFollow2D cameraFollow,
+        WorldDebrisSpawner debris,
+        WorldLandmarkSpawner landmarks)
+    {
+        GameObject builderObject = new GameObject("MapLayoutBuilder");
+        SceneManager.MoveGameObjectToScene(builderObject, scene);
+        MapLayoutBuilder builder = builderObject.AddComponent<MapLayoutBuilder>();
+        MapBlockDefinition[] pool = EnsureBlockDefinitions();
+        GameObject initialSheep = FindNamedObjectInScene(scene, "Sheep_Initial");
+
+        SerializedObject serialized = new SerializedObject(builder);
+        serialized.FindProperty("worldSeed").objectReferenceValue = worldSeed;
+        serialized.FindProperty("borderRing").objectReferenceValue = borderRing;
+        serialized.FindProperty("tutorialPen").objectReferenceValue = tutorialPen;
+        serialized.FindProperty("flockRoot").objectReferenceValue = flockObject.transform;
+        serialized.FindProperty("initialSheep").objectReferenceValue = initialSheep != null ? initialSheep.transform : null;
+        serialized.FindProperty("gameplayCamera").objectReferenceValue = cameraFollow != null ? cameraFollow.transform : null;
+        serialized.FindProperty("debrisSpawner").objectReferenceValue = debris;
+        serialized.FindProperty("landmarkSpawner").objectReferenceValue = landmarks;
+        serialized.FindProperty("columns").intValue = MapColumns;
+        serialized.FindProperty("rows").intValue = MapRows;
+        serialized.FindProperty("worldRect").rectValue = WorldRect;
+        SerializedProperty poolProperty = serialized.FindProperty("blockPool");
+        poolProperty.arraySize = pool.Length;
+        for (int index = 0; index < pool.Length; index++)
+            poolProperty.GetArrayElementAtIndex(index).objectReferenceValue = pool[index];
+        serialized.ApplyModifiedPropertiesWithoutUndo();
+        return builder;
+    }
+
+    /// <summary>按 BlockSpecs 建（或刷新）区块定义资产；已存在的只更新字段，保留 GUID。</summary>
+    private static MapBlockDefinition[] EnsureBlockDefinitions()
+    {
+        WorldObstaclePrefabBuilder.EnsureFolder(BlockDefinitionFolder);
+        List<MapBlockDefinition> result = new List<MapBlockDefinition>(BlockSpecs.Length);
+        foreach (BlockSpec spec in BlockSpecs)
+        {
+            string path = $"{BlockDefinitionFolder}/{spec.File}.asset";
+            MapBlockDefinition definition = AssetDatabase.LoadAssetAtPath<MapBlockDefinition>(path);
+            if (definition == null)
+            {
+                definition = ScriptableObject.CreateInstance<MapBlockDefinition>();
+                AssetDatabase.CreateAsset(definition, path);
+            }
+
+            SerializedObject serialized = new SerializedObject(definition);
+            serialized.FindProperty("blockId").stringValue = spec.Id;
+            serialized.FindProperty("displayName").stringValue = spec.DisplayName;
+            serialized.FindProperty("role").enumValueIndex = (int)spec.Role;
+            serialized.FindProperty("weight").floatValue = spec.Weight;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            result.Add(definition);
+        }
+
+        AssetDatabase.SaveAssets();
+        return result.ToArray();
     }
 
     // ------------------------------------------------------------------ flock & spawners

@@ -63,6 +63,17 @@ public sealed class TutorialPen : MonoBehaviour
         RefreshTutorialStage();
     }
 
+    /// <summary>
+    /// 把羊圈整体挪到新的中心。围栏、教程羊和地面标识都是本对象的子物体，随根节点一起移动；
+    /// 这里只需同步世界坐标的 penRect。
+    /// </summary>
+    public void Relocate(Vector2 center)
+    {
+        Vector2 delta = center - penRect.center;
+        transform.position += (Vector3)delta;
+        penRect.position += delta;
+    }
+
     public void BindFlock(FlockController controller)
     {
         UnsubscribeFromFlock();

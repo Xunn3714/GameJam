@@ -70,6 +70,12 @@ public sealed class WorldLandmarkSpawner : MonoBehaviour
     private Transform root;
     private bool hasSpawned;
 
+    /// <summary>运行时改写排除区（例如出生羊圈被挪到别的格子后）；必须在 Start 之前调用。</summary>
+    public void SetExclusionZones(params Rect[] zones)
+    {
+        exclusionZones = zones ?? Array.Empty<Rect>();
+    }
+
     private void Start() => Spawn();
 
     /// <summary>整局只生成一次：地标被摧毁后不再补刷，残骸永久保留。</summary>
