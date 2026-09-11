@@ -174,7 +174,6 @@ public sealed class WorldDebrisSpawner : MonoBehaviour
         if (blobCell.HasValue)
         {
             const int samples = 256;
-            int insideCount = 0;
             float weightSum = 0f;
             for (int sample = 0; sample < samples; sample++)
                 weightSum += ForestBlobWeight(RandomPoint(inner, random), blobCell.Value);

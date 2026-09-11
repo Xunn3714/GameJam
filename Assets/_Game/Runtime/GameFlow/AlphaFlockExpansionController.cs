@@ -647,9 +647,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
             wolfDirector.Run();
         cameraFollow?.Shake(fenceBreakShakeAmplitude * 0.6f, fenceBreakShakeDuration);
         sheepSpawner.SetExclusionZones();
-        ShowBanner(tutorialPen != null && tutorialPen.HasFences
-            ? "羊圈打开了！去草原上壮大羊群吧"
-            : "凑够伙伴了！去草原上壮大羊群吧");
+        ShowBanner("羊圈打开了！去草原上壮大羊群吧");
         RefreshObjectives();
     }
 

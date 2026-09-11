@@ -37,7 +37,13 @@ public sealed class TruckHazard : MonoBehaviour
         truckObject.transform.rotation = Quaternion.Euler(0f, 0f, portrait ? heading + 90f : heading);
 
         SpriteRenderer renderer = truckObject.AddComponent<SpriteRenderer>();
-        renderer.sprite = sprite;
+        renderer.sprite = sprite != null ? sprite : RuntimeSprites.Solid();
+        if (sprite == null)
+        {
+            renderer.color = new Color(0.55f, 0.35f, 0.2f);
+            renderer.drawMode = SpriteDrawMode.Tiled;
+            renderer.size = spriteSize;
+        }
         renderer.sortingOrder = 30;
         // 车身长约 TruckLength 单位、宽不超过路面的 0.7。
         float length = portrait ? spriteSize.y : spriteSize.x;

@@ -50,7 +50,7 @@ public sealed class RoadHazard : MonoBehaviour
             onRoad - heading * truckLeadDistance,
             to,
             width,
-            truckSprite != null ? truckSprite : RuntimeSprites.Truck(),
+            truckSprite,
             truckSpeed);
     }
 }

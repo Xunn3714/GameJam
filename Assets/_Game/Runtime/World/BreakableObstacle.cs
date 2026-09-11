@@ -80,16 +80,17 @@ public sealed class BreakableObstacle : MonoBehaviour
 
     /// 判断碰上来的是不是已入群的真实羊。羊群目标中心只表达移动意图，
     /// 不能隔着障碍代替成员触发破坏或围栏范围。
+    public static bool IsFlockContact(Collider2D other)
+    {
+        SheepMember member = other.GetComponentInParent<SheepMember>();
+        return member != null && member.Flock != null;
+    }
+
     /// <summary>接触者所属羊群的数量（按定义的 CountSource）是否达到 RequiredFlockCount。</summary>
     private bool MeetsCount(Collider2D other)
     {
-        FlockController flock = other.GetComponentInParent<FlockController>();
-        if (flock == null)
-        {
-            SheepMember member = other.GetComponentInParent<SheepMember>();
-            flock = member != null ? member.Flock : null;
-        }
-
+        SheepMember member = other.GetComponentInParent<SheepMember>();
+        FlockController flock = member != null ? member.Flock : null;
         if (flock == null || definition == null)
             return false;
 
@@ -97,12 +98,6 @@ public sealed class BreakableObstacle : MonoBehaviour
             ? flock.HighestMemberCount
             : flock.MemberCount;
         return count >= definition.RequiredFlockCount;
-    }
-
-    public static bool IsFlockContact(Collider2D other)
-    {
-        SheepMember member = other.GetComponentInParent<SheepMember>();
-        return member != null && member.Flock != null;
     }
 
     /// <summary>

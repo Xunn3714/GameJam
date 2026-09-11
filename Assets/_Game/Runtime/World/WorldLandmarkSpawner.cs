@@ -75,8 +75,6 @@ public sealed class WorldLandmarkSpawner : MonoBehaviour
     [SerializeField] private Vector2 bigHouseColliderOffset = new(0f, -0.5f);
     [Tooltip("家具槽位 / 围栏角点到房屋中心的距离 = 碰撞盒半宽 + 这个边距；小房子约 3.6，大房子约 5。")]
     [SerializeField, Min(0f)] private float furnitureRingMargin = 2.2f;
-    [Tooltip("房屋旁是否再围一段 90° 羊圈围栏。")]
-    [SerializeField] private bool houseFences = true;
 
     /// <summary>找不到位置时依次放宽到的间距倍率。</summary>
     private static readonly float[] RelaxSteps = { 1f, 0.75f, 0.55f, 0.4f, 0.28f, 0.18f };
@@ -295,7 +293,7 @@ public sealed class WorldLandmarkSpawner : MonoBehaviour
         Vector2 vertical = corner % 2 == 0 ? Vector2.left : Vector2.right;
         Vector2 cornerPosition = position + horizontal * (ring - 0.2f) + vertical * (ring - 0.4f);
         List<Vector2> fencePositions = new();
-        for (int index = 0; houseFences && index < 3; index++)
+        for (int index = 0; index < 3; index++)
         {
             Vector2 horizontalPosition = cornerPosition - vertical * index * 2f;
             Vector2 verticalPosition = cornerPosition - horizontal * index * 2f;

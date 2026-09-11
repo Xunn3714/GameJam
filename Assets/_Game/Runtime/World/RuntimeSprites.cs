@@ -5,8 +5,6 @@ public static class RuntimeSprites
 {
     private static Sprite solid;
     private static Sprite road;
-    private static Sprite arrow;
-    private static Sprite truck;
 
     public static Sprite Solid()
     {
@@ -31,39 +29,7 @@ public static class RuntimeSprites
         return road;
     }
 
-    /// <summary>朝 +X 的三角箭头，1×1 单位。</summary>
-    public static Sprite Arrow()
-    {
-        if (arrow == null)
-        {
-            arrow = Create(Fill(32, 32, (x, y) =>
-            {
-                int half = Mathf.Abs(y - 16);
-                bool head = x >= 12 && half <= (31 - x) * 16 / 19;
-                bool shaft = x < 12 && half <= 5;
-                return head || shaft ? Color.white : Color.clear;
-            }), 32f);
-        }
 
-        return arrow;
-    }
-
-    /// <summary>占位卡车：4×2 单位的深色车身 + 车头。</summary>
-    public static Sprite Truck()
-    {
-        if (truck == null)
-        {
-            truck = Create(Fill(64, 32, (x, y) =>
-            {
-                bool cab = x >= 48 && y >= 6 && y < 26;
-                bool box = x < 48 && y >= 4 && y < 30;
-                bool wheel = (y < 6) && ((x >= 8 && x < 18) || (x >= 50 && x < 60));
-                return wheel ? new Color(0.1f, 0.1f, 0.1f) : cab ? new Color(0.85f, 0.25f, 0.2f) : box ? new Color(0.55f, 0.35f, 0.2f) : Color.clear;
-            }), 16f);
-        }
-
-        return truck;
-    }
 
     private static Texture2D Fill(int width, int height, System.Func<int, int, Color> pixel)
     {

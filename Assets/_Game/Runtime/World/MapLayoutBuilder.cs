@@ -63,8 +63,6 @@ public sealed class MapLayoutBuilder : MonoBehaviour
     [SerializeField] private MapBlockDefinition[] blockPool = Array.Empty<MapBlockDefinition>();
 
     [Header("Spawn Pen")]
-    [Tooltip("开局拆掉出生羊圈的围栏；凑够人数即算教程完成。默认保留撞栏教程。")]
-    [SerializeField] private bool removeSpawnPenFences;
 
     [Header("Spawn Pen Exclusion")]
     [Tooltip("与 Setup 里给散布物 / 地标预留的羊圈外扩距离保持一致。")]
@@ -75,8 +73,6 @@ public sealed class MapLayoutBuilder : MonoBehaviour
     [Tooltip("出口格地面上的指向标识；留空则用运行时生成的三角形。")]
     [SerializeField] private Sprite arrowSprite;
     [SerializeField, Min(0)] private int arrowCount = 3;
-    [Tooltip("true = 出口以外的围栏锁死；false = 整圈围栏都用同一个（100 只）门槛，撞出去会落在公路上。")]
-    [SerializeField] private bool lockFencesOutsideExit;
     [Tooltip("美术路牌（箭头.png）的缩放；贴图本身箭头朝上、带木桩。")]
     [SerializeField, Min(0.1f)] private float arrowScale = 2f;
 
@@ -163,26 +159,6 @@ public sealed class MapLayoutBuilder : MonoBehaviour
         };
     }
 
-    /// <summary>出口格贴外圈的那条边的围栏矩形；其余外围围栏由 BorderFenceRing 锁死。</summary>
-    public Rect? ExitSpan
-    {
-        get
-        {
-            MapCell exit = ExitCell;
-            if (exit == null || !exit.ExitEdge.HasValue)
-                return null;
-
-            const float thickness = 6f;
-            Rect rect = exit.Rect;
-            return exit.ExitEdge.Value switch
-            {
-                MapEdge.Top => new Rect(rect.xMin, rect.yMax - thickness * 0.5f, rect.width, thickness),
-                MapEdge.Bottom => new Rect(rect.xMin, rect.yMin - thickness * 0.5f, rect.width, thickness),
-                MapEdge.Left => new Rect(rect.xMin - thickness * 0.5f, rect.yMin, thickness, rect.height),
-                _ => new Rect(rect.xMax - thickness * 0.5f, rect.yMin, thickness, rect.height),
-            };
-        }
-    }
 
     /// <summary>五种角色各至少一格；多出来的格子在 FillerRoles 里随机。</summary>
     public static readonly MapBlockRole[] RequiredRoles =
@@ -326,9 +302,6 @@ public sealed class MapLayoutBuilder : MonoBehaviour
         if (spawn == null || tutorialPen == null)
             return;
 
-        if (removeSpawnPenFences && tutorialPen.HasFences)
-            tutorialPen.RemoveFences();
-
         Vector2 delta = spawn.Rect.center - tutorialPen.PenRect.center;
         if (delta.sqrMagnitude > 0.0001f)
         {
@@ -354,26 +327,20 @@ public sealed class MapLayoutBuilder : MonoBehaviour
 
     // ---------------------------------------------------------------- exit
 
-    /// <summary>只让出口边的外围围栏可撞，并在出口格地面铺几枚指向出口的箭头。</summary>
+    /// <summary>
+    /// 在出口格地面铺几块指向出口的路牌。围栏整圈都按同一门槛可撞：出口之外撞出去只会落到公路上（卡车）、
+    /// 再外面是河（空气墙），真正能离开地图的仍然只有出口那一段。
+    /// </summary>
     private void ConfigureExit()
     {
         MapCell exit = ExitCell;
-        Rect? span = ExitSpan;
-        if (exit == null || !span.HasValue)
+        if (exit == null || !exit.ExitEdge.HasValue || arrowSprite == null)
             return;
-
-        // 围栏整圈都按 100 只的门槛可撞：出口之外撞出去只会落到公路上（卡车）、再外面是河（空气墙），
-        // 真正能离开地图的仍然只有出口那一段。
-        if (lockFencesOutsideExit)
-            borderRing?.SetBreakableSpan(span.Value);
 
         Vector2 direction = EdgeDirection(exit.ExitEdge.Value);
         Vector2 edgeCenter = EdgeCenter(exit.Rect, exit.ExitEdge.Value);
-        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
-        // 占位箭头朝 +X；美术路牌箭头朝上（+Y），要少转 90°，且不染色、按自己的比例缩放。
-        bool signpost = arrowSprite != null;
-        Sprite sprite = signpost ? arrowSprite : RuntimeSprites.Arrow();
-        float spriteAngle = signpost ? angle - 90f : angle;
+        // 路牌贴图箭头朝上（+Y）：把 +Y 转到出口方向。
+        float spriteAngle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg - 90f;
         Transform arrows = new GameObject("ExitArrows").transform;
         arrows.SetParent(transform, false);
         for (int index = 0; index < arrowCount; index++)
@@ -385,10 +352,9 @@ public sealed class MapLayoutBuilder : MonoBehaviour
             arrow.transform.SetParent(arrows, false);
             arrow.transform.position = position;
             arrow.transform.rotation = Quaternion.Euler(0f, 0f, spriteAngle);
-            arrow.transform.localScale = Vector3.one * (signpost ? arrowScale : 2.5f);
+            arrow.transform.localScale = Vector3.one * arrowScale;
             SpriteRenderer renderer = arrow.AddComponent<SpriteRenderer>();
-            renderer.sprite = sprite;
-            renderer.color = signpost ? Color.white : new Color(1f, 0.95f, 0.6f, 0.85f);
+            renderer.sprite = arrowSprite;
             renderer.sortingLayerName = "Background";
             renderer.sortingOrder = -40;
         }

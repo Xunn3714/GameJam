@@ -78,7 +78,6 @@ public static class AlphaFlockExpansionSceneSetup
     private const float PenFenceScale = 1f;      // 羊圈栅栏 2x1 单位
     private const int ExitUnlockFlockSize = 100;
     private const int TutorialRequiredFlockSize = 6;
-    private const bool TutorialPenFences = true;    // 出生羊圈保留撞栏教程；改 false 则凑够 6 只即算完成
     private const int WolfUnlockFlockSize = 20;
 
     // 区块网格：3×2 共 6 格，每格 80×70；区块定义资产由 Setup 生成到这个目录。
@@ -656,16 +655,11 @@ public static class AlphaFlockExpansionSceneSetup
         GameObject root = new GameObject("TutorialPen");
         SceneManager.MoveGameObjectToScene(root, scene);
 
-        // 出生点不再围栅栏：凑够 6 只即视为教程完成（TutorialPen.HasFences == false 的分支）。
-        List<FenceObstacle> fences = new List<FenceObstacle>();
-        if (TutorialPenFences)
-        {
-            GameObject fenceRoot = new GameObject("PenFences");
-            fenceRoot.transform.SetParent(root.transform, false);
-            fences = BuildFenceRing(fenceRoot.transform, fencePrefab, penDefinition, PenRect, PenFenceScale, "PenFence");
-            foreach (FenceObstacle fence in fences)
-                fence.SetRequiredCountOverride(TutorialRequiredFlockSize);
-        }
+        GameObject fenceRoot = new GameObject("PenFences");
+        fenceRoot.transform.SetParent(root.transform, false);
+        List<FenceObstacle> fences = BuildFenceRing(fenceRoot.transform, fencePrefab, penDefinition, PenRect, PenFenceScale, "PenFence");
+        foreach (FenceObstacle fence in fences)
+            fence.SetRequiredCountOverride(TutorialRequiredFlockSize);
 
         GameObject sheepRoot = new GameObject("TutorialSheep");
         sheepRoot.transform.SetParent(root.transform, false);
@@ -820,7 +814,6 @@ public static class AlphaFlockExpansionSceneSetup
         serialized.FindProperty("barrelPrefab").objectReferenceValue =
             LoadRequired<GameObject>(WorldObstaclePrefabBuilder.PrefabFolder + "/Obstacle_Barrel.prefab");
         serialized.FindProperty("fencePrefab").objectReferenceValue = fencePrefab;
-        serialized.FindProperty("houseFences").boolValue = true;
         serialized.FindProperty("fenceDefinition").objectReferenceValue = fenceDefinition;
         serialized.FindProperty("redChestDefinition").objectReferenceValue =
             LoadRequired<ObstacleDefinition>(WorldObstaclePrefabBuilder.RedChestDefinitionPath);
