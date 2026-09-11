@@ -14,6 +14,8 @@ public sealed class RoadHazard : MonoBehaviour
     [SerializeField] private Sprite truckSprite;
     [SerializeField, Min(0.1f)] private float truckSpeed = 16f;
     [SerializeField, Min(0f)] private float cooldown = 8f;
+    [Tooltip("卡车从踩上公路的那只羊沿路往回多少单位处出现（刚好在屏幕外），几乎是踩上去的一瞬间就撞过来。")]
+    [SerializeField, Min(0f)] private float truckLeadDistance = 14f;
 
     private TruckHazard activeTruck;
     private float nextTruckTime;
@@ -36,15 +38,17 @@ public sealed class RoadHazard : MonoBehaviour
             return;
 
         nextTruckTime = Time.time + cooldown;
-        // 随机从哪头开过来，卡车横跨整条路。
+        // 随机从哪头开过来，但不是从路的尽头出发：把踩上来的那只羊投影到路中线，
+        // 往回 truckLeadDistance 处生成，然后一路开到另一头。
+        Vector2 axis = (end - start).normalized;
+        float along = Mathf.Clamp(Vector2.Dot((Vector2)other.transform.position - start, axis), 0f, (end - start).magnitude);
+        Vector2 onRoad = start + axis * along;
         bool forward = Random.value < 0.5f;
-        Vector2 from = forward ? start : end;
-        Vector2 to = forward ? end : start;
-        Vector2 axis = (to - from).normalized;
-        // 起点在路外一点，让车"开进来"。
+        Vector2 heading = forward ? axis : -axis;
+        Vector2 to = (forward ? end : start) + heading * 6f;
         activeTruck = TruckHazard.Spawn(
-            from - axis * 6f,
-            to + axis * 6f,
+            onRoad - heading * truckLeadDistance,
+            to,
             width,
             truckSprite != null ? truckSprite : RuntimeSprites.Truck(),
             truckSpeed);

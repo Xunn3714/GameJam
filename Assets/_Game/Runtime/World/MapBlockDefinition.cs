@@ -3,24 +3,24 @@ using UnityEngine;
 
 public enum MapBlockRole
 {
-    /// 出生羊圈所在格，每局随机一格。
+    /// 出生羊圈所在格。
     Spawn,
 
-    /// 洪山宝通寺所在格，全图唯一。
-    Pagoda,
-
-    /// 贴外圈的出口格，外围围栏只在它的一条边上可撞开。
+    /// 贴外圈的出口格：它的一条外边没有公路和河流，是唯一能冲出去的地方。
     Exit,
 
     Forest,
     Plains,
+
+    /// 村庄：房屋区块（小房子或大房子，由定义决定）+ 固定红箱子 + 拖拉机。
     Village,
+
     Lake,
 }
 
 /// <summary>
-/// 一种地图区块模板。地图按 3×2 网格拼装，每格从这些定义里抽一份；
-/// 出生点 / 宝塔 / 出口是固定角色，其余按权重随机。
+/// 一种地图区块模板。地图按 3×2 网格拼装：出生点 / 出口 / 森林 / 平原 / 村庄各一格、剩余格子在森林 / 平原 / 村庄里随机，位置随机，
+/// 同一角色有多份定义时按权重抽一份；宝塔另外随机落在某一格之上。
 /// 散布物和地标数量按格配置，由 WorldDebrisSpawner / WorldLandmarkSpawner 读取。
 /// </summary>
 [CreateAssetMenu(fileName = "MapBlock", menuName = "Game/Map Block Definition")]
@@ -29,7 +29,7 @@ public sealed class MapBlockDefinition : ScriptableObject
     [SerializeField] private string blockId = "block.new";
     [SerializeField] private string displayName = "New Block";
     [SerializeField] private MapBlockRole role = MapBlockRole.Plains;
-    [Tooltip("随机槽位的抽取权重；出生点 / 宝塔 / 出口这类固定角色忽略此值。")]
+    [Tooltip("同一角色有多份定义（例如森林 A / B）时的抽取权重。")]
     [SerializeField, Min(0f)] private float weight = 1f;
 
     [Header("Debris")]
@@ -67,9 +67,7 @@ public sealed class MapBlockDefinition : ScriptableObject
 
     public static bool IsFixed(MapBlockRole blockRole)
     {
-        return blockRole == MapBlockRole.Spawn
-            || blockRole == MapBlockRole.Pagoda
-            || blockRole == MapBlockRole.Exit;
+        return blockRole == MapBlockRole.Spawn || blockRole == MapBlockRole.Exit;
     }
 
     private void OnValidate()

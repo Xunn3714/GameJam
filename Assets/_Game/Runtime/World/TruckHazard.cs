@@ -19,6 +19,9 @@ public sealed class TruckHazard : MonoBehaviour
     private int carriedCount;
 
     /// <summary>卡车抓走一只羊时触发，供关卡统计。</summary>
+    /// <summary>车身长度（世界单位）。大运.png 有效像素约占贴图高度的 82%，8 单位贴图 ≈ 6.5 单位可见车身。</summary>
+    private const float TruckLength = 8f;
+
     public static event Action<SheepMember> SheepTaken;
 
     public static TruckHazard Spawn(Vector2 from, Vector2 to, float laneWidth, Sprite sprite, float speed)
@@ -26,14 +29,19 @@ public sealed class TruckHazard : MonoBehaviour
         GameObject truckObject = new GameObject("SheepTruck");
         truckObject.transform.position = from;
         Vector2 direction = (to - from).normalized;
-        truckObject.transform.rotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg);
+        float heading = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+
+        // 占位贴图车头朝 +X；美术图（大运.png）是竖着画的俯视车，车头朝 -Y，需要多转 90°。
+        Vector2 spriteSize = sprite != null ? (Vector2)sprite.bounds.size : new Vector2(4f, 2f);
+        bool portrait = spriteSize.y > spriteSize.x;
+        truckObject.transform.rotation = Quaternion.Euler(0f, 0f, portrait ? heading + 90f : heading);
 
         SpriteRenderer renderer = truckObject.AddComponent<SpriteRenderer>();
         renderer.sprite = sprite;
         renderer.sortingOrder = 30;
-        // 车身长约 6 单位、宽占路面的 0.7。
-        Vector2 spriteSize = sprite != null ? sprite.bounds.size : new Vector2(4f, 2f);
-        float scale = 6f / Mathf.Max(0.1f, spriteSize.x);
+        // 车身长约 TruckLength 单位、宽不超过路面的 0.7。
+        float length = portrait ? spriteSize.y : spriteSize.x;
+        float scale = TruckLength / Mathf.Max(0.1f, length);
         truckObject.transform.localScale = Vector3.one * scale;
 
         Rigidbody2D truckBody = truckObject.AddComponent<Rigidbody2D>();
@@ -43,7 +51,10 @@ public sealed class TruckHazard : MonoBehaviour
 
         BoxCollider2D trigger = truckObject.AddComponent<BoxCollider2D>();
         trigger.isTrigger = true;
-        trigger.size = new Vector2(spriteSize.x, Mathf.Min(spriteSize.y, laneWidth * 0.7f / scale));
+        float laneLimit = laneWidth * 0.7f / scale;
+        trigger.size = portrait
+            ? new Vector2(Mathf.Min(spriteSize.x, laneLimit), spriteSize.y)
+            : new Vector2(spriteSize.x, Mathf.Min(spriteSize.y, laneLimit));
 
         TruckHazard truck = truckObject.AddComponent<TruckHazard>();
         truck.target = to;

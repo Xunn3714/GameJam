@@ -11,8 +11,8 @@ GameObject:
   - component: {fileID: 1428887932547662636}
   - component: {fileID: 8727328977818529079}
   - component: {fileID: 8704444653036034973}
-  - component: {fileID: 2544621789828145217}
-  - component: {fileID: 3821627512672657142}
+  - component: {fileID: 7493253985127837581}
+  - component: {fileID: 6231587399795877410}
   - component: {fileID: 3839112463712834672}
   - component: {fileID: 7486083753882040587}
   - component: {fileID: 8794002858962907804}
@@ -125,8 +125,8 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 0
---- !u!58 &2544621789828145217
-CircleCollider2D:
+--- !u!61 &7493253985127837581
+BoxCollider2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -159,10 +159,20 @@ CircleCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
-  m_Radius: 0.5
---- !u!58 &3821627512672657142
-CircleCollider2D:
+  m_Offset: {x: 0.06363636, y: -1}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0.5, y: 0.5}
+    oldSize: {x: 4, y: 3}
+    newSize: {x: 4, y: 3}
+    adaptiveTilingThreshold: 0.5
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  m_Size: {x: 0.81818175, y: 0.6363636}
+  m_EdgeRadius: 0
+--- !u!61 &6231587399795877410
+BoxCollider2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -195,8 +205,18 @@ CircleCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
-  m_Radius: 0.9090909
+  m_Offset: {x: 0.06363636, y: -1}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0.5, y: 0.5}
+    oldSize: {x: 4, y: 3}
+    newSize: {x: 4, y: 3}
+    adaptiveTilingThreshold: 0.5
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  m_Size: {x: 1.2272726, y: 1.0454545}
+  m_EdgeRadius: 0
 --- !u!114 &3839112463712834672
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -225,7 +245,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d587e570eb2d0a94b80a067f26ca425a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BreakableObstacleVFX
-  breakParticlesPrefab: {fileID: 8882286306400846765, guid: 85d4791578168dd449df7c2c5edbe9cf, type: 3}
   fragmentPrefab: {fileID: 4741890322465624849, guid: f73eb5294d78c2b46a8256df3c5e6803, type: 3}
   fragmentCount: 8
   spawnOffset: {x: 0, y: -0.5}

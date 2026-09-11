@@ -21,6 +21,8 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     [SerializeField] private WolfSpawner wolfSpawner;
     [SerializeField] private BorderFenceRing borderRing;
     [SerializeField] private TutorialPen tutorialPen;
+    [Tooltip("区块布局；有它时只有出口边算冲出草原（其他方向围栏外是公路 + 河）。留空会自己去场景里找。")]
+    [SerializeField] private MapLayoutBuilder mapLayout;
     [SerializeField] private AlphaBannerView bannerView;
     [Tooltip("结算页挂到这个 Canvas 下。")]
     [SerializeField] private Canvas uiCanvas;
@@ -620,10 +622,14 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
 
         Rect worldRect = borderRing.WorldRect;
         Vector2 center = flock.Center;
-        bool outside = center.x < worldRect.xMin - exitMargin
-            || center.x > worldRect.xMax + exitMargin
-            || center.y < worldRect.yMin - exitMargin
-            || center.y > worldRect.yMax + exitMargin;
+        if (mapLayout == null)
+            mapLayout = FindFirstObjectByType<MapLayoutBuilder>();
+        bool outside = mapLayout != null && mapLayout.ExitCell != null
+            ? mapLayout.IsBeyondExit(center, exitMargin)
+            : center.x < worldRect.xMin - exitMargin
+                || center.x > worldRect.xMax + exitMargin
+                || center.y < worldRect.yMin - exitMargin
+                || center.y > worldRect.yMax + exitMargin;
 
         if (!outside)
             return false;
@@ -641,7 +647,9 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
             wolfDirector.Run();
         cameraFollow?.Shake(fenceBreakShakeAmplitude * 0.6f, fenceBreakShakeDuration);
         sheepSpawner.SetExclusionZones();
-        ShowBanner("羊圈打开了！去草原上壮大羊群吧");
+        ShowBanner(tutorialPen != null && tutorialPen.HasFences
+            ? "羊圈打开了！去草原上壮大羊群吧"
+            : "凑够伙伴了！去草原上壮大羊群吧");
         RefreshObjectives();
     }
 

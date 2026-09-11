@@ -39,6 +39,8 @@ public sealed class TutorialPen : MonoBehaviour
         new Dictionary<TMP_Text, float>();
 
     public bool IsOpen => isOpen;
+    /// <summary>没有围栏时，凑够人数即视为"羊圈打开"，不需要撞栏。</summary>
+    public bool HasFences => fences != null && fences.Length > 0;
     public Rect PenRect => penRect;
     public IReadOnlyList<FenceObstacle> Fences => fences;
     public int RequiredFlockCount => EffectiveRequiredFlockCount;
@@ -72,6 +74,47 @@ public sealed class TutorialPen : MonoBehaviour
         Vector2 delta = center - penRect.center;
         transform.position += (Vector3)delta;
         penRect.position += delta;
+        // 围栏和教程羊都带 Rigidbody2D：只改父节点的 Transform，物理体会在下一步把旧位置写回去，
+        // 表现就是"羊圈留在原地"。这里把每个刚体的位置显式同步到新 Transform。
+        SyncBodies(transform);
+    }
+
+    /// <summary>把 root 下所有 Rigidbody2D 的物理位置同步到当前 Transform。</summary>
+    public static void SyncBodies(Transform root)
+    {
+        if (root == null)
+            return;
+
+        foreach (Rigidbody2D body in root.GetComponentsInChildren<Rigidbody2D>(true))
+        {
+            body.position = body.transform.position;
+            body.rotation = body.transform.eulerAngles.z;
+        }
+
+        Physics2D.SyncTransforms();
+    }
+
+    /// <summary>
+    /// 运行时拆掉羊圈围栏（场景里烘好的旧围栏也一起清），之后凑够人数即算教程完成。
+    /// 必须在 OnEnable 订阅之前或之后成对调用：这里先退订再销毁。
+    /// </summary>
+    public void RemoveFences()
+    {
+        foreach (FenceObstacle fence in fences)
+        {
+            if (fence == null)
+                continue;
+
+            if (fence.Breakable != null)
+                fence.Breakable.Broken -= HandleFenceBroken;
+            Destroy(fence.gameObject);
+        }
+
+        fences = Array.Empty<FenceObstacle>();
+        Transform fenceRoot = transform.Find("PenFences");
+        if (fenceRoot != null)
+            Destroy(fenceRoot.gameObject);
+        RefreshTutorialStage();
     }
 
     public void BindFlock(FlockController controller)
@@ -144,8 +187,13 @@ public sealed class TutorialPen : MonoBehaviour
 
     private void HandleMemberCountChanged(int memberCount)
     {
-        if (!isOpen && memberCount >= EffectiveRequiredFlockCount)
+        if (isOpen || memberCount < EffectiveRequiredFlockCount)
+            return;
+
+        if (HasFences)
             ShowStage(TutorialStage.Fence);
+        else
+            Open();
     }
 
     private void RefreshTutorialStage()
@@ -159,7 +207,10 @@ public sealed class TutorialPen : MonoBehaviour
 
         if (flock != null && flock.MemberCount >= EffectiveRequiredFlockCount)
         {
-            ShowStage(TutorialStage.Fence);
+            if (HasFences)
+                ShowStage(TutorialStage.Fence);
+            else if (Application.isPlaying)
+                Open();
             return;
         }
 
@@ -328,7 +379,9 @@ public sealed class TutorialPen : MonoBehaviour
         }
     }
 
-    private void HandleFenceBroken(BreakableObstacle obstacle)
+    private void HandleFenceBroken(BreakableObstacle obstacle) => Open();
+
+    private void Open()
     {
         if (isOpen)
             return;

@@ -75,6 +75,8 @@ public sealed class WorldLandmarkSpawner : MonoBehaviour
     [SerializeField] private Vector2 bigHouseColliderOffset = new(0f, -0.5f);
     [Tooltip("家具槽位 / 围栏角点到房屋中心的距离 = 碰撞盒半宽 + 这个边距；小房子约 3.6，大房子约 5。")]
     [SerializeField, Min(0f)] private float furnitureRingMargin = 2.2f;
+    [Tooltip("房屋旁是否再围一段 90° 羊圈围栏。")]
+    [SerializeField] private bool houseFences = true;
 
     /// <summary>找不到位置时依次放宽到的间距倍率。</summary>
     private static readonly float[] RelaxSteps = { 1f, 0.75f, 0.55f, 0.4f, 0.28f, 0.18f };
@@ -203,7 +205,7 @@ public sealed class WorldLandmarkSpawner : MonoBehaviour
             int houses = random.Next(definition.MinimumHouseCount, definition.MaximumHouseCount + 1);
             for (int index = 0; index < houses; index++)
             {
-                bool big = definition.AllowBigHouse && bigHouseSprite != null && bigHouseDefinition != null && random.Next(2) == 0;
+                bool big = definition.AllowBigHouse && bigHouseSprite != null && bigHouseDefinition != null;
                 if (TryFindPositionRelaxed(random, big ? 12f : 9f, region, out Vector2 position))
                     CreateHouseCompound(position, random, big);
             }
@@ -240,14 +242,20 @@ public sealed class WorldLandmarkSpawner : MonoBehaviour
             return;
         }
 
+        // 宝塔是结局地标，必须生成：找不到干净位置就在格子里随机挑一点，把脚下的散布物清掉硬放。
         if (!TryFindPositionRelaxed(random, pagodaClearance, region, out Vector2 position))
         {
-            Debug.LogWarning("找不到摆宝通寺的位置。", this);
-            return;
+            Rect inner = new(region.xMin + pagodaClearance, region.yMin + pagodaClearance,
+                Mathf.Max(1f, region.width - pagodaClearance * 2f), Mathf.Max(1f, region.height - pagodaClearance * 2f));
+            position = new Vector2(
+                inner.xMin + (float)random.NextDouble() * inner.width,
+                inner.yMin + (float)random.NextDouble() * inner.height);
+            occupied.Add(position);
+            Debug.Log("宝通寺没有找到空位，清掉脚下散布物后强制放置。", this);
         }
 
         // 塔脚下的花草石头清掉，免得这座唯一地标插在一堆杂物里。
-        ClearDebrisAround(position, pagodaClearRadius);
+        ClearDebrisAround(position, Mathf.Max(pagodaClearRadius, pagodaClearance * 0.5f));
 
         GameObject pagoda = CreateBlockedObject(
             "HongshanPagoda", position, pagodaScale, pagodaColliderSize, pagodaColliderOffset,
@@ -287,7 +295,7 @@ public sealed class WorldLandmarkSpawner : MonoBehaviour
         Vector2 vertical = corner % 2 == 0 ? Vector2.left : Vector2.right;
         Vector2 cornerPosition = position + horizontal * (ring - 0.2f) + vertical * (ring - 0.4f);
         List<Vector2> fencePositions = new();
-        for (int index = 0; index < 3; index++)
+        for (int index = 0; houseFences && index < 3; index++)
         {
             Vector2 horizontalPosition = cornerPosition - vertical * index * 2f;
             Vector2 verticalPosition = cornerPosition - horizontal * index * 2f;

@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a7e50b284e224723ac103ac0e692fd3a, type: 3}
+  m_Name: block.spawn
+  m_EditorClassIdentifier: Assembly-CSharp::MapBlockDefinition
+  blockId: block.spawn
+  displayName: "\u51FA\u751F\u70B9"
+  role: 0
+  weight: 1
+  debris:
+  - prefab: {fileID: 8373902696720333534, guid: 6fcb0cb10c422524884dc94954cf12e9, type: 3}
+    weight: 3
+    clearance: 1.6
+  - prefab: {fileID: 1189197347636829024, guid: 20bf4f02e8a5328469535438ed7cf1e1, type: 3}
+    weight: 3
+    clearance: 1.6
+  - prefab: {fileID: 7509237637596112746, guid: 484d06ace29f0c14e8ce288b69e774e8, type: 3}
+    weight: 2
+    clearance: 1.8
+  - prefab: {fileID: 5154007170766394758, guid: 0fd82638f6b24d545946e0a3abb7921f, type: 3}
+    weight: 1
+    clearance: 2.4
+  - prefab: {fileID: 573874487759409631, guid: aa56b98badc29d44b99a359db659e4e7, type: 3}
+    weight: 0.6
+    clearance: 2.8
+  - prefab: {fileID: 8458269541540090481, guid: 4d905793f721484448277c7ee8da7235, type: 3}
+    weight: 0.6
+    clearance: 2.6
+  debrisDensityPer100SquareUnits: 0.45
+  minimumHouseCount: 0
+  maximumHouseCount: 0
+  allowBigHouse: 0
+  fixedRedChestCount: 0
+  minimumTractorCount: 0
+  maximumTractorCount: 0
+  farmClusterCount: 0

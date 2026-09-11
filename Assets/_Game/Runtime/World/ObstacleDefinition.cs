@@ -14,6 +14,9 @@ public enum ObstacleBreakRule
 
     /// 围栏：羊群数量达到要求后才允许破坏。具体触发方式由围栏组件决定。
     RequireCountAndInteract,
+
+    /// 树：羊数达到 RequiredFlockCount 时踩上去就碎；不够时挡路，得用 E 冲刺撞（冲刺不看数量）。
+    ContactWhenCountElseInteract,
 }
 
 public enum ObstacleCountSource

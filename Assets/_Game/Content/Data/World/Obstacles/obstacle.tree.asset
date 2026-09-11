@@ -15,8 +15,8 @@ MonoBehaviour:
   obstacleId: obstacle.tree
   displayName: "\u5927\u6811"
   sizeCategory: 2
-  breakRule: 0
-  requiredFlockCount: 1
+  breakRule: 2
+  requiredFlockCount: 20
   requiredDashHits: 1
   countSource: 0
   brokenBehavior: 0

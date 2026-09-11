@@ -20,7 +20,7 @@ public sealed class MapLayoutTests
     [Test]
     public void SixCellsTileTheWorldRectExactly()
     {
-        MapCell[] cells = MapLayoutBuilder.Assign(new System.Random(1), 3, 2, World, FullPool(), 1);
+        MapCell[] cells = MapLayoutBuilder.Assign(new System.Random(1), 3, 2, World, FullPool());
 
         Assert.AreEqual(6, cells.Length);
         foreach (MapCell cell in cells)
@@ -39,15 +39,17 @@ public sealed class MapLayoutTests
     }
 
     [Test]
-    public void FixedRolesAppearExactlyOnceAndExitEdgeIsOnTheBoundary()
+    public void EveryRoleAppearsExactlyOnceAndExitEdgeIsOnTheBoundary()
     {
         for (int seed = 1; seed <= 50; seed++)
         {
-            MapCell[] cells = MapLayoutBuilder.Assign(new System.Random(seed), 3, 2, World, FullPool(), 1);
-            Assert.AreEqual(1, cells.Count(cell => cell.Role == MapBlockRole.Spawn), $"seed {seed}");
-            Assert.AreEqual(1, cells.Count(cell => cell.Role == MapBlockRole.Pagoda), $"seed {seed}");
-            Assert.AreEqual(1, cells.Count(cell => cell.Role == MapBlockRole.Exit), $"seed {seed}");
+            MapCell[] cells = MapLayoutBuilder.Assign(new System.Random(seed), 3, 2, World, FullPool());
             Assert.IsTrue(cells.All(cell => cell.Definition != null), $"seed {seed}: empty cell");
+            Assert.AreEqual(1, cells.Count(cell => cell.Role == MapBlockRole.Spawn), $"seed {seed}: spawn");
+            Assert.AreEqual(1, cells.Count(cell => cell.Role == MapBlockRole.Exit), $"seed {seed}: exit");
+            foreach (MapBlockRole role in MapLayoutBuilder.RequiredRoles)
+                Assert.GreaterOrEqual(cells.Count(cell => cell.Role == role), 1, $"seed {seed}: {role}");
+            Assert.IsTrue(cells.All(cell => MapLayoutBuilder.RequiredRoles.Contains(cell.Role)), $"seed {seed}: unexpected role");
 
             MapCell exit = cells.Single(cell => cell.Role == MapBlockRole.Exit);
             Assert.IsTrue(exit.ExitEdge.HasValue, $"seed {seed}: exit without edge");
@@ -65,18 +67,14 @@ public sealed class MapLayoutTests
     }
 
     [Test]
-    public void RandomSlotsAlwaysIncludeAtLeastOneVillage()
+    public void PagodaLandsOnExactlyOneNonSpawnCell()
     {
-        for (int seed = 1; seed <= 200; seed++)
+        for (int seed = 1; seed <= 100; seed++)
         {
-            MapCell[] cells = MapLayoutBuilder.Assign(new System.Random(seed), 3, 2, World, FullPool(), 1);
-            Assert.GreaterOrEqual(cells.Count(cell => cell.Role == MapBlockRole.Village), 1, $"seed {seed}");
-            Assert.IsTrue(
-                cells.All(cell => MapBlockDefinition.IsFixed(cell.Role)
-                    || cell.Role == MapBlockRole.Forest
-                    || cell.Role == MapBlockRole.Plains
-                    || cell.Role == MapBlockRole.Village),
-                $"seed {seed}: unexpected role");
+            MapCell[] cells = MapLayoutBuilder.Assign(new System.Random(seed), 3, 2, World, FullPool());
+            MapCell pagoda = cells.Single(cell => cell.HasPagoda);
+            Assert.AreNotEqual(MapBlockRole.Spawn, pagoda.Role, $"seed {seed}");
+            Assert.AreNotEqual(MapBlockRole.Exit, pagoda.Role, $"seed {seed}");
         }
     }
 
@@ -84,61 +82,55 @@ public sealed class MapLayoutTests
     public void SameSeedProducesSameLayout()
     {
         List<MapBlockDefinition> pool = FullPool();
-        MapCell[] first = MapLayoutBuilder.Assign(new System.Random(42), 3, 2, World, pool, 1);
-        MapCell[] second = MapLayoutBuilder.Assign(new System.Random(42), 3, 2, World, pool, 1);
+        MapCell[] first = MapLayoutBuilder.Assign(new System.Random(42), 3, 2, World, pool);
+        MapCell[] second = MapLayoutBuilder.Assign(new System.Random(42), 3, 2, World, pool);
 
         for (int index = 0; index < first.Length; index++)
         {
             Assert.AreEqual(first[index].Definition.BlockId, second[index].Definition.BlockId, $"cell {index}");
             Assert.AreEqual(first[index].ExitEdge, second[index].ExitEdge, $"cell {index}");
+            Assert.AreEqual(first[index].HasPagoda, second[index].HasPagoda, $"cell {index}");
         }
     }
 
     [Test]
-    public void ZeroWeightBlocksAreNeverDrawn()
+    public void ZeroWeightVariantsAreNeverDrawnWhenAnotherVariantExists()
     {
-        List<MapBlockDefinition> pool = new List<MapBlockDefinition>
-        {
-            Block("spawn", MapBlockRole.Spawn, 0f),
-            Block("pagoda", MapBlockRole.Pagoda, 0f),
-            Block("exit", MapBlockRole.Exit, 0f),
-            Block("forest_off", MapBlockRole.Forest, 0f),
-            Block("plains", MapBlockRole.Plains, 1f),
-            Block("village", MapBlockRole.Village, 1f),
-        };
+        List<MapBlockDefinition> pool = FullPool();
+        pool.Add(Block("forest_off", MapBlockRole.Forest, 0f));
 
         for (int seed = 1; seed <= 100; seed++)
         {
-            MapCell[] cells = MapLayoutBuilder.Assign(new System.Random(seed), 3, 2, World, pool, 1);
-            Assert.IsFalse(cells.Any(cell => cell.Role == MapBlockRole.Forest), $"seed {seed}");
+            MapCell[] cells = MapLayoutBuilder.Assign(new System.Random(seed), 3, 2, World, pool);
+            Assert.IsFalse(cells.Any(cell => cell.Definition.BlockId == "forest_off"), $"seed {seed}");
         }
     }
 
     [Test]
-    public void MissingFixedDefinitionsLeaveCellsEmptyInsteadOfThrowing()
+    public void MissingRoleDefinitionsLeaveCellsEmptyInsteadOfThrowing()
     {
         List<MapBlockDefinition> pool = new List<MapBlockDefinition>
         {
             Block("plains", MapBlockRole.Plains, 1f),
         };
 
-        MapCell[] cells = MapLayoutBuilder.Assign(new System.Random(7), 3, 2, World, pool, 1);
+        MapCell[] cells = MapLayoutBuilder.Assign(new System.Random(7), 3, 2, World, pool);
         Assert.AreEqual(6, cells.Length);
-        Assert.AreEqual(3, cells.Count(cell => cell.Definition == null));
-        Assert.AreEqual(3, cells.Count(cell => cell.Role == MapBlockRole.Plains && cell.Definition != null));
+        // 只有平原有定义：其余角色的格子留空，第六格补位可能也是平原。
+        Assert.GreaterOrEqual(cells.Count(cell => cell.Definition == null), 4);
+        Assert.IsTrue(cells.Where(cell => cell.Definition != null).All(cell => cell.Role == MapBlockRole.Plains));
     }
 
     private List<MapBlockDefinition> FullPool() => new List<MapBlockDefinition>
     {
-        Block("spawn", MapBlockRole.Spawn, 0f),
-        Block("pagoda", MapBlockRole.Pagoda, 0f),
-        Block("exit", MapBlockRole.Exit, 0f),
+        Block("spawn", MapBlockRole.Spawn, 1f),
+        Block("exit", MapBlockRole.Exit, 1f),
         Block("forest_a", MapBlockRole.Forest, 1f),
         Block("forest_b", MapBlockRole.Forest, 1f),
         Block("plains_a", MapBlockRole.Plains, 1f),
         Block("plains_b", MapBlockRole.Plains, 1f),
-        Block("village_a", MapBlockRole.Village, 1f),
-        Block("village_b", MapBlockRole.Village, 1f),
+        Block("village_small", MapBlockRole.Village, 1f),
+        Block("village_big", MapBlockRole.Village, 1f),
     };
 
     private MapBlockDefinition Block(string id, MapBlockRole role, float weight)

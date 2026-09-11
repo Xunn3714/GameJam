@@ -225,7 +225,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d587e570eb2d0a94b80a067f26ca425a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BreakableObstacleVFX
-  breakParticlesPrefab: {fileID: 8882286306400846765, guid: 85d4791578168dd449df7c2c5edbe9cf, type: 3}
   fragmentPrefab: {fileID: 4741890322465624849, guid: c273f39e30f131644a291e8c21e28472, type: 3}
   fragmentCount: 8
   spawnOffset: {x: 0, y: 0}
