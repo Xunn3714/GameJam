@@ -33,6 +33,8 @@ public sealed class WorldDebrisSpawner : MonoBehaviour
 
     [Header("References")]
     [SerializeField] private WorldSeed worldSeed;
+    [Tooltip("有区块布局时按每格的定义撒；为空则按下面的 entries 在整张 area 里撒。")]
+    [SerializeField] private MapLayoutBuilder layout;
 
     [Header("Debris")]
     [SerializeField] private DebrisEntry[] entries = Array.Empty<DebrisEntry>();
@@ -84,38 +86,61 @@ public sealed class WorldDebrisSpawner : MonoBehaviour
         Clear();
 
         System.Random random = worldSeed != null ? worldSeed.CreateRandom(2) : new System.Random();
-        float totalWeight = 0f;
-        foreach (DebrisEntry entry in entries)
-        {
-            if (entry != null && entry.Prefab != null)
-                totalWeight += entry.Weight;
-        }
-
-        if (totalWeight <= 0f)
-            return;
-
         GameObject root = new GameObject("WorldDebris");
         root.transform.SetParent(transform, false);
         debrisRoot = root.transform;
 
+        // 留边只对整张图的外圈生效；格子之间不留空带。
         Rect inner = new Rect(
             area.xMin + borderPadding,
             area.yMin + borderPadding,
             Mathf.Max(0f, area.width - borderPadding * 2f),
             Mathf.Max(0f, area.height - borderPadding * 2f));
 
-        int targetCount = Mathf.Min(
-            maximumCount,
-            Mathf.RoundToInt(inner.width * inner.height / 100f * densityPer100SquareUnits));
-
         Physics2D.SyncTransforms();
         placedPositions.Clear();
         placedClearances.Clear();
 
         int placed = 0;
-        for (int index = 0; index < targetCount; index++)
+        int target = 0;
+        if (layout != null && layout.Cells.Count > 0)
         {
-            DebrisEntry entry = PickEntry(random, totalWeight);
+            foreach (MapCell cell in layout.Cells)
+            {
+                MapBlockDefinition definition = cell.Definition;
+                if (definition == null || definition.Debris.Length == 0)
+                    continue;
+
+                Rect region = Intersect(cell.Rect, inner);
+                target += SpawnInArea(region, definition.Debris, definition.DebrisDensityPer100SquareUnits, random, ref placed);
+            }
+        }
+        else
+        {
+            target = SpawnInArea(inner, entries, densityPer100SquareUnits, random, ref placed);
+        }
+
+        Physics2D.SyncTransforms();
+        Debug.Log($"地图散布了 {placed} 个可破坏物（目标 {target}）。", this);
+    }
+
+    /// <summary>在一个矩形里按给定条目和密度撒；返回本区域的目标数量。</summary>
+    private int SpawnInArea(Rect inner, DebrisEntry[] set, float density, System.Random random, ref int placed)
+    {
+        float totalWeight = 0f;
+        foreach (DebrisEntry entry in set)
+        {
+            if (entry != null && entry.Prefab != null)
+                totalWeight += entry.Weight;
+        }
+
+        if (totalWeight <= 0f || inner.width <= 0f || inner.height <= 0f)
+            return 0;
+
+        int targetCount = Mathf.RoundToInt(inner.width * inner.height / 100f * density);
+        for (int index = 0; index < targetCount && placed < maximumCount; index++)
+        {
+            DebrisEntry entry = PickEntry(set, random, totalWeight);
             if (entry == null)
                 continue;
 
@@ -144,8 +169,16 @@ public sealed class WorldDebrisSpawner : MonoBehaviour
             }
         }
 
-        Physics2D.SyncTransforms();
-        Debug.Log($"地图散布了 {placed} 个可破坏物（目标 {targetCount}）。", this);
+        return targetCount;
+    }
+
+    private static Rect Intersect(Rect a, Rect b)
+    {
+        float xMin = Mathf.Max(a.xMin, b.xMin);
+        float yMin = Mathf.Max(a.yMin, b.yMin);
+        float xMax = Mathf.Min(a.xMax, b.xMax);
+        float yMax = Mathf.Min(a.yMax, b.yMax);
+        return new Rect(xMin, yMin, Mathf.Max(0f, xMax - xMin), Mathf.Max(0f, yMax - yMin));
     }
 
     public void Clear()
@@ -166,10 +199,10 @@ public sealed class WorldDebrisSpawner : MonoBehaviour
         }
     }
 
-    private DebrisEntry PickEntry(System.Random random, float totalWeight)
+    private static DebrisEntry PickEntry(DebrisEntry[] set, System.Random random, float totalWeight)
     {
         float roll = (float)random.NextDouble() * totalWeight;
-        foreach (DebrisEntry entry in entries)
+        foreach (DebrisEntry entry in set)
         {
             if (entry == null || entry.Prefab == null)
                 continue;

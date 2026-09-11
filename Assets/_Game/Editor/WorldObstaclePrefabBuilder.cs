@@ -38,6 +38,7 @@ public static class WorldObstaclePrefabBuilder
     public const string BorderFenceDefinitionPath = DefinitionFolder + "/obstacle.border_fence.asset";
     public const string RedChestDefinitionPath = DefinitionFolder + "/obstacle.red_chest.asset";
     public const string HouseDefinitionPath = DefinitionFolder + "/obstacle.house.asset";
+    public const string BigHouseDefinitionPath = DefinitionFolder + "/obstacle.big_house.asset";
 
     /// <summary>
     /// 美术组提供的散布物（Assets/Art/Debris 下的中文命名 PNG）。
@@ -92,7 +93,13 @@ public static class WorldObstaclePrefabBuilder
         new DebrisSpec { Id = "obstacle.haystack", DisplayName = "干草垛", PrefabName = "Obstacle_Haystack", Sprite = "干草垛", BrokenSprite = "干草垛（坏）", Size = ObstacleSizeCategory.Medium, Scale = 0.8f, SolidRadius = 0.7f, Weight = 1f, Clearance = 3.5f, RandomBreakClipPaths = VegetationBreakClipPaths, FragmentPrefabPath = CropFragmentPrefabPath, FragmentCount = 8 },
         new DebrisSpec { Id = "obstacle.rice_field", DisplayName = "稻田", PrefabName = "Obstacle_RiceField", Sprite = "稻田", BrokenSprite = "稻田（坏）", Size = ObstacleSizeCategory.Medium, Scale = 0.8f, SolidRadius = 0.75f, Weight = 1f, Clearance = 3.5f, RandomBreakClipPaths = VegetationBreakClipPaths, FragmentPrefabPath = CropFragmentPrefabPath, FragmentCount = 8 },
         new DebrisSpec { Id = "obstacle.tree", DisplayName = "大树", PrefabName = "Obstacle_Tree", Sprite = "大树（完整）", BrokenSprite = "大树（断）", Size = ObstacleSizeCategory.Large, Scale = 1.1f, SolidRadius = 0.55f, Weight = 2.5f, Clearance = 4.5f, BreakClipPath = WoodBreakClipPath, FragmentPrefabPath = WoodFragmentPrefabPath, FragmentCount = 8, FragmentSpawnOffset = new Vector2(0f, -0.5f), FragmentSpawnRadius = 0.2f },
+        // ---- 新美术（2304x1728 画布，完好 / 坏同画布）----
+        new DebrisSpec { Id = "obstacle.tree_2", DisplayName = "大树 II", PrefabName = "Obstacle_Tree2", Sprite = "大树2", BrokenSprite = "大树2（坏）", Size = ObstacleSizeCategory.Large, Scale = 0.35f, SolidRadius = 0.7f, Weight = 2.5f, Clearance = 6f, BreakClipPath = WoodBreakClipPath, FragmentPrefabPath = WoodFragmentPrefabPath, FragmentCount = 10, FragmentSpawnOffset = new Vector2(0f, -1.2f), FragmentSpawnRadius = 0.3f },
+        new DebrisSpec { Id = "obstacle.tractor", DisplayName = "拖拉机", PrefabName = "Obstacle_Tractor", Sprite = "拖拉机", BrokenSprite = "拖拉机（坏）", Size = ObstacleSizeCategory.Medium, Scale = 0.6f, SolidRadius = 0.7f, Weight = 0f, Clearance = 2.5f, BreakClipPath = StoneBreakClipPath, FragmentPrefabPath = RockFragmentPrefabPath, FragmentCount = 8, FragmentSpawnRadius = 0.3f },
     };
+
+    public const string Tree2PrefabPath = PrefabFolder + "/Obstacle_Tree2.prefab";
+    public const string TractorPrefabPath = PrefabFolder + "/Obstacle_Tractor.prefab";
 
     [MenuItem("Game Jam/World/Build Obstacle Prefabs")]
     public static void BuildAll()
@@ -104,6 +111,7 @@ public static class WorldObstaclePrefabBuilder
         Sprite fenceBroken = LoadSprite("obstacle_fence_broken_256x128");
         Sprite redChestBroken = LoadBuildingSprite("红箱子-坏");
         Sprite houseBroken = LoadBuildingSprite("房子--坏");
+        Sprite bigHouseBroken = LoadBuildingSprite("大房子-坏", optional: true);
 
         ObstacleDefinition fenceDefinition = GetOrCreateDefinition(
             FenceDefinitionPath, "obstacle.fence", "围栏", ObstacleSizeCategory.Medium,
@@ -121,6 +129,13 @@ public static class WorldObstaclePrefabBuilder
             HouseDefinitionPath, "obstacle.house", "房子", ObstacleSizeCategory.Large,
             ObstacleBreakRule.RequireCountAndInteract, 50, ObstacleCountSource.CurrentFlockCount,
             ObstacleBrokenBehavior.BecomeBackground, houseBroken);
+        if (bigHouseBroken != null)
+        {
+            GetOrCreateDefinition(
+                BigHouseDefinitionPath, "obstacle.big_house", "大房子", ObstacleSizeCategory.Large,
+                ObstacleBreakRule.RequireCountAndInteract, 50, ObstacleCountSource.CurrentFlockCount,
+                ObstacleBrokenBehavior.BecomeBackground, bigHouseBroken);
+        }
 
         BuildFencePrefab(
             FencePrefabPath,
@@ -511,20 +526,29 @@ public static class WorldObstaclePrefabBuilder
 
     private static Sprite LoadSprite(string fileName)
     {
-        string path = $"{DebrisFolder}/{fileName}.png";
-        Sprite sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
-        if (sprite == null)
-            Debug.LogWarning($"Sprite not found: {path}");
-        return sprite;
+        return LoadSpriteAt($"{DebrisFolder}/{fileName}.png", optional: false);
     }
 
-    public static Sprite LoadBuildingSprite(string fileName)
+    public static Sprite LoadBuildingSprite(string fileName, bool optional = false)
     {
-        string path = $"{BuildingFolder}/{fileName}.png";
+        return LoadSpriteAt($"{BuildingFolder}/{fileName}.png", optional);
+    }
+
+    /// <summary>
+    /// 统一按 Sprite / Single / 128 PPU 导入。spriteImportMode 也要检查：美术给的图被自动切成 Multiple 时，
+    /// LoadAssetAtPath&lt;Sprite&gt; 只会拿到第一个碎片（例如"房子--坏_0"是 27x25 的一块木屑），破坏后的图就完全不对。
+    /// </summary>
+    public static Sprite LoadSpriteAt(string path, bool optional)
+    {
+        if (System.IO.File.Exists(path) == false)
+        {
+            if (!optional)
+                Debug.LogWarning($"Sprite not found: {path}");
+            return null;
+        }
+
         AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
         TextureImporter importer = AssetImporter.GetAtPath(path) as TextureImporter;
-        // spriteImportMode 也要检查：美术给的图被自动切成 Multiple 时，LoadAssetAtPath<Sprite> 只会拿到
-        // 第一个碎片（例如"房子--坏_0"是 27x25 的一块木屑），破坏后的图就完全不对。
         if (importer != null
             && (importer.textureType != TextureImporterType.Sprite
                 || importer.spriteImportMode != SpriteImportMode.Single
@@ -539,8 +563,8 @@ public static class WorldObstaclePrefabBuilder
         }
 
         Sprite sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
-        if (sprite == null)
-            Debug.LogWarning($"Building sprite not found: {path}");
+        if (sprite == null && !optional)
+            Debug.LogWarning($"Sprite not found: {path}");
         return sprite;
     }
 

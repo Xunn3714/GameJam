@@ -29,6 +29,13 @@ public sealed class WorldLandmarkSpawner : MonoBehaviour
     [SerializeField] private ObstacleDefinition pagodaDefinition;
     [SerializeField] private Sprite pagodaSprite;
 
+    [Header("Map Blocks")]
+    [Tooltip("有区块布局时：宝塔限定宝塔格，房屋 / 拖拉机 / 固定红箱子 / 农田按每格定义生成；为空则按整张 area 的旧规则。")]
+    [SerializeField] private MapLayoutBuilder layout;
+    [SerializeField] private ObstacleDefinition bigHouseDefinition;
+    [SerializeField] private Sprite bigHouseSprite;
+    [SerializeField] private GameObject tractorPrefab;
+
     [Header("Area")]
     [SerializeField] private Rect area = new(-120f, -70f, 240f, 140f);
     [SerializeField, Min(0f)] private float borderPadding = 7f;
@@ -62,6 +69,12 @@ public sealed class WorldLandmarkSpawner : MonoBehaviour
     [SerializeField, Min(0.001f)] private float houseScale = 1.25f;
     [SerializeField] private Vector2 houseColliderSize = new(2.8f, 3f);
     [SerializeField] private Vector2 houseColliderOffset = new(-0.02f, 0.13f);
+    [Tooltip("大房子贴图 2304×1728、房体约 1650×950 px；0.5 倍后约 6.4×3.7 单位。")]
+    [SerializeField, Min(0.001f)] private float bigHouseScale = 0.5f;
+    [SerializeField] private Vector2 bigHouseColliderSize = new(5.6f, 2.2f);
+    [SerializeField] private Vector2 bigHouseColliderOffset = new(0f, -0.5f);
+    [Tooltip("家具槽位 / 围栏角点到房屋中心的距离 = 碰撞盒半宽 + 这个边距；小房子约 3.6，大房子约 5。")]
+    [SerializeField, Min(0f)] private float furnitureRingMargin = 2.2f;
 
     /// <summary>找不到位置时依次放宽到的间距倍率。</summary>
     private static readonly float[] RelaxSteps = { 1f, 0.75f, 0.55f, 0.4f, 0.28f, 0.18f };
@@ -96,13 +109,34 @@ public sealed class WorldLandmarkSpawner : MonoBehaviour
         root = new GameObject("WorldLandmarks").transform;
         root.SetParent(transform, false);
 
-        // 全图唯一的宝通寺，最先挑位置。
-        CreatePagoda(random);
-
         List<GameObject> createdChests = new();
-        for (int index = 0; index < redChestCount; index++)
+        bool useBlocks = layout != null && layout.Cells.Count > 0;
+
+        // 全图唯一的宝通寺，最先挑位置（有区块布局时限定在宝塔格）。
+        MapCell pagodaCell = useBlocks ? layout.PagodaCell : null;
+        CreatePagoda(random, pagodaCell != null ? pagodaCell.Rect : area);
+
+        if (useBlocks)
+            SpawnByBlocks(random, createdChests);
+
+        // 兜底：没有布局时全图随机；有布局时把固定箱子之外的余量撒到非村庄、非出生格。
+        int remainingChests = redChestCount - createdChests.Count;
+        List<Rect> chestRegions = new();
+        if (useBlocks)
         {
-            if (TryFindPosition(random, redChestClearance, out Vector2 position))
+            foreach (MapCell cell in layout.Cells)
+            {
+                if (cell.Definition != null && cell.Definition.FixedRedChestCount == 0 && cell.Role != MapBlockRole.Spawn)
+                    chestRegions.Add(cell.Rect);
+            }
+        }
+        if (chestRegions.Count == 0)
+            chestRegions.Add(area);
+
+        for (int index = 0; index < remainingChests; index++)
+        {
+            Rect region = chestRegions[random.Next(chestRegions.Count)];
+            if (TryFindPositionRelaxed(random, redChestClearance, region, out Vector2 position))
                 createdChests.Add(CreateRedChest(position));
         }
         if (createdChests.Count < redChestCount)
@@ -137,13 +171,16 @@ public sealed class WorldLandmarkSpawner : MonoBehaviour
                 this);
         }
 
+        if (useBlocks)
+            return;
+
         int houseCount = random.Next(
             Mathf.Max(1, minimumHouseCount),
             Mathf.Max(minimumHouseCount, maximumHouseCount) + 1);
         for (int index = 0; index < houseCount; index++)
         {
             if (TryFindPosition(random, 9f, out Vector2 position))
-                CreateHouseCompound(position, random);
+                CreateHouseCompound(position, random, false);
         }
 
         for (int index = 0; index < farmClusterCount; index++)
@@ -153,8 +190,49 @@ public sealed class WorldLandmarkSpawner : MonoBehaviour
         }
     }
 
+    /// <summary>按每格的 MapBlockDefinition 生成房屋区块、拖拉机、固定红箱子和农田。</summary>
+    private void SpawnByBlocks(System.Random random, List<GameObject> createdChests)
+    {
+        foreach (MapCell cell in layout.Cells)
+        {
+            MapBlockDefinition definition = cell.Definition;
+            if (definition == null)
+                continue;
+
+            Rect region = cell.Rect;
+            int houses = random.Next(definition.MinimumHouseCount, definition.MaximumHouseCount + 1);
+            for (int index = 0; index < houses; index++)
+            {
+                bool big = definition.AllowBigHouse && bigHouseSprite != null && bigHouseDefinition != null && random.Next(2) == 0;
+                if (TryFindPositionRelaxed(random, big ? 12f : 9f, region, out Vector2 position))
+                    CreateHouseCompound(position, random, big);
+            }
+
+            int tractors = tractorPrefab != null
+                ? random.Next(definition.MinimumTractorCount, definition.MaximumTractorCount + 1)
+                : 0;
+            for (int index = 0; index < tractors; index++)
+            {
+                if (TryFindPositionRelaxed(random, 3f, region, out Vector2 position))
+                    CreatePrefab(tractorPrefab, position, "Tractor");
+            }
+
+            for (int index = 0; index < definition.FixedRedChestCount; index++)
+            {
+                if (TryFindPositionRelaxed(random, redChestClearance, region, out Vector2 position))
+                    createdChests.Add(CreateRedChest(position));
+            }
+
+            for (int index = 0; index < definition.FarmClusterCount; index++)
+            {
+                if (TryFindPositionRelaxed(random, 5f, region, out Vector2 position))
+                    CreateFarmCluster(position, random);
+            }
+        }
+    }
+
     /// <summary>洪山宝通寺：全图有且仅有一座。复用围栏的 FenceObstacle 判定，只是门槛是 150 只羊。</summary>
-    private void CreatePagoda(System.Random random)
+    private void CreatePagoda(System.Random random, Rect region)
     {
         if (pagodaDefinition == null || pagodaSprite == null)
         {
@@ -162,7 +240,7 @@ public sealed class WorldLandmarkSpawner : MonoBehaviour
             return;
         }
 
-        if (!TryFindPositionRelaxed(random, pagodaClearance, out Vector2 position))
+        if (!TryFindPositionRelaxed(random, pagodaClearance, region, out Vector2 position))
         {
             Debug.LogWarning("找不到摆宝通寺的位置。", this);
             return;
@@ -186,17 +264,28 @@ public sealed class WorldLandmarkSpawner : MonoBehaviour
             redChestDefinition, redChestSprite);
     }
 
-    private void CreateHouseCompound(Vector2 position, System.Random random)
+    /// <summary>房屋区块：房子（小 / 大）+ 一段 90° 羊圈围栏 + 干草垛 / 木桶。围栏和家具的距离按房屋碰撞盒推导。</summary>
+    private void CreateHouseCompound(Vector2 position, System.Random random, bool bigHouse)
     {
+        Vector2 colliderSize = bigHouse ? bigHouseColliderSize : houseColliderSize;
+        float ring = colliderSize.x * 0.5f + furnitureRingMargin;
+
+        // 大房子占地比周围散布物大得多，先把脚下的花草石头清掉，避免压在一起。
+        if (bigHouse)
+            ClearDebrisAround(position, ring + 1.5f);
+
         CreateBlockedObject(
-            "House", position, houseScale, houseColliderSize, houseColliderOffset,
-            houseDefinition, houseSprite);
+            bigHouse ? "BigHouse" : "House", position,
+            bigHouse ? bigHouseScale : houseScale, colliderSize,
+            bigHouse ? bigHouseColliderOffset : houseColliderOffset,
+            bigHouse ? bigHouseDefinition : houseDefinition,
+            bigHouse ? bigHouseSprite : houseSprite);
 
         // 随机选一个角，围一段 90° 羊圈栅栏；不注册 TutorialPen，因此没有教程提示。
         int corner = random.Next(4);
         Vector2 horizontal = corner < 2 ? Vector2.up : Vector2.down;
         Vector2 vertical = corner % 2 == 0 ? Vector2.left : Vector2.right;
-        Vector2 cornerPosition = position + horizontal * 3.4f + vertical * 3.2f;
+        Vector2 cornerPosition = position + horizontal * (ring - 0.2f) + vertical * (ring - 0.4f);
         List<Vector2> fencePositions = new();
         for (int index = 0; index < 3; index++)
         {
@@ -210,23 +299,28 @@ public sealed class WorldLandmarkSpawner : MonoBehaviour
 
         // 家具从房屋四周的离散位置中抽取，并避开本栋围栏和已放置家具。
         // 这样仍保留随机感，但不会因随机角度相近而叠在一起。
-        List<Vector2> furnitureSlots = CreateFurnitureSlots(position);
+        List<Vector2> furnitureSlots = CreateFurnitureSlots(position, ring);
         RemoveSlotsNear(furnitureSlots, fencePositions, 1.65f);
         PlaceFurniture(haystackPrefab, "HouseHaystack", random.Next(1, 3), 2.25f, furnitureSlots, random);
         PlaceFurniture(barrelPrefab, "HouseBarrel", random.Next(0, 4), 1.8f, furnitureSlots, random);
     }
 
-    private static List<Vector2> CreateFurnitureSlots(Vector2 center) => new()
+    /// <summary>8 个家具槽位；ring = 3.6 时即原来小房子的固定坐标。</summary>
+    private static List<Vector2> CreateFurnitureSlots(Vector2 center, float ring)
     {
-        center + new Vector2(-3.8f, -2.7f),
-        center + new Vector2(0f, -3.1f),
-        center + new Vector2(3.8f, -2.7f),
-        center + new Vector2(-3.6f, 0f),
-        center + new Vector2(3.6f, 0f),
-        center + new Vector2(-3.8f, 2.7f),
-        center + new Vector2(0f, 3.1f),
-        center + new Vector2(3.8f, 2.7f)
-    };
+        float scale = ring / 3.6f;
+        return new List<Vector2>
+        {
+            center + new Vector2(-3.8f, -2.7f) * scale,
+            center + new Vector2(0f, -3.1f) * scale,
+            center + new Vector2(3.8f, -2.7f) * scale,
+            center + new Vector2(-3.6f, 0f) * scale,
+            center + new Vector2(3.6f, 0f) * scale,
+            center + new Vector2(-3.8f, 2.7f) * scale,
+            center + new Vector2(0f, 3.1f) * scale,
+            center + new Vector2(3.8f, 2.7f) * scale
+        };
+    }
 
     private void PlaceFurniture(
         GameObject prefab,
@@ -341,9 +435,14 @@ public sealed class WorldLandmarkSpawner : MonoBehaviour
     /// </summary>
     private bool TryFindPositionRelaxed(System.Random random, float clearance, out Vector2 position)
     {
+        return TryFindPositionRelaxed(random, clearance, area, out position);
+    }
+
+    private bool TryFindPositionRelaxed(System.Random random, float clearance, Rect region, out Vector2 position)
+    {
         foreach (float factor in RelaxSteps)
         {
-            if (TryFindPosition(random, Mathf.Max(2.5f, clearance * factor), out position))
+            if (TryFindPosition(random, Mathf.Max(2.5f, clearance * factor), region, out position))
                 return true;
         }
 
@@ -375,7 +474,18 @@ public sealed class WorldLandmarkSpawner : MonoBehaviour
 
     private bool TryFindPosition(System.Random random, float clearance, out Vector2 position)
     {
-        Rect inner = new(area.xMin + borderPadding, area.yMin + borderPadding, area.width - borderPadding * 2f, area.height - borderPadding * 2f);
+        return TryFindPosition(random, clearance, area, out position);
+    }
+
+    /// <summary>在 region 与"整图内缩 borderPadding"的交集里找位置；留边只对外圈生效，格子之间不留空带。</summary>
+    private bool TryFindPosition(System.Random random, float clearance, Rect region, out Vector2 position)
+    {
+        Rect world = new(area.xMin + borderPadding, area.yMin + borderPadding, area.width - borderPadding * 2f, area.height - borderPadding * 2f);
+        Rect inner = new(
+            Mathf.Max(region.xMin, world.xMin),
+            Mathf.Max(region.yMin, world.yMin),
+            Mathf.Max(0f, Mathf.Min(region.xMax, world.xMax) - Mathf.Max(region.xMin, world.xMin)),
+            Mathf.Max(0f, Mathf.Min(region.yMax, world.yMax) - Mathf.Max(region.yMin, world.yMin)));
         for (int attempt = 0; attempt < 100; attempt++)
         {
             Vector2 candidate = new(inner.xMin + (float)random.NextDouble() * inner.width, inner.yMin + (float)random.NextDouble() * inner.height);

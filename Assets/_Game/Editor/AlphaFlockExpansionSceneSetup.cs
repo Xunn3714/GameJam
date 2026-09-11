@@ -20,6 +20,9 @@ public static class AlphaFlockExpansionSceneSetup
     private const string ScenePath = SceneFolder + "/AlphaFlockExpansion.unity";
     private const string SceneTemplatePath = "Assets/Settings/Scenes/URP2DSceneTemplate.unity";
     private const string GrassBackgroundPath = "Assets/Art/WorldSprites/Tiles/草原_背景.png";
+    private const string RiverTilePath = "Assets/Art/WorldSprites/Tiles/草原_河.png";
+    private const string TruckSpritePath = "Assets/Art/WorldSprites/大运.png";
+    private const string ArrowSpritePath = "Assets/Art/WorldSprites/箭头.png";
     private const string WarningRectAssetPath = "Assets/_Game/Content/Art/Prototype/WolfWarningRect.asset";
     private const string SheepMemberPrefabPath = "Assets/_Game/Content/Perfabs/Sheep/SheepMember.prefab";
     private const string RecruitableSheepPrefabPath = "Assets/_Game/Content/Perfabs/Sheep/RecruitableSheep.prefab";
@@ -82,45 +85,90 @@ public static class AlphaFlockExpansionSceneSetup
     private const int MapColumns = 3;
     private const int MapRows = 2;
 
-    private readonly struct BlockSpec
+    /// <summary>散布物条目：DebrisSpecs 里的 Id + 本格权重（间距沿用 spec）。</summary>
+    private readonly struct DebrisPick
     {
-        public BlockSpec(string file, string id, string displayName, MapBlockRole role, float weight = 1f)
-        {
-            File = file;
-            Id = id;
-            DisplayName = displayName;
-            Role = role;
-            Weight = weight;
-        }
-
-        public string File { get; }
+        public DebrisPick(string id, float weight) { Id = id; Weight = weight; }
         public string Id { get; }
-        public string DisplayName { get; }
-        public MapBlockRole Role { get; }
         public float Weight { get; }
     }
 
-    private static readonly BlockSpec[] BlockSpecs =
+    private readonly struct BlockSpec
     {
-        new BlockSpec("block.spawn", "block.spawn", "出生点", MapBlockRole.Spawn, 0f),
-        new BlockSpec("block.pagoda", "block.pagoda", "宝通寺", MapBlockRole.Pagoda, 0f),
-        new BlockSpec("block.exit", "block.exit", "出口", MapBlockRole.Exit, 0f),
-        new BlockSpec("block.forest_a", "block.forest_a", "森林 A", MapBlockRole.Forest),
-        new BlockSpec("block.forest_b", "block.forest_b", "森林 B", MapBlockRole.Forest),
-        new BlockSpec("block.plains_grass", "block.plains_grass", "平原·草", MapBlockRole.Plains),
-        new BlockSpec("block.plains_rock", "block.plains_rock", "平原·石", MapBlockRole.Plains),
-        new BlockSpec("block.village_a", "block.village_a", "村庄 A", MapBlockRole.Village),
-        new BlockSpec("block.village_b", "block.village_b", "村庄 B", MapBlockRole.Village),
+        public BlockSpec(
+            string file, string displayName, MapBlockRole role, float weight,
+            float density, DebrisPick[] debris,
+            int houseMin = 0, int houseMax = 0, int chests = 0, int tractorMin = 0, int tractorMax = 0, int farms = 0)
+        {
+            File = file;
+            DisplayName = displayName;
+            Role = role;
+            Weight = weight;
+            Density = density;
+            Debris = debris;
+            HouseMin = houseMin;
+            HouseMax = houseMax;
+            Chests = chests;
+            TractorMin = tractorMin;
+            TractorMax = tractorMax;
+            Farms = farms;
+        }
+
+        public string File { get; }
+        public string DisplayName { get; }
+        public MapBlockRole Role { get; }
+        public float Weight { get; }
+        public float Density { get; }
+        public DebrisPick[] Debris { get; }
+        public int HouseMin { get; }
+        public int HouseMax { get; }
+        public int Chests { get; }
+        public int TractorMin { get; }
+        public int TractorMax { get; }
+        public int Farms { get; }
+    }
+
+    private static readonly DebrisPick[] SparseGrass =
+    {
+        new DebrisPick("obstacle.grass_1", 3f), new DebrisPick("obstacle.grass_2", 3f), new DebrisPick("obstacle.flower", 2f),
     };
 
-    private static readonly Vector2[] TutorialSheepPositions =
+    private static readonly DebrisPick[] ForestA =
     {
-        new Vector2(-6.8f, 3.3f),
-        new Vector2(-2.6f, 3.4f),
-        new Vector2(4.8f, 3.4f),
-        new Vector2(7.2f, 0.4f),
-        new Vector2(0.5f, -3.6f),
-        new Vector2(-3.8f, -3.4f)
+        new DebrisPick("obstacle.tree", 4f), new DebrisPick("obstacle.tree_2", 3f), new DebrisPick("obstacle.rock", 1.5f),
+        new DebrisPick("obstacle.bush_1", 2f), new DebrisPick("obstacle.bush_2", 2f), new DebrisPick("obstacle.grass_3", 1f),
+    };
+
+    private static readonly DebrisPick[] ForestB =
+    {
+        new DebrisPick("obstacle.tree", 3f), new DebrisPick("obstacle.tree_2", 4f), new DebrisPick("obstacle.rock", 1f),
+        new DebrisPick("obstacle.pebble", 1f), new DebrisPick("obstacle.bush_1", 2f), new DebrisPick("obstacle.flower_cluster", 1f),
+    };
+
+    private static readonly DebrisPick[] PlainsGrass =
+    {
+        new DebrisPick("obstacle.grass_1", 6f), new DebrisPick("obstacle.grass_2", 6f), new DebrisPick("obstacle.grass_3", 6f),
+        new DebrisPick("obstacle.flower", 5f), new DebrisPick("obstacle.flower_daisy", 5f), new DebrisPick("obstacle.flower_cluster", 3f),
+        new DebrisPick("obstacle.bush_1", 2f), new DebrisPick("obstacle.bush_2", 2f),
+    };
+
+    private static readonly DebrisPick[] PlainsRock =
+    {
+        new DebrisPick("obstacle.pebble", 5f), new DebrisPick("obstacle.rock", 3f), new DebrisPick("obstacle.grass_1", 2f),
+        new DebrisPick("obstacle.barrel", 0.5f),
+    };
+
+    private static readonly BlockSpec[] BlockSpecs =
+    {
+        new BlockSpec("block.spawn", "出生点", MapBlockRole.Spawn, 0f, 0.25f, SparseGrass),
+        new BlockSpec("block.pagoda", "宝通寺", MapBlockRole.Pagoda, 0f, 0.5f, PlainsGrass),
+        new BlockSpec("block.exit", "出口", MapBlockRole.Exit, 0f, 0.4f, SparseGrass),
+        new BlockSpec("block.forest_a", "森林 A", MapBlockRole.Forest, 1f, 2.5f, ForestA),
+        new BlockSpec("block.forest_b", "森林 B", MapBlockRole.Forest, 1f, 3f, ForestB),
+        new BlockSpec("block.plains_grass", "平原·草", MapBlockRole.Plains, 1f, 0.9f, PlainsGrass, farms: 3),
+        new BlockSpec("block.plains_rock", "平原·石", MapBlockRole.Plains, 1f, 0.9f, PlainsRock, farms: 2),
+        new BlockSpec("block.village_a", "村庄 A", MapBlockRole.Village, 1f, 0.3f, SparseGrass, houseMin: 3, houseMax: 4, chests: 3, tractorMin: 1, tractorMax: 2),
+        new BlockSpec("block.village_b", "村庄 B", MapBlockRole.Village, 1f, 0.3f, SparseGrass, houseMin: 2, houseMax: 3, chests: 3, tractorMin: 1, tractorMax: 2),
     };
 
     private static readonly string[] ManagedRootNames =
@@ -438,15 +486,24 @@ public static class AlphaFlockExpansionSceneSetup
         }
     }
 
-    /// <summary>草原背景需要 Full Rect 网格才能平铺；不是的话改导入设置后重新导入。</summary>
     private static Sprite LoadGrassSprite()
     {
-        TextureImporter importer = AssetImporter.GetAtPath(GrassBackgroundPath) as TextureImporter;
-        if (importer == null)
-        {
+        Sprite grass = LoadTiledSprite(GrassBackgroundPath, optional: false);
+        if (grass == null)
             Debug.LogWarning($"找不到草原背景 {GrassBackgroundPath}，改用纯色。");
+        return grass;
+    }
+
+    /// <summary>可平铺的地面贴图（草地 / 河流）需要 Sprite + Full Rect 网格 + Repeat；不是的话改导入设置后重新导入。</summary>
+    private static Sprite LoadTiledSprite(string path, bool optional)
+    {
+        if (!System.IO.File.Exists(path))
             return null;
-        }
+
+        AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
+        TextureImporter importer = AssetImporter.GetAtPath(path) as TextureImporter;
+        if (importer == null)
+            return null;
 
         bool changed = false;
         if (importer.textureType != TextureImporterType.Sprite)
@@ -470,12 +527,21 @@ public static class AlphaFlockExpansionSceneSetup
             changed = true;
         }
 
+        if (importer.spriteImportMode != SpriteImportMode.Single)
+        {
+            importer.spriteImportMode = SpriteImportMode.Single;
+            changed = true;
+        }
+
         if (changed)
         {
             importer.SaveAndReimport();
         }
 
-        return AssetDatabase.LoadAssetAtPath<Sprite>(GrassBackgroundPath);
+        Sprite sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
+        if (sprite == null && !optional)
+            Debug.LogWarning($"Tiled sprite not found: {path}");
+        return sprite;
     }
 
     private static WorldSeed CreateWorldSeed(Scene scene)
@@ -782,7 +848,25 @@ public static class AlphaFlockExpansionSceneSetup
         poolProperty.arraySize = pool.Length;
         for (int index = 0; index < pool.Length; index++)
             poolProperty.GetArrayElementAtIndex(index).objectReferenceValue = pool[index];
+        serialized.FindProperty("riverSprite").objectReferenceValue = LoadTiledSprite(RiverTilePath, optional: true);
+        serialized.FindProperty("truckSprite").objectReferenceValue = WorldObstaclePrefabBuilder.LoadSpriteAt(TruckSpritePath, optional: true);
+        serialized.FindProperty("arrowSprite").objectReferenceValue = WorldObstaclePrefabBuilder.LoadSpriteAt(ArrowSpritePath, optional: true);
         serialized.ApplyModifiedPropertiesWithoutUndo();
+
+        // 两个撒点器改为按格生成；大房子 / 拖拉机没有美术时保持为空，运行时自动退回小房子 / 不放拖拉机。
+        SerializedObject debrisSerialized = new SerializedObject(debris);
+        debrisSerialized.FindProperty("layout").objectReferenceValue = builder;
+        debrisSerialized.ApplyModifiedPropertiesWithoutUndo();
+
+        SerializedObject landmarkSerialized = new SerializedObject(landmarks);
+        landmarkSerialized.FindProperty("layout").objectReferenceValue = builder;
+        landmarkSerialized.FindProperty("bigHouseDefinition").objectReferenceValue =
+            AssetDatabase.LoadAssetAtPath<ObstacleDefinition>(WorldObstaclePrefabBuilder.BigHouseDefinitionPath);
+        landmarkSerialized.FindProperty("bigHouseSprite").objectReferenceValue =
+            WorldObstaclePrefabBuilder.LoadBuildingSprite("大房子", optional: true);
+        landmarkSerialized.FindProperty("tractorPrefab").objectReferenceValue =
+            AssetDatabase.LoadAssetAtPath<GameObject>(WorldObstaclePrefabBuilder.TractorPrefabPath);
+        landmarkSerialized.ApplyModifiedPropertiesWithoutUndo();
         return builder;
     }
 
@@ -802,10 +886,33 @@ public static class AlphaFlockExpansionSceneSetup
             }
 
             SerializedObject serialized = new SerializedObject(definition);
-            serialized.FindProperty("blockId").stringValue = spec.Id;
+            serialized.FindProperty("blockId").stringValue = spec.File;
             serialized.FindProperty("displayName").stringValue = spec.DisplayName;
             serialized.FindProperty("role").enumValueIndex = (int)spec.Role;
             serialized.FindProperty("weight").floatValue = spec.Weight;
+            serialized.FindProperty("debrisDensityPer100SquareUnits").floatValue = spec.Density;
+            SerializedProperty debris = serialized.FindProperty("debris");
+            debris.arraySize = 0;
+            foreach (DebrisPick pick in spec.Debris)
+            {
+                WorldObstaclePrefabBuilder.DebrisSpec debrisSpec = WorldObstaclePrefabBuilder.DebrisSpecs
+                    .FirstOrDefault(item => item.Id == pick.Id);
+                GameObject prefab = debrisSpec != null ? AssetDatabase.LoadAssetAtPath<GameObject>(debrisSpec.PrefabPath) : null;
+                if (prefab == null)
+                    continue;   // 对应美术还没到（例如新树），这条先跳过。
+
+                debris.arraySize++;
+                SerializedProperty entry = debris.GetArrayElementAtIndex(debris.arraySize - 1);
+                entry.FindPropertyRelative("prefab").objectReferenceValue = prefab;
+                entry.FindPropertyRelative("weight").floatValue = pick.Weight;
+                entry.FindPropertyRelative("clearance").floatValue = debrisSpec.Clearance;
+            }
+            serialized.FindProperty("minimumHouseCount").intValue = spec.HouseMin;
+            serialized.FindProperty("maximumHouseCount").intValue = spec.HouseMax;
+            serialized.FindProperty("fixedRedChestCount").intValue = spec.Chests;
+            serialized.FindProperty("minimumTractorCount").intValue = spec.TractorMin;
+            serialized.FindProperty("maximumTractorCount").intValue = spec.TractorMax;
+            serialized.FindProperty("farmClusterCount").intValue = spec.Farms;
             serialized.ApplyModifiedPropertiesWithoutUndo();
             result.Add(definition);
         }

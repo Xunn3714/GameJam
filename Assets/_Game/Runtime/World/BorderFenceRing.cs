@@ -24,13 +24,26 @@ public sealed class BorderFenceRing : MonoBehaviour
         fences = ringFences ?? Array.Empty<FenceObstacle>();
     }
 
-    /// <summary>把冲出地图的门槛下发到每一段围栏。</summary>
+    private bool hasBreakableSpan;
+    private Rect breakableSpan;
+
+    /// <summary>只有落在这个矩形里的围栏段才接受门槛，其余段锁死（出口区块用）。要在 ApplyRequiredCount 之前调用。</summary>
+    public void SetBreakableSpan(Rect span)
+    {
+        hasBreakableSpan = true;
+        breakableSpan = span;
+    }
+
+    /// <summary>把冲出地图的门槛下发到每一段围栏；出口范围之外的段用 int.MaxValue 锁死。</summary>
     public void ApplyRequiredCount(int count)
     {
         foreach (FenceObstacle fence in fences)
         {
-            if (fence != null)
-                fence.SetRequiredCountOverride(count);
+            if (fence == null)
+                continue;
+
+            bool breakable = !hasBreakableSpan || breakableSpan.Contains((Vector2)fence.transform.position);
+            fence.SetRequiredCountOverride(breakable ? count : int.MaxValue);
         }
     }
 
