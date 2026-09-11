@@ -272,18 +272,15 @@ public sealed class DestructionScoreHudView : MonoBehaviour
 
     private static float FontSizeFor(int score)
     {
-        if (score >= 100) return 38f;
-        if (score >= 50) return 34f;
-        if (score >= 15) return 30f;
-        if (score >= 5) return 27f;
+        if (score >= 50) return 38f;
+        if (score >= 6) return 30f;
         return 24f;
     }
 
     private static Color ColorFor(int score)
     {
-        if (score >= 100) return new Color(1f, 0.54f, 0.30f, 0.92f);
-        if (score >= 50) return new Color(1f, 0.68f, 0.34f, 0.9f);
-        if (score >= 15) return new Color(1f, 0.84f, 0.48f, 0.88f);
-        return new Color(1f, 0.94f, 0.72f, 0.86f);
+        if (score >= 50) return new Color32(255, 75, 60, 255);
+        if (score >= 6) return new Color32(255, 155, 45, 255);
+        return new Color32(255, 225, 70, 255);
     }
 }
