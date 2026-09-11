@@ -133,6 +133,44 @@ public sealed class AlphaUiIntegrationTests
     }
 
     [Test]
+    public void OpeningPausePreservesOpenTaskPanelState()
+    {
+        GameObject pausePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(PauseSystemPrefabPath);
+        GameObject taskPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(TaskSystemPrefabPath);
+        GameObject pauseInstance = Object.Instantiate(pausePrefab);
+        GameObject taskInstance = Object.Instantiate(taskPrefab);
+        try
+        {
+            PauseManager manager = pauseInstance.GetComponent<PauseManager>();
+            TaskPanelToggle taskPanelToggle = taskInstance.GetComponentInChildren<TaskPanelToggle>(true);
+            Assert.That(taskPanelToggle, Is.Not.Null);
+
+            SerializedObject pauseData = new SerializedObject(manager);
+            pauseData.FindProperty("taskPanelToggle").objectReferenceValue = taskPanelToggle;
+            pauseData.ApplyModifiedPropertiesWithoutUndo();
+
+            taskPanelToggle.OpenTaskPanel();
+            Assert.That(taskPanelToggle.IsOpen, Is.True);
+
+            manager.OpenPause();
+            Assert.That(manager.IsPaused, Is.True);
+            Assert.That(taskPanelToggle.gameObject.activeSelf, Is.False);
+            Assert.That(taskPanelToggle.IsOpen, Is.True,
+                "Opening pause should hide the task system without closing the task panel.");
+
+            manager.ResumeGame();
+            Assert.That(taskPanelToggle.gameObject.activeSelf, Is.True);
+            Assert.That(taskPanelToggle.IsOpen, Is.True);
+        }
+        finally
+        {
+            Time.timeScale = 1f;
+            Object.DestroyImmediate(taskInstance);
+            Object.DestroyImmediate(pauseInstance);
+        }
+    }
+
+    [Test]
     public void AlphaSceneKeepsMainGameplayAndUsesSingleUiStack()
     {
         Scene scene = EditorSceneManager.OpenScene(AlphaScenePath, OpenSceneMode.Additive);
