@@ -14,6 +14,9 @@ public class MainMenuController : MonoBehaviour
     public GameObject statisticsPanel;
     public GameObject creditsPanel;
 
+    [Header("Credits Scene")]
+    [SerializeField] private GameObject creditsScenePrefab;
+
     [Header("Developers")]
     public GameObject developersPanel;
 
@@ -21,6 +24,8 @@ public class MainMenuController : MonoBehaviour
     public GameObject gameTitle;
     public GameObject settingButton;
     public GameObject developersButton;
+
+    public GameObject CreditsScenePrefab => creditsScenePrefab;
 
 
     private void Start()
@@ -180,6 +185,14 @@ public class MainMenuController : MonoBehaviour
 
     public void ShowCredits()
     {
+        if (creditsScenePrefab != null)
+        {
+            SceneFadeTransition.Begin(
+                () => CreditsSceneController.OpenRuntimeScene(creditsScenePrefab),
+                0.35f);
+            return;
+        }
+
         HideMainMenu();
 
         if (creditsPanel != null)
@@ -193,10 +206,7 @@ public class MainMenuController : MonoBehaviour
 
     public void ShowDevelopers()
     {
-        HideMainMenu();
-
-        if (developersPanel != null)
-            developersPanel.SetActive(true);
+        ShowCredits();
     }
 
 

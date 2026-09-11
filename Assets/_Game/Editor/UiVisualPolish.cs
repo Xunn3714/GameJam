@@ -24,6 +24,7 @@ public static class UiVisualPolish
     private const string TaskPrefabPath = "Assets/_Game/Content/Perfabs/UI/TaskSystem.prefab";
     private const string PausePrefabPath = "Assets/_Game/Content/Perfabs/UI/PauseSystem.prefab";
     private const string BannerPrefabPath = "Assets/_Game/Content/Perfabs/UI/BannerSystem.prefab";
+    private const string CreditsScenePrefabPath = "Assets/_Game/Content/Perfabs/UI/CreditsScene.prefab";
     private const string CatalogPath = "Assets/_Game/Content/Data/Sheep/SpecialSheepCatalog.asset";
 
     private const string GrassPath = "Assets/Art/WorldSprites/Tiles/草原_背景.png";
@@ -158,18 +159,29 @@ public static class UiVisualPolish
         MainMenuController menuController = scene.GetRootGameObjects()
             .SelectMany(root => root.GetComponentsInChildren<MainMenuController>(true))
             .FirstOrDefault();
-        GameObject credits = BuildCreditsPanel(canvasObject.transform, menuController);
+        GameObject legacyCredits = Find(scene, "CreditsPanel");
+        GameObject legacyDevelopers = Find(scene, "DevelopersPanel");
+        if (legacyCredits != null)
+            Object.DestroyImmediate(legacyCredits);
+        if (legacyDevelopers != null)
+            Object.DestroyImmediate(legacyDevelopers);
+
         if (menuController != null)
         {
-            menuController.creditsPanel = credits;
+            menuController.creditsPanel = null;
+            menuController.developersPanel = null;
             SerializedObject menuData = new SerializedObject(menuController);
             SerializedProperty collectionPrefab = menuData.FindProperty("collectionPanelPrefab");
             if (collectionPrefab != null)
             {
                 collectionPrefab.objectReferenceValue =
                     AssetDatabase.LoadAssetAtPath<GameObject>(CollectionPrefabPath);
-                menuData.ApplyModifiedPropertiesWithoutUndo();
             }
+            SerializedProperty creditsScenePrefab = menuData.FindProperty("creditsScenePrefab");
+            if (creditsScenePrefab != null)
+                creditsScenePrefab.objectReferenceValue =
+                    AssetDatabase.LoadAssetAtPath<GameObject>(CreditsScenePrefabPath);
+            menuData.ApplyModifiedPropertiesWithoutUndo();
             Button openCredits = developersButton != null ? developersButton.GetComponent<Button>() : null;
             ReplacePersistentListener(openCredits, menuController.ShowCredits);
             EditorUtility.SetDirty(menuController);
@@ -192,46 +204,6 @@ public static class UiVisualPolish
         EditorSceneManager.SaveScene(scene);
         if (openedForEdit)
             EditorSceneManager.CloseScene(scene, true);
-    }
-
-    private static GameObject BuildCreditsPanel(Transform canvas, MainMenuController controller)
-    {
-        GameObject panel = EnsureImage(canvas, "CreditsPanel");
-        SetStretch(panel);
-        SetOverlay(panel);
-        panel.transform.SetAsLastSibling();
-
-        GameObject window = EnsureImage(panel.transform, "CreditsWindow");
-        SetRect(window, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(910f, 620f));
-        SetImage(window, PausePanelPath, Color.white);
-
-        TMP_Text title = EnsureText(window.transform, "CreditsTitle", "制作人员");
-        SetRect(title.gameObject, new Vector2(0.5f, 1f), new Vector2(0f, -82f), new Vector2(620f, 62f), new Vector2(0.5f, 1f));
-        StyleText(title, 42f, Ink, TextAlignmentOptions.Center, FontStyles.Bold);
-
-        const string creditsText =
-            "项目管理  PKAT · KSLJ · XUNN\n" +
-            "游戏设计  PKAT · KSLJ\n\n" +
-            "程序  XUNN · W1K · DARCY\n" +
-            "3WATER · JIMMY · KSLJ\n\n" +
-            "2D 美术  ANKI0_0 · OAKT · GAILTY · XUNN\n" +
-            "音乐  WHILIST · JIMMY · GAILTY\n" +
-            "音效  WHILIST";
-        TMP_Text body = EnsureText(window.transform, "CreditsBody", creditsText);
-        SetRect(body.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0f, -8f), new Vector2(760f, 365f));
-        StyleText(body, 23f, Ink, TextAlignmentOptions.Center);
-        body.lineSpacing = 12f;
-
-        GameObject backObject = EnsureImage(window.transform, "Btn_CreditsBack");
-        Button back = backObject.GetComponent<Button>();
-        if (back == null) back = backObject.AddComponent<Button>();
-        EnsureText(backObject.transform, "Text (TMP)", "返回");
-        StyleButton(backObject, ExitButtonPath, "返回", new Vector2(0f, -245f), new Vector2(190f, 72f), 22f);
-        if (controller != null)
-            ReplacePersistentListener(back, controller.BackToMenu);
-
-        panel.SetActive(false);
-        return panel;
     }
 
     private static void StyleSettingPrefab()
