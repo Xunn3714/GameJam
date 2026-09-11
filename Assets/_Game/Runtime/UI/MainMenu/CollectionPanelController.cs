@@ -21,6 +21,7 @@ public class CollectionPanelController : MonoBehaviour
     public TMP_Text rarityText;
     public TMP_Text countText;
     public TMP_Text descriptionText;
+    public TMP_Text flavorText;
     public TMP_Text abilityNameText;
     public TMP_Text abilityDescriptionText;
     public Image sentenceImage;
@@ -60,9 +61,11 @@ public class CollectionPanelController : MonoBehaviour
             rarityText,
             countText,
             descriptionText,
+            flavorText,
             abilityNameText,
             abilityDescriptionText,
-            sentenceImage);
+            sentenceImage,
+            true);
         return detailCard;
     }
 
