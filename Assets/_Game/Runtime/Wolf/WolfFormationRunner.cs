@@ -229,7 +229,9 @@ public sealed class WolfFormationRunner : MonoBehaviour
             // 上一条冲锋开始时刻 + 冲出 handoff 距离所需时间 = 下一条冲锋开始时刻；再减去下一条的预警时长就是它的生成时刻。
             float chargeStart = Time.time + wolf.WarningDuration;
             float handoffSeconds = wolf.ChargeSpeed > 0f ? formation.chainHandoffDistance / wolf.ChargeSpeed : 0f;
-            float nextWarning = prefab != null ? prefab.WarningDuration : wolf.WarningDuration;
+            float nextWarning = prefab != null
+                ? prefab.WarningDuration + spawner.AdditionalWarningLeadTime
+                : wolf.WarningDuration;
             float nextSpawnTime = chargeStart + handoffSeconds - nextWarning;
 
             bool finished = false;

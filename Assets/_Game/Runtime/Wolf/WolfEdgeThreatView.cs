@@ -17,17 +17,17 @@ public sealed class WolfEdgeThreatView : MonoBehaviour
     [SerializeField] private Camera viewCamera;
 
     [Header("Layout")]
-    [SerializeField, Min(0f)] private float edgeInset = 58f;
-    [SerializeField, Min(24f)] private float iconSize = 76f;
+    [SerializeField, Min(0f)] private float edgeInset = 74f;
+    [SerializeField, Min(24f)] private float iconSize = 116f;
     [SerializeField, Min(1)] private int initialPoolSize = 6;
 
     [Header("Warning Feel")]
     [SerializeField] private Color earlyWarningColor = new Color(1f, 0.62f, 0.12f, 1f);
     [SerializeField] private Color imminentColor = new Color(1f, 0.12f, 0.08f, 1f);
     [SerializeField] private Color retreatColor = new Color(0.48f, 0.52f, 0.58f, 1f);
-    [SerializeField, Min(0.1f)] private float earlyFlashFrequency = 2f;
-    [SerializeField, Min(0.1f)] private float imminentFlashFrequency = 8f;
-    [SerializeField, Min(0f)] private float inwardPulseDistance = 7f;
+    [SerializeField, Min(0.1f)] private float earlyFlashFrequency = 1.6f;
+    [SerializeField, Min(0.1f)] private float imminentFlashFrequency = 8.5f;
+    [SerializeField, Min(0f)] private float inwardPulseDistance = 10f;
     [SerializeField, Min(0.1f)] private float fadeSpeed = 8f;
     [SerializeField, Min(0.1f)] private float retreatFadeSpeed = 3.5f;
     [SerializeField, Min(0f)] private float retreatSlideSpeed = 42f;
@@ -256,11 +256,11 @@ public sealed class WolfEdgeThreatView : MonoBehaviour
         float pulse01 = 0.5f + 0.5f * Mathf.Sin(Time.time * frequency * Mathf.PI * 2f);
         float targetAlpha = indicator.HasEnteredViewport
             ? 0f
-            : Mathf.Lerp(0.48f, 1f, pulse01);
+            : Mathf.Lerp(0.68f, 1f, pulse01);
         indicator.Alpha = Mathf.MoveTowards(indicator.Alpha, targetAlpha, fadeSpeed * deltaTime);
         float targetScale = indicator.HasEnteredViewport
             ? 0.82f
-            : Mathf.Lerp(0.94f, 1.12f, pulse01 * Mathf.Lerp(0.45f, 1f, urgency));
+            : Mathf.Lerp(0.98f, 1.18f, pulse01 * Mathf.Lerp(0.45f, 1f, urgency));
         indicator.Scale = Mathf.MoveTowards(indicator.Scale, targetScale, 5f * deltaTime);
 
         Color color = Color.Lerp(earlyWarningColor, imminentColor, urgency);
@@ -341,10 +341,10 @@ public sealed class WolfEdgeThreatView : MonoBehaviour
         MvpUiFactory.Stretch(glow.rectTransform);
         glow.preserveAspect = true;
         glow.raycastTarget = false;
-        glow.rectTransform.localScale = Vector3.one * 1.18f;
+        glow.rectTransform.localScale = Vector3.one * 1.28f;
 
         Image portrait = MvpUiFactory.CreateImage("Wolf", indicatorRoot, Color.white);
-        MvpUiFactory.Stretch(portrait.rectTransform, 7f);
+        MvpUiFactory.Stretch(portrait.rectTransform, 9f);
         portrait.preserveAspect = true;
         portrait.raycastTarget = false;
 

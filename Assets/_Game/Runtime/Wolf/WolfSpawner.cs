@@ -18,6 +18,8 @@ public sealed class WolfSpawner : MonoBehaviour
     [Tooltip("勾选后必须等上一只狼离开才会生成下一只。")]
     [SerializeField] private bool waitForPreviousWolf;
     [SerializeField, Min(1)] private int maxAliveWolves = 3;
+    [Tooltip("策划可调：每只狼生成后额外增加的冲锋前预警秒数；只在本次运行时读取。")]
+    [SerializeField, Min(0f)] private float additionalWarningLeadTime = 0.8f;
 
     [Header("Placement")]
     [Tooltip("狼出现的位置离羊群中心的最小距离。")]
@@ -42,6 +44,7 @@ public sealed class WolfSpawner : MonoBehaviour
 
     public FlockController Flock => flock;
     public Wolf WolfPrefab => wolfPrefab;
+    public float AdditionalWarningLeadTime => Mathf.Max(0f, additionalWarningLeadTime);
 
     /// <summary>之后生成的每只狼都会乘这个速度倍率（随羊群规模增长，由节奏控制器设置）。</summary>
     public float SpeedScale { get; private set; } = 1f;
@@ -183,6 +186,7 @@ public sealed class WolfSpawner : MonoBehaviour
     {
         wolf.name = $"Wolf_{SpawnedCount + 1:00}";
         wolf.SetSpeedScale(SpeedScale);
+        wolf.SetAdditionalWarningLeadTime(AdditionalWarningLeadTime);
         wolf.Finished += HandleWolfFinished;
         aliveWolves.Add(wolf);
         SpawnedCount++;

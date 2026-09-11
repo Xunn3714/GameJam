@@ -23,10 +23,10 @@ public sealed class WolfEdgeThreatViewTests
         Assert.That(WolfEdgeThreatView.IsInsideViewport(new Vector2(x, y)), Is.False);
     }
 
-    [TestCase(-0.25f, 0.5f, -902f, 0f, 1f, 0f)]
-    [TestCase(1.25f, 0.5f, 902f, 0f, -1f, 0f)]
-    [TestCase(0.5f, -0.25f, 0f, -482f, 0f, 1f)]
-    [TestCase(0.5f, 1.25f, 0f, 482f, 0f, -1f)]
+    [TestCase(-0.25f, 0.5f, -886f, 0f, 1f, 0f)]
+    [TestCase(1.25f, 0.5f, 886f, 0f, -1f, 0f)]
+    [TestCase(0.5f, -0.25f, 0f, -466f, 0f, 1f)]
+    [TestCase(0.5f, 1.25f, 0f, 466f, 0f, -1f)]
     public void TryCalculateEdgePosition_ClampsToMatchingScreenEdge(
         float viewportX,
         float viewportY,
@@ -38,7 +38,7 @@ public sealed class WolfEdgeThreatViewTests
         bool found = WolfEdgeThreatView.TryCalculateEdgePosition(
             new Rect(0f, 0f, 1920f, 1080f),
             new Vector2(viewportX, viewportY),
-            58f,
+            74f,
             out Vector2 position,
             out Vector2 inward);
 
@@ -55,16 +55,16 @@ public sealed class WolfEdgeThreatViewTests
         bool found = WolfEdgeThreatView.TryCalculateEdgePosition(
             new Rect(0f, 0f, 1920f, 1080f),
             new Vector2(1.4f, 1.2f),
-            58f,
+            74f,
             out Vector2 position,
             out Vector2 inward);
 
         Assert.That(found, Is.True);
-        Assert.That(Mathf.Abs(position.x), Is.LessThanOrEqualTo(902.01f));
-        Assert.That(Mathf.Abs(position.y), Is.LessThanOrEqualTo(482.01f));
+        Assert.That(Mathf.Abs(position.x), Is.LessThanOrEqualTo(886.01f));
+        Assert.That(Mathf.Abs(position.y), Is.LessThanOrEqualTo(466.01f));
         Assert.That(
-            Mathf.Approximately(Mathf.Abs(position.x), 902f)
-            || Mathf.Approximately(Mathf.Abs(position.y), 482f),
+            Mathf.Approximately(Mathf.Abs(position.x), 886f)
+            || Mathf.Approximately(Mathf.Abs(position.y), 466f),
             Is.True);
         Assert.That(Vector2.Dot(position.normalized, inward), Is.EqualTo(-1f).Within(0.001f));
     }
@@ -78,5 +78,25 @@ public sealed class WolfEdgeThreatViewTests
         Wolf wolf = prefab.GetComponent<Wolf>();
         Assert.That(wolf, Is.Not.Null);
         Assert.That(wolf.ThreatIndicatorSprite, Is.Not.Null);
+    }
+
+    [Test]
+    public void Wolf_AdditionalWarningLeadTimeExtendsBaseWarning()
+    {
+        GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(WolfPrefabPath);
+        GameObject instance = Object.Instantiate(prefab);
+        try
+        {
+            Wolf wolf = instance.GetComponent<Wolf>();
+            float baseDuration = wolf.WarningDuration;
+
+            wolf.SetAdditionalWarningLeadTime(0.8f);
+
+            Assert.That(wolf.WarningDuration, Is.EqualTo(baseDuration + 0.8f).Within(0.001f));
+        }
+        finally
+        {
+            Object.DestroyImmediate(instance);
+        }
     }
 }

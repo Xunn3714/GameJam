@@ -120,6 +120,7 @@ public sealed class Wolf : MonoBehaviour
     private Vector2 fixedRouteDirection = Vector2.right;
     private float fixedRouteTravel;
     private float activeWarningDuration;
+    private float additionalWarningLeadTime;
     private float activeChargeSpeed;
     private float speedScale = 1f;
     private bool predictionAllowed = true;
@@ -166,6 +167,13 @@ public sealed class Wolf : MonoBehaviour
     {
         speedScale = Mathf.Max(0.1f, scale);
     }
+
+    /// <summary>统一延长冲锋前的预警窗口，不改变原始 prefab / 编队覆盖值。</summary>
+    public void SetAdditionalWarningLeadTime(float seconds)
+    {
+        additionalWarningLeadTime = Mathf.Max(0f, seconds);
+    }
+
     /// <summary>冲锋阶段已经冲出的距离（不在冲锋时为 0）。</summary>
     public float ChargeTravelled => state == State.Charging ? chargeTravelled : 0f;
 
@@ -202,7 +210,8 @@ public sealed class Wolf : MonoBehaviour
     public float PredictionMaxDegrees => predictionMaxDegrees;
     public float PredictionLeadTime => predictionLeadTime;
     /// <summary>本次进攻实际使用的预警时长（编队可以覆盖 prefab 的值）。</summary>
-    public float WarningDuration => activeWarningDuration > 0f ? activeWarningDuration : warningDuration;
+    public float WarningDuration => (activeWarningDuration > 0f ? activeWarningDuration : warningDuration)
+        + additionalWarningLeadTime;
     /// <summary>预警阶段已经过去的秒数（不在预警时为 0）。</summary>
     public float WarningElapsed => state == State.Warning ? stateTimer : 0f;
 
