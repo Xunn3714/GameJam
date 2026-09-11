@@ -15,6 +15,8 @@ public sealed class ChineseFontAssetTests
 
         Assert.That(fontAsset, Is.Not.Null, "The repository TMP Chinese font asset is missing.");
         Assert.That(fontAsset.atlasPopulationMode, Is.EqualTo(AtlasPopulationMode.Dynamic));
+        Assert.That(new SerializedObject(fontAsset).FindProperty("m_ClearDynamicDataOnBuild").boolValue,
+            Is.False, "Build validation must preserve the preview atlas.");
         Assert.That(fontAsset.sourceFontFile, Is.Not.Null, "The source OTF is not embedded or referenced.");
         Assert.That(fontAsset.HasCharacter('羊'), Is.True, "The preview atlas does not contain Chinese glyphs.");
         Assert.That(TMP_Settings.fallbackFontAssets.Contains(fontAsset), Is.True,
