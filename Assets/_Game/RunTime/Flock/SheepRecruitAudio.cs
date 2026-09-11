@@ -22,12 +22,17 @@ public sealed class SheepRecruitAudio : MonoBehaviour
     private void OnEnable()
     {
         RecruitableSheep.AnyRecruited += HandleSheepRecruited;
+        SheepMember.AnyClicked += HandleSheepClicked;
     }
 
     private void OnDisable()
     {
         RecruitableSheep.AnyRecruited -= HandleSheepRecruited;
+        SheepMember.AnyClicked -= HandleSheepClicked;
     }
+
+    // 点击单只羊时始终叫一声，复用与招募相同的随机叫声池。
+    private void HandleSheepClicked(SheepMember member) => PlayRandomBleat();
 
     private void HandleSheepRecruited(
         RecruitableSheep sheep,

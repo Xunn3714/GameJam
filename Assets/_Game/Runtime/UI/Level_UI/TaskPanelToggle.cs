@@ -9,12 +9,12 @@ public class TaskPanelToggle : MonoBehaviour
     [SerializeField] private Button closeButton;
 
     [Header("Initial State")]
-    [SerializeField] private bool openOnStart = false;
+    [SerializeField] private bool openOnStart = true;
 
 
     /// 当前任务面板是否打开。
-    /// PauseManager 会读取这个状态，
-    /// 防止 TaskPanel 打开时 ESC 又打开 Pause。
+    /// PauseManager 暂停时会临时隐藏整个任务系统，
+    /// 但不会通过 ESC 改变这个展开状态。
     public bool IsOpen
     {
         get

@@ -13,6 +13,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     [SerializeField] private FlockController flock;
     [SerializeField] private FlockMovementController flockMovement;
     [SerializeField] private FlockActionController flockActions;
+    [SerializeField] private PoopAbility poopAbility;
     [SerializeField] private ProgressiveSheepSpawner sheepSpawner;
     [SerializeField] private CameraFollow2D cameraFollow;
     [Tooltip("狼群节奏（生长空挡 → 狼嚎 → 攻击 → 跑路）。有它时狼由它掌控；为空则退回旧的 WolfSpawner 定时。")]
@@ -30,6 +31,16 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     [Tooltip("“xx 加入了族群”提示。")]
     [SerializeField] private JoinToastView joinToastView;
     [SerializeField] private PauseManager pauseManager;
+    [Tooltip("右上角可折叠的任务页；宝通寺撞不动时会自动展开它。留空会自己去场景里找。")]
+    [SerializeField] private TaskPanelToggle taskPanelToggle;
+
+    [Header("True Ending (洪山宝通寺)")]
+    [Tooltip("真结局演出；留空会自动挂一个。")]
+    [SerializeField] private TrueEndingSequence trueEndingSequence;
+    [SerializeField] private Sprite holeFirstJumpSprite;
+    [SerializeField] private Sprite holeSecondJumpSprite;
+    [Tooltip("胜利后、结算面板前播放的伪结局 / 真结局插画。留空会运行时创建。")]
+    [SerializeField] private EndingIllustrationSequence endingIllustrationSequence;
     [Tooltip("仓库里的 ResultPanel 预制体；留空则用 Alpha 自己的占位结算页。")]
     [SerializeField] private ResultPanelView resultPanelPrefab;
 
@@ -52,8 +63,8 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
 
     [Header("Impact Feedback")]
     [Tooltip("第一阶段镜头尺寸下的主动撞击振幅；实际值会随当前视野等比放大。")]
-    [SerializeField, Min(0f)] private float impactShakeAmplitude = 0.16f;
-    [SerializeField, Min(0f)] private float impactShakeDuration = 0.2f;
+    [SerializeField, Min(0f)] private float impactShakeAmplitude = 0.30f;
+    [SerializeField, Min(0f)] private float impactShakeDuration = 0.22f;
     [SerializeField, Min(0.02f)] private float impactFeedbackInterval = 0.12f;
 
     [Header("Exit")]
@@ -92,8 +103,15 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     private bool penOpened;
     private bool borderBroken;
     private bool escaped;
+    private bool pagodaTaskUnlocked;
+    private bool trueEndingRunning;
+    private ScreenFlashView screenFlashView;
+    private WolfEdgeThreatView wolfThreatView;
+    private DestructionScoreHudView destructionScoreView;
+    private PagodaLandmark hookedPagoda;
     private bool firstWolfEventCompleted;
     private int newRecruitCount;
+    private int poopUseCount;
     private readonly List<MvpObjectiveSnapshot> objectiveScratch = new List<MvpObjectiveSnapshot>();
     private float nextPopulationRefreshTime;
     private float nextImpactFeedbackTime;
@@ -120,6 +138,8 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
             flockMovement = flock.GetComponent<FlockMovementController>();
         if (flock != null && flockActions == null)
             flockActions = flock.GetComponent<FlockActionController>();
+        if (flock != null && poopAbility == null)
+            poopAbility = flock.GetComponent<PoopAbility>();
         flockActions?.Configure(flock, flockMovement);
     }
 
@@ -147,6 +167,11 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         {
             tutorialPen.Opened += HandleTutorialPenOpened;
         }
+
+        if (poopAbility != null)
+            poopAbility.Used += HandlePoopUsed;
+
+        BreakableObstacle.AnyBroken += HandleObstacleBroken;
     }
 
     private void OnDisable()
@@ -173,6 +198,11 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         {
             tutorialPen.Opened -= HandleTutorialPenOpened;
         }
+
+        if (poopAbility != null)
+            poopAbility.Used -= HandlePoopUsed;
+
+        BreakableObstacle.AnyBroken -= HandleObstacleBroken;
     }
 
     private void Start()
@@ -191,11 +221,13 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
             initialAnimator?.SetFacingImmediately(true);
         }
 
+        UnityEngine.UI.Image bannerBackground = bannerView != null
+            ? bannerView.GetComponent<UnityEngine.UI.Image>()
+            : null;
+        Sprite notificationSprite = bannerBackground != null ? bannerBackground.sprite : null;
+
         if (joinToastView != null)
         {
-            UnityEngine.UI.Image bannerBackground = bannerView != null
-                ? bannerView.GetComponent<UnityEngine.UI.Image>() : null;
-            Sprite notificationSprite = bannerBackground != null ? bannerBackground.sprite : null;
             joinToastView.ConfigureStack(notificationSprite);
             CollectionPanelController collectionPanel = uiCanvas != null
                 ? uiCanvas.GetComponentInChildren<CollectionPanelController>(true)
@@ -214,6 +246,19 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         stats = new AlphaRunStats();
         progression = new AlphaProgression(stages, exitUnlockFlockSize, Mathf.Max(1, flock.MemberCount));
 
+        if (uiCanvas != null)
+        {
+            Camera gameplayCamera = cameraFollow != null
+                ? cameraFollow.GetComponent<Camera>()
+                : Camera.main;
+            destructionScoreView = DestructionScoreHudView.Create(
+                uiCanvas.transform,
+                gameplayCamera,
+                notificationSprite);
+            destructionScoreView?.SetFlockCount(flock.MemberCount);
+            destructionScoreView?.SetScore(0);
+        }
+
         // 有节奏控制器时狼由它管（含阶段门槛和狼嚎预警）；否则退回旧的定时生成器。
         if (wolfDirector == null)
             wolfSpawner?.StopSpawning();
@@ -227,13 +272,34 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
 
         Rect worldRect = borderRing != null ? borderRing.WorldRect : sheepSpawner.SpawnBounds;
         flockMovement?.ConfigureMovementBounds(worldRect);
+        flockMovement?.ConfigureLeashView(cameraFollow);
         cameraFollow?.ConfigureBounds(worldRect);
         borderRing?.ApplyRequiredCount(exitUnlockFlockSize);
 
         if (uiCanvas != null && resultPanelPrefab == null)
             resultView = AlphaResultView.Create(uiCanvas.transform);
 
-        ApplyStage(true);
+        if (uiCanvas != null)
+            screenFlashView = ScreenFlashView.Create(uiCanvas.transform);
+        if (uiCanvas != null && wolfDirector != null)
+        {
+            Camera threatCamera = cameraFollow != null
+                ? cameraFollow.GetComponent<Camera>()
+                : Camera.main;
+            wolfThreatView = WolfEdgeThreatView.Create(
+                uiCanvas.transform,
+                wolfDirector,
+                threatCamera);
+        }
+        if (taskPanelToggle == null)
+            taskPanelToggle = FindFirstObjectByType<TaskPanelToggle>(FindObjectsInactive.Include);
+        if (trueEndingSequence == null)
+            trueEndingSequence = gameObject.AddComponent<TrueEndingSequence>();
+        trueEndingSequence.Configure(flock, cameraFollow, screenFlashView, holeFirstJumpSprite, holeSecondJumpSprite);
+        if (uiCanvas != null && endingIllustrationSequence == null)
+            endingIllustrationSequence = EndingIllustrationSequence.Create(uiCanvas.transform);
+
+        ApplyStage();
         RefreshComposition();
         MaintainNearbyPopulation();
         initialized = true;
@@ -254,6 +320,8 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
 
         stats.SurvivalSeconds = Time.time - runStartTime;
 
+        HookPagoda();
+
         if (CheckEscaped())
             return;
 
@@ -268,6 +336,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         if (!initialized || ended)
             return;
 
+        destructionScoreView?.SetFlockCount(memberCount);
         RefreshComposition();
 
         if (memberCount <= 0)
@@ -283,7 +352,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
 
         if (change.StageChanged)
         {
-            ApplyStage(false);
+            ApplyStage();
             FlockGrowthStage stage = progression.CurrentStage;
             ShowLatestBanner($"阶段 {progression.StageIndex + 1} · {stage.DisplayName}");
             Debug.Log($"羊群升级到阶段 {progression.StageIndex + 1}：{stage.DisplayName}。", this);
@@ -444,30 +513,91 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     private void UnlockExit()
     {
         borderRing?.ApplyRequiredCount(exitUnlockFlockSize);
-        ExpandBoundsForExit();
+        flockMovement?.SetExternalMovementCanLeaveBounds(true);
+        ExpandCameraBoundsForExit();
         ShowBanner($"历史最高达到 {exitUnlockFlockSize} 只！按 E 让整群蓄势冲刺，撞开围栏后冲出草原");
         Debug.Log("出口已解锁。", this);
     }
 
-    private void ExpandBoundsForExit()
+    private Rect GetExpandedExitBounds()
     {
         Rect worldRect = borderRing != null ? borderRing.WorldRect : sheepSpawner.SpawnBounds;
-        Rect expanded = new Rect(
+        return new Rect(
             worldRect.xMin - exitBoundsExpansion,
             worldRect.yMin - exitBoundsExpansion,
             worldRect.width + exitBoundsExpansion * 2f,
             worldRect.height + exitBoundsExpansion * 2f);
+    }
+
+    private void ExpandCameraBoundsForExit()
+    {
+        cameraFollow?.ConfigureBounds(GetExpandedExitBounds());
+    }
+
+    private void ExpandBoundsForExit()
+    {
+        Rect expanded = GetExpandedExitBounds();
         flockMovement?.ConfigureMovementBounds(expanded);
         cameraFollow?.ConfigureBounds(expanded);
     }
 
     private void HandleBorderFenceBroken(FenceObstacle fence)
     {
+        // 一次宽正面冲击可能同时撞开相邻多段外围围栏；全局出口反馈只播一次。
+        if (borderBroken)
+            return;
+
         borderBroken = true;
+        flockMovement?.SetExternalMovementCanLeaveBounds(false);
         cameraFollow?.Shake(fenceBreakShakeAmplitude, fenceBreakShakeDuration);
         ExpandBoundsForExit();
         ShowBanner("围栏破了！带着羊群冲出去！");
         RefreshObjectives();
+    }
+
+    // ---------------------------------------------------------------- 洪山宝通寺
+
+    /// <summary>地标是 WorldLandmarkSpawner 在 Start 里生成的，这里等它出现再挂事件。</summary>
+    private void HookPagoda()
+    {
+        PagodaLandmark pagoda = PagodaLandmark.Current;
+        if (pagoda == null || pagoda == hookedPagoda)
+            return;
+
+        hookedPagoda = pagoda;
+        pagoda.AttemptRejected += HandlePagodaAttemptRejected;
+        pagoda.Smashed += HandlePagodaSmashed;
+    }
+
+    /// <summary>羊不够却来撞塔：展开任务页，把「寻找？？」加进任务列表。</summary>
+    private void HandlePagodaAttemptRejected(PagodaLandmark pagoda)
+    {
+        if (pagodaTaskUnlocked)
+            return;
+
+        pagodaTaskUnlocked = true;
+        taskPanelToggle?.OpenTaskPanel();
+        RefreshObjectives();
+        ShowBanner($"这塔里好像有点什么……得凑够 {pagoda.RequiredFlockCount} 只羊才撞得动");
+    }
+
+    private void HandlePagodaSmashed(PagodaLandmark pagoda)
+    {
+        if (trueEndingRunning || ended)
+            return;
+
+        trueEndingRunning = true;
+        pagodaTaskUnlocked = true;
+        RefreshObjectives();
+
+        flockActions?.SetControlEnabled(false);
+        flockMovement?.SetControlEnabled(false);
+        wolfDirector?.Stop();
+        wolfSpawner?.StopSpawning();
+        ShowBanner("宝通寺塌了！羊群踩穿了洪山……");
+
+        stats.RecordTrueEnding(flock != null ? flock.MemberCount : 0);
+        trueEndingSequence.Play(pagoda.gameObject, () => EndRun(true));
     }
 
     private bool CheckEscaped()
@@ -502,7 +632,29 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         RefreshObjectives();
     }
 
-    /// <summary>把 Alpha 的进度翻译成任务栏当前唯一显示的条目。</summary>
+    private void HandlePoopUsed()
+    {
+        if (ended)
+            return;
+
+        poopUseCount++;
+        RefreshObjectives();
+    }
+
+    private void HandleObstacleBroken(BreakableObstacle obstacle)
+    {
+        if (!initialized || ended || obstacle == null || stats == null)
+            return;
+
+        ObstacleDefinition definition = obstacle.Definition;
+        string obstacleId = definition != null ? definition.ObstacleId : null;
+        string displayName = definition != null ? definition.DisplayName : obstacle.name;
+        int score = obstacle.DestructionScore;
+        stats.RecordDestruction(obstacleId, displayName, score);
+        destructionScoreView?.ShowGain(obstacle.transform.position, score, stats.DestructionScore);
+    }
+
+    /// <summary>把 Alpha 的进度翻译成主线、技能计数和可选支线条目。</summary>
     private void RefreshObjectives()
     {
         if (hudView == null || progression == null)
@@ -528,6 +680,17 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
             sheepTideTarget,
             exitUnlockFlockSize));
 
+        objectiveScratch.Add(AlphaTaskSequence.PoopCounter(poopUseCount));
+
+        // 撞过宝通寺但羊不够时解锁的支线，排在主线下面一行。
+        if (pagodaTaskUnlocked)
+        {
+            objectiveScratch.Add(AlphaTaskSequence.Pagoda(
+                members,
+                hookedPagoda != null ? hookedPagoda.RequiredFlockCount : 150,
+                hookedPagoda != null && hookedPagoda.IsSmashed));
+        }
+
         hudView.UpdateObjectives(objectiveScratch, members);
     }
 
@@ -552,9 +715,11 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         wolfDirector?.Stop();
         wolfSpawner?.StopSpawning();
         flockActions?.SetControlEnabled(false);
+        poopAbility?.SetControlEnabled(false);
         flockMovement?.SetControlEnabled(false);
         if (pauseManager != null)
             pauseManager.SetResultLocked(true);
+        destructionScoreView?.SetGameplayVisible(false);
         RefreshObjectives();
         Time.timeScale = 0f;
 
@@ -567,14 +732,22 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         yield return null;
         RefreshComposition();
 
+        if (victory && endingIllustrationSequence != null)
+            yield return endingIllustrationSequence.Play(stats.IsTrueEnding);
+
         if (wolfDirector != null)
             stats.SetWolfBreakdown(wolfDirector.LossTracker.TakenByLongWolves, wolfDirector.LossTracker.TakenBySingleWolves);
         if (GameStatsManager.Instance != null)
             GameStatsManager.Instance.RecordRunResult(stats, victory);
         string report = stats.BuildReport(sheepSpawner.GetTypeDisplayName);
-        string description = victory
-            ? $"羊群带着 {flock.MemberCount} 只羊冲出了草原（历史最高 {stats.HighestFlockSize} 只）"
-            : "最后一只羊也没了……";
+        string description = !victory
+            ? "最后一只羊也没了……"
+            : stats.IsTrueEnding
+                ? $"{stats.TrueEndingFlockSize} 只羊踩塌了洪山宝通寺，也踩穿了整座洪山"
+                : $"羊群带着 {flock.MemberCount} 只羊冲出了草原（历史最高 {stats.HighestFlockSize} 只）";
+        if (stats.IsTrueEnding)
+            description += "\n\n" + stats.BuildTrueEndingHighlights();
+        string victoryTitle = stats.IsTrueEnding ? "寻得美食" : "冲出草原！";
 
         Debug.Log((victory ? "胜利：" : "失败：") + description + "\n" + report, this);
 
@@ -583,16 +756,24 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
             ResultPanelView panel = Instantiate(resultPanelPrefab, uiCanvas.transform);
             panel.transform.SetAsLastSibling();
             panel.ReturnTitleRequested += ReturnToTitle;
-            string panelDescription = description + "\n" + report + "\n按 R 再来一局";
+            string journeyMessage = victory
+                ? $"你带着 {flock.MemberCount} 只羊，\n一起走出了草原。"
+                : "这次的旅程，暂时停在这里。\n下一次，再和伙伴们一起出发。";
+            string panelDescription = "<b>一路同行</b>\n\n" + journeyMessage
+                + $"\n\n招募羊种：{stats.RecruitedByType.Count} 种"
+                + $"\n同行羊种：{stats.CurrentComposition.Count} 种"
+                + "\n\n<b>破坏记录</b>\n" + stats.BuildDestructionSummary()
+                + "\n\n每一次相遇，都让旅程更有意义。\n<size=80%>按 R 再来一局</size>";
             if (victory)
-                panel.ShowVictory(panelDescription, flock.MemberCount, stats.HighestFlockSize, stats.TotalRecruited, stats.TotalTaken, stats.SurvivalSeconds);
+                panel.ShowVictory(panelDescription, flock.MemberCount, stats.HighestFlockSize, stats.TotalRecruited, stats.TotalTaken, stats.SurvivalSeconds, victoryTitle);
             else
                 panel.ShowDefeat(panelDescription, 0, stats.HighestFlockSize, stats.TotalRecruited, stats.TotalTaken, stats.SurvivalSeconds);
+            panel.StyleJourneySummary();
             resultPanelShown = true;
         }
         else if (resultView != null)
         {
-            if (victory) resultView.ShowVictory(description, report);
+            if (victory) resultView.ShowVictory(description, report, victoryTitle);
             else resultView.ShowDefeat(description, report);
         }
     }
@@ -621,14 +802,14 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
 
     // ---------------------------------------------------------------- helpers
 
-    private void ApplyStage(bool immediateCamera)
+    private void ApplyStage()
     {
         FlockGrowthStage stage = progression.CurrentStage;
         if (stage == null)
             return;
 
         sheepSpawner?.SetCurrentBatchRange(stage.MinimumBatchSize, stage.MaximumBatchSize);
-        cameraFollow?.SetOrthographicSize(stage.CameraSize, immediateCamera);
+        cameraFollow?.UnlockMaximumOrthographicSize(stage.CameraSize);
 
         float baseCameraSize = stages[0] != null ? stages[0].CameraSize : stage.CameraSize;
         float multiplier = speedScaleExponent <= 0f

@@ -8,16 +8,34 @@ using System.Text;
 /// </summary>
 public sealed class AlphaRunStats
 {
+    public sealed class DestructionEntry
+    {
+        internal DestructionEntry(string obstacleId, string displayName)
+        {
+            ObstacleId = obstacleId;
+            DisplayName = displayName;
+        }
+
+        public string ObstacleId { get; }
+        public string DisplayName { get; }
+        public int Count { get; internal set; }
+        public int Score { get; internal set; }
+    }
+
     private readonly Dictionary<string, int> recruitedByType = new Dictionary<string, int>(StringComparer.Ordinal);
     private readonly Dictionary<string, int> takenByType = new Dictionary<string, int>(StringComparer.Ordinal);
     private readonly Dictionary<string, int> peakComposition = new Dictionary<string, int>(StringComparer.Ordinal);
     private readonly Dictionary<string, int> currentComposition = new Dictionary<string, int>(StringComparer.Ordinal);
+    private readonly Dictionary<string, DestructionEntry> destroyedByType =
+        new Dictionary<string, DestructionEntry>(StringComparer.Ordinal);
 
     public int HighestFlockSize { get; private set; }
     public int TotalRecruited { get; private set; }
     public int TotalTaken { get; private set; }
     public float SurvivalSeconds { get; set; }
     public int CurrentFlockSize { get; private set; }
+    public int DestructionScore { get; private set; }
+    public int TotalDestroyed { get; private set; }
     /// <summary>被长条狼叼走的数量（由狼群节奏控制器统计后写入）。</summary>
     public int TakenByLongWolves { get; private set; }
     /// <summary>被单只普通狼叼走的数量。</summary>
@@ -33,6 +51,7 @@ public sealed class AlphaRunStats
     public IReadOnlyDictionary<string, int> TakenByType => takenByType;
     public IReadOnlyDictionary<string, int> PeakComposition => peakComposition;
     public IReadOnlyDictionary<string, int> CurrentComposition => currentComposition;
+    public IReadOnlyDictionary<string, DestructionEntry> DestroyedByType => destroyedByType;
 
     public void RecordRecruit(string typeId)
     {
@@ -44,6 +63,25 @@ public sealed class AlphaRunStats
     {
         Increment(takenByType, Normalize(typeId));
         TotalTaken++;
+    }
+
+    /// <summary>记录一个已经完全破坏的物件。score 由物件的破坏羊数门槛派生。</summary>
+    public void RecordDestruction(string obstacleId, string displayName, int score)
+    {
+        string normalizedId = NormalizeObstacleId(obstacleId, displayName);
+        string normalizedName = NormalizeObstacleName(displayName);
+        int awardedScore = Math.Max(1, score);
+
+        if (!destroyedByType.TryGetValue(normalizedId, out DestructionEntry entry))
+        {
+            entry = new DestructionEntry(normalizedId, normalizedName);
+            destroyedByType.Add(normalizedId, entry);
+        }
+
+        entry.Count++;
+        entry.Score += awardedScore;
+        TotalDestroyed++;
+        DestructionScore += awardedScore;
     }
 
     /// <summary>喂入当前羊群所有成员的类型；羊数创新高时记录峰值构成。</summary>
@@ -70,6 +108,34 @@ public sealed class AlphaRunStats
         }
     }
 
+    // ---- 真结局：踩出来的大洞和找到的洪山菜薹 ----
+    /// <summary>踩出来的洞：每只羊 2 平方米。</summary>
+    public const float HoleSquareMetersPerSheep = 2f;
+    public const float SquareMetersPerMu = 2000f / 3f;
+    public const float CaitaiJinPerMu = 300f;
+    /// <summary>每只羊对应的菜薹：2 平方米 × 300 斤/亩 ÷ (2000/3 平方米/亩) = 0.9 斤。</summary>
+    public const float CaitaiJinPerSheep = HoleSquareMetersPerSheep * CaitaiJinPerMu / SquareMetersPerMu;
+
+    /// <summary>大于 0 表示这局走的是真结局；数值是踩塌宝通寺时的羊数。</summary>
+    public int TrueEndingFlockSize { get; private set; }
+    public bool IsTrueEnding => TrueEndingFlockSize > 0;
+
+    public void RecordTrueEnding(int flockSize)
+    {
+        TrueEndingFlockSize = Math.Max(0, flockSize);
+    }
+
+    public string BuildTrueEndingHighlights()
+    {
+        if (!IsTrueEnding)
+            return string.Empty;
+
+        float holeSquareMeters = TrueEndingFlockSize * HoleSquareMetersPerSheep;
+        float caitaiJin = TrueEndingFlockSize * CaitaiJinPerSheep;
+        return $"踩出了 {holeSquareMeters:0.#} 平方米的大洞\n" +
+               $"找到了 {caitaiJin:0.#} 斤的美味洪山菜薹";
+    }
+
     public string BuildReport(Func<string, string> displayName)
     {
         displayName ??= id => id;
@@ -79,7 +145,52 @@ public sealed class AlphaRunStats
         builder.AppendLine($"累计招募（{TotalRecruited}）：{Describe(recruitedByType, displayName)}");
         builder.AppendLine($"被狼抓走（{TotalTaken}）：{Describe(takenByType, displayName)}");
         builder.AppendLine($"　其中长条狼叼走 {TakenByLongWolves} 只，单只狼叼走 {TakenBySingleWolves} 只");
+        builder.AppendLine(BuildDestructionSummary());
         builder.Append($"峰值构成（{HighestFlockSize}）：{Describe(peakComposition, displayName)}");
+        return builder.ToString();
+    }
+
+    public string BuildDestructionSummary()
+    {
+        StringBuilder builder = new StringBuilder();
+        builder.Append($"破坏得分：{DestructionScore}　破坏物品：{TotalDestroyed} 件");
+        builder.Append("\n破坏清单：");
+
+        if (destroyedByType.Count == 0)
+        {
+            builder.Append("无");
+            return builder.ToString();
+        }
+
+        Dictionary<string, DestructionEntry> mergedByName =
+            new Dictionary<string, DestructionEntry>(StringComparer.Ordinal);
+        foreach (DestructionEntry source in destroyedByType.Values)
+        {
+            if (!mergedByName.TryGetValue(source.DisplayName, out DestructionEntry merged))
+            {
+                merged = new DestructionEntry(source.DisplayName, source.DisplayName);
+                mergedByName.Add(source.DisplayName, merged);
+            }
+
+            merged.Count += source.Count;
+            merged.Score += source.Score;
+        }
+
+        List<DestructionEntry> ordered = new List<DestructionEntry>(mergedByName.Values);
+        ordered.Sort((a, b) =>
+            b.Score != a.Score
+                ? b.Score.CompareTo(a.Score)
+                : b.Count != a.Count
+                    ? b.Count.CompareTo(a.Count)
+                    : string.CompareOrdinal(a.DisplayName, b.DisplayName));
+
+        for (int index = 0; index < ordered.Count; index++)
+        {
+            if (index > 0)
+                builder.Append('，');
+            builder.Append(ordered[index].DisplayName).Append(" ×").Append(ordered[index].Count);
+        }
+
         return builder.ToString();
     }
 
@@ -110,6 +221,20 @@ public sealed class AlphaRunStats
     private static string Normalize(string typeId)
     {
         return string.IsNullOrWhiteSpace(typeId) ? MvpSheepCatalog.DefaultTypeId : typeId.Trim();
+    }
+
+    private static string NormalizeObstacleId(string obstacleId, string displayName)
+    {
+        if (!string.IsNullOrWhiteSpace(obstacleId))
+            return obstacleId.Trim();
+        if (!string.IsNullOrWhiteSpace(displayName))
+            return "obstacle.unknown." + displayName.Trim();
+        return "obstacle.unknown";
+    }
+
+    private static string NormalizeObstacleName(string displayName)
+    {
+        return string.IsNullOrWhiteSpace(displayName) ? "未知物品" : displayName.Trim();
     }
 
     private static void Increment(Dictionary<string, int> map, string key)

@@ -62,8 +62,8 @@ public sealed class FlockController : MonoBehaviour
     private bool facingCommittedThisHold;
     private float actionMemberSpeedMultiplier = 1f;
     private Vector2 groupActionDirection = Vector2.right;
-    private Collider2D pendingGroupActionBlocker;
-    private bool hasPendingGroupActionBlock;
+    private readonly List<Collider2D> pendingGroupActionBlockers = new List<Collider2D>();
+    private readonly HashSet<Transform> breachedFenceGroups = new HashSet<Transform>();
     private float nextSeparationCheckTime;
     private float currentMembershipRadius = 5.5f;
     private readonly Dictionary<SheepMember, float> outsideMembershipSince =
@@ -80,6 +80,11 @@ public sealed class FlockController : MonoBehaviour
     public Vector2 Center => movementController != null
         ? (Vector2)movementController.transform.position
         : (Vector2)transform.position;
+
+    /// <summary>镜头使用的独立焦点；移动中仍会保持可操作羊处于画面中央区域。</summary>
+    public Vector2 CameraFocus => movementController != null
+        ? movementController.CameraFocus
+        : Center;
 
     /// <summary>羊群当前的速度上限（含阶段倍率）；没有移动控制器时给个默认值。</summary>
     public float CurrentSpeedLimit => movementController != null ? movementController.CurrentSpeedLimit : 4f;
@@ -98,6 +103,10 @@ public sealed class FlockController : MonoBehaviour
     public int FacingIntentRevision => facingIntentRevision;
     public bool IsGroupActionActive { get; private set; }
     public bool IsGroupActionHolding { get; private set; }
+    public bool IsGroupActionAnticipating { get; private set; }
+    public bool IsGroupActionFollowThrough { get; private set; }
+    public float GroupActionFollowThroughSpeed { get; private set; }
+    public bool GroupActionFollowThroughHardImpact { get; private set; }
     public Vector2 GroupActionDirection => groupActionDirection;
     public float CurrentMembershipRadius => Mathf.Max(minimumMembershipRadius, currentMembershipRadius);
 
@@ -130,8 +139,8 @@ public sealed class FlockController : MonoBehaviour
         bool actionStarted = active && !IsGroupActionActive;
         if (!active || !IsGroupActionActive)
         {
-            pendingGroupActionBlocker = null;
-            hasPendingGroupActionBlock = false;
+            pendingGroupActionBlockers.Clear();
+            breachedFenceGroups.Clear();
         }
 
         if (forwardDirection.sqrMagnitude > 0.0001f)
@@ -139,6 +148,10 @@ public sealed class FlockController : MonoBehaviour
 
         IsGroupActionActive = active;
         IsGroupActionHolding = active && holding;
+        IsGroupActionAnticipating = false;
+        IsGroupActionFollowThrough = false;
+        GroupActionFollowThroughSpeed = 0f;
+        GroupActionFollowThroughHardImpact = false;
 
         if (actionStarted)
         {
@@ -156,27 +169,66 @@ public sealed class FlockController : MonoBehaviour
         }
     }
 
+    internal void SetGroupActionAnticipating(bool anticipating)
+    {
+        IsGroupActionAnticipating = IsGroupActionActive
+            && IsGroupActionHolding
+            && anticipating;
+    }
+
+    internal void SetGroupActionFollowThrough(bool active, float speed, bool hardImpact)
+    {
+        IsGroupActionFollowThrough = IsGroupActionActive && active && speed > 0f;
+        GroupActionFollowThroughSpeed = IsGroupActionFollowThrough
+            ? Mathf.Max(0f, speed)
+            : 0f;
+        GroupActionFollowThroughHardImpact = IsGroupActionFollowThrough && hardImpact;
+    }
+
     internal void ReportGroupActionMemberBlocked(Collider2D blocker)
     {
-        if (IsGroupActionActive && !IsGroupActionHolding && !hasPendingGroupActionBlock)
+        if (IsGroupActionActive
+            && !IsGroupActionHolding
+            && !IsGroupActionFollowThrough
+            && blocker != null
+            && !pendingGroupActionBlockers.Contains(blocker))
         {
-            pendingGroupActionBlocker = blocker;
-            hasPendingGroupActionBlock = true;
+            pendingGroupActionBlockers.Add(blocker);
         }
     }
 
-    internal bool TryConsumeGroupActionMemberBlock(out Collider2D blocker)
+    internal int ConsumeGroupActionMemberBlocks(List<Collider2D> results)
     {
-        if (!hasPendingGroupActionBlock)
-        {
-            blocker = null;
-            return false;
-        }
+        if (results == null)
+            return 0;
 
-        blocker = pendingGroupActionBlocker;
-        pendingGroupActionBlocker = null;
-        hasPendingGroupActionBlock = false;
-        return true;
+        results.Clear();
+        results.AddRange(pendingGroupActionBlockers);
+        pendingGroupActionBlockers.Clear();
+        return results.Count;
+    }
+
+    internal void RegisterGroupActionFenceBreach(FenceObstacle fence)
+    {
+        if (fence == null)
+            return;
+
+        breachedFenceGroups.Add(GetFenceGroup(fence));
+    }
+
+    internal bool IsGroupActionFenceBreach(Collider2D blocker)
+    {
+        FenceObstacle fence = blocker != null
+            ? blocker.GetComponentInParent<FenceObstacle>()
+            : null;
+        return fence != null && breachedFenceGroups.Contains(GetFenceGroup(fence));
+    }
+
+    private static Transform GetFenceGroup(FenceObstacle fence)
+    {
+        return fence.transform.parent != null
+            ? fence.transform.parent
+            : fence.transform;
     }
 
     internal bool HasMovementLockedMembers()
@@ -189,6 +241,37 @@ public sealed class FlockController : MonoBehaviour
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// 普通移动只要求至少一只羊沿输入方向仍有可走路径。成员各自处理碰撞、
+    /// 绕行和脱队；只有全员被挡时，目标中心才停下。
+    /// </summary>
+    internal bool AreAllMembersBlocked(Vector2 displacement)
+    {
+        if (displacement.sqrMagnitude <= 0.000001f)
+            return false;
+
+        Vector2 direction = displacement.normalized;
+        bool foundMember = false;
+        for (int index = 0; index < members.Count; index++)
+        {
+            SheepMember member = members[index];
+            if (member == null)
+                continue;
+
+            SheepFlockAgent agent = member.Agent;
+            // 缺少当前方向的有效报告时先允许中心前进，避免初始化或转向时误锁。
+            if (agent == null
+                || !agent.TryGetNormalMovementBlocked(direction, out bool blocked))
+                return false;
+
+            foundMember = true;
+            if (!blocked)
+                return false;
+        }
+
+        return foundMember;
     }
 
     public event Action<RecruitableSheep, int> SheepRecruited;
@@ -647,6 +730,15 @@ public sealed class FlockController : MonoBehaviour
         currentMembershipRadius = CalculateMembershipRadius();
         float membershipRadiusSquared = currentMembershipRadius * currentMembershipRadius;
         detachingMembers.Clear();
+
+        // 距离脱队不能移除最后一只羊。中心与成员位置现在允许暂时分离，
+        // 单羊被障碍挡住时仍应保留控制锚点并继续尝试追赶。
+        if (members.Count <= 1)
+        {
+            outsideMembershipSince.Clear();
+            return;
+        }
+
         for (int index = 0; index < members.Count; index++)
         {
             SheepMember member = members[index];
@@ -670,7 +762,38 @@ public sealed class FlockController : MonoBehaviour
                 detachingMembers.Add(member);
         }
 
+        PreserveNearestMemberWhenAllWouldDetach();
+
         DetachSeparatedMembers();
+    }
+
+
+    private void PreserveNearestMemberWhenAllWouldDetach()
+    {
+        if (detachingMembers.Count == 0 || detachingMembers.Count < members.Count)
+            return;
+
+        SheepMember nearest = null;
+        float nearestDistanceSquared = float.PositiveInfinity;
+        for (int index = 0; index < detachingMembers.Count; index++)
+        {
+            SheepMember candidate = detachingMembers[index];
+            if (candidate == null)
+                continue;
+
+            float distanceSquared = (GetMemberPosition(candidate) - Center).sqrMagnitude;
+            if (distanceSquared < nearestDistanceSquared)
+            {
+                nearest = candidate;
+                nearestDistanceSquared = distanceSquared;
+            }
+        }
+
+        if (nearest == null)
+            return;
+
+        detachingMembers.Remove(nearest);
+        outsideMembershipSince.Remove(nearest);
     }
 
 

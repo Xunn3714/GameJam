@@ -21,13 +21,12 @@ public enum WolfAttackType
     Pentagram,
 }
 
-/// <summary>攻击选择的三大类。</summary>
-public enum WolfAttackCategory
+/// <summary>狼袭导演使用的威胁强度。具体攻击仍在同档内随机。</summary>
+public enum WolfAttackIntensity
 {
-    Single,
-    Pack,
-    /// <summary>本场损失最多羊的那种攻击（不含五角星）。</summary>
-    MostLoss,
+    Basic,
+    Formation,
+    Major,
 }
 
 public static class WolfAttackTypes
@@ -44,6 +43,22 @@ public static class WolfAttackTypes
     };
 
     public static bool IsPack(WolfAttackType type) => Array.IndexOf(PackTypes, type) >= 0;
+
+    public static WolfAttackIntensity Intensity(WolfAttackType type)
+    {
+        switch (type)
+        {
+            case WolfAttackType.ParallelSequential:
+            case WolfAttackType.PerpendicularChain:
+                return WolfAttackIntensity.Formation;
+            case WolfAttackType.ParallelSimultaneous:
+            case WolfAttackType.LongWolfWithEscorts:
+            case WolfAttackType.Pentagram:
+                return WolfAttackIntensity.Major;
+            default:
+                return WolfAttackIntensity.Basic;
+        }
+    }
 
     public static bool UsesLongWolf(WolfAttackType type) =>
         type != WolfAttackType.StraightWolf && type != WolfAttackType.SmartWolf;

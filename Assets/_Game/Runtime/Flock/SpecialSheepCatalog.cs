@@ -58,6 +58,11 @@ public sealed class SpecialSheepCatalog : ScriptableObject
             lastImportedFileName = nextImportedFileName;
         }
 
+        public void EditorSetCodexDescription(string description)
+        {
+            codexDescription = description?.Trim();
+        }
+
         public void EditorMarkMissing()
         {
             sprite = null;

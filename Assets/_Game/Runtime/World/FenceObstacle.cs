@@ -42,6 +42,11 @@ public sealed class FenceObstacle : MonoBehaviour
     public bool CanBreak => IsFlockInRange && CurrentFlockCount >= RequiredFlockCount;
 
     public event Action<FenceObstacle> StateChanged;
+    /// <summary>整群冲刺撞上来了、但羊不够，撞不开。宝通寺靠这个事件来解锁任务。</summary>
+    public event Action<FenceObstacle> DashRejected;
+
+    /// <summary>关掉"数量够了碰到就碎"，只能由 E 整群冲刺撞碎。</summary>
+    public void SetBreakOnContact(bool value) => breakOnContact = value;
 
     private void Awake()
     {
@@ -89,7 +94,10 @@ public sealed class FenceObstacle : MonoBehaviour
             RequiredFlockCount);
         sourceFlock.ReportFenceChargeImpact(hardImpact: !canBreak);
         if (!canBreak)
+        {
+            DashRejected?.Invoke(this);
             return false;
+        }
 
         breakable.Break();
         ClearRange();

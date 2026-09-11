@@ -131,6 +131,16 @@ public static class MovementBlocking
         return TryFindBlocker(position, radius, blockingMask, out _) == false;
     }
 
+    /// <summary>返回当前位置与指定阻挡层重叠的第一个实体碰撞体。</summary>
+    internal static bool TryGetBlocker(
+        Vector2 position,
+        float radius,
+        LayerMask blockingMask,
+        out Collider2D blocker)
+    {
+        return TryFindBlocker(position, radius, blockingMask, out blocker);
+    }
+
     private static bool TryFindBlocker(
         Vector2 position,
         float radius,

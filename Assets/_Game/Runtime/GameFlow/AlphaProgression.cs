@@ -138,6 +138,34 @@ public static class AlphaTaskSequence
         return Objective("alpha.escape", "冲出草原！", escaped ? 1 : 0, 1, escaped);
     }
 
+    /// <summary>撞过宝通寺但羊不够时解锁的支线：寻找？？</summary>
+    public static MvpObjectiveSnapshot Pagoda(int currentMemberCount, int requiredCount, bool smashed)
+    {
+        requiredCount = Mathf.Max(1, requiredCount);
+        return new MvpObjectiveSnapshot(
+            "alpha.pagoda",
+            "寻找？？",
+            false,
+            !smashed,
+            smashed,
+            Mathf.Clamp(currentMemberCount, 0, requiredCount),
+            requiredCount);
+    }
+
+    /// <summary>常驻统计行：只记录本局成功生成粪便的次数，不参与任务完成判断。</summary>
+    public static MvpObjectiveSnapshot PoopCounter(int useCount)
+    {
+        return new MvpObjectiveSnapshot(
+            "alpha.poop_counter",
+            "Space 拉屎",
+            false,
+            false,
+            false,
+            Mathf.Max(0, useCount),
+            0,
+            true);
+    }
+
     private static MvpObjectiveSnapshot Objective(
         string id,
         string title,

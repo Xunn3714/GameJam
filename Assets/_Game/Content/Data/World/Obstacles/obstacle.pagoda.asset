@@ -10,17 +10,17 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4d668429246d71b49b18e7de5da03335, type: 3}
-  m_Name: obstacle.pen_fence
+  m_Name: obstacle.pagoda
   m_EditorClassIdentifier: Assembly-CSharp::ObstacleDefinition
-  obstacleId: obstacle.pen_fence
-  displayName: "\u7F8A\u5708\u6805\u680F"
-  sizeCategory: 1
+  obstacleId: obstacle.pagoda
+  displayName: "\u6D2A\u5C71\u5B9D\u901A\u5BFA"
+  sizeCategory: 2
   breakRule: 1
-  requiredFlockCount: 6
+  requiredFlockCount: 150
   requiredDashHits: 1
   countSource: 0
   brokenBehavior: 0
   breakAnimationDuration: 0.4
   brokenSortingLayer: Background
   brokenSortingOrder: 10
-  brokenSprite: {fileID: 21300000, guid: 4f9d89aa3127b6346815e3f9957798d0, type: 3}
+  brokenSprite: {fileID: 0}

@@ -5,6 +5,7 @@ using UnityEditor;
 using UnityEditor.Events;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
@@ -29,6 +30,8 @@ public static class AlphaFlockExpansionSceneSetup
     private const string PauseSystemPrefabPath = "Assets/_Game/Content/Perfabs/UI/PauseSystem.prefab";
     private const string ResultPanelPrefabPath = "Assets/_Game/Content/Perfabs/UI/ResultPanel.prefab";
     private const string TaskSystemPrefabPath = "Assets/_Game/Content/Perfabs/UI/TaskSystem.prefab";
+    private const string PoopPrefabPath = "Assets/_Game/Content/Perfabs/SheepMvp/Poop.prefab";
+    private const string PoopActionPath = "Assets/_Game/Content/Data/SheepMvp/Poop.asset";
     private const string GameplayBgmPath = "Assets/_Game/Content/Audio/BGM/sheep-coming.wav";
     private const string WolfSpawnClipPath = "Assets/_Game/Content/Audio/SFX/woof/woof.wav";
     private const string WolfAttack1ClipPath = "Assets/_Game/Content/Audio/SFX/woof/attact1.wav";
@@ -254,7 +257,7 @@ public static class AlphaFlockExpansionSceneSetup
         GameObject wolfPrefab = LoadRequired<GameObject>(WolfPrefabPath);
         GameObject fencePrefab = LoadRequired<GameObject>(WorldObstaclePrefabBuilder.FencePrefabPath);
         SheepNamePool namePool = LoadRequired<SheepNamePool>(NamePoolPath);
-        ObstacleDefinition penFenceDefinition = LoadRequired<ObstacleDefinition>(WorldObstaclePrefabBuilder.PenFenceDefinitionPath);
+        ObstacleDefinition fenceDefinition = LoadRequired<ObstacleDefinition>(WorldObstaclePrefabBuilder.FenceDefinitionPath);
         ObstacleDefinition borderFenceDefinition = LoadRequired<ObstacleDefinition>(WorldObstaclePrefabBuilder.BorderFenceDefinitionPath);
 
         ClearManagedObjects(scene);
@@ -264,7 +267,7 @@ public static class AlphaFlockExpansionSceneSetup
         CreateWorld(scene);
         WorldSeed worldSeed = CreateWorldSeed(scene);
         BorderFenceRing borderRing = CreateBorderFence(scene, fencePrefab, borderFenceDefinition);
-        TutorialPen tutorialPen = CreateTutorialPen(scene, fencePrefab, penFenceDefinition, recruitablePrefab);
+        TutorialPen tutorialPen = CreateTutorialPen(scene, fencePrefab, fenceDefinition, recruitablePrefab);
         WorldDebrisSpawner debris = CreateDebrisSpawner(scene, worldSeed);
 
         GameObject flockObject = CreateFlock(
@@ -272,13 +275,14 @@ public static class AlphaFlockExpansionSceneSetup
             memberPrefab,
             out FlockController flock,
             out FlockMovementController movement,
-            out FlockActionController actions);
+            out FlockActionController actions,
+            out PoopAbility poopAbility);
         tutorialPen.BindFlock(flock);
         ConfigureRecruitAudio(movement, tutorialPen);
         CameraFollow2D cameraFollow = ConfigureCamera(scene, flockObject.transform, out Camera gameplayCamera);
         ConfigureLighting(scene);
         ProgressiveSheepSpawner sheepSpawner = CreateSheepSpawner(scene, flock, namePool, gameplayCamera, worldSeed);
-        CreateLandmarkSpawner(scene, worldSeed, sheepSpawner, fencePrefab, penFenceDefinition);
+        CreateLandmarkSpawner(scene, worldSeed, sheepSpawner, fencePrefab, fenceDefinition);
         CreateWolfSystem(scene, flock, wolfPrefab.GetComponent<Wolf>(), out WolfSpawner wolfSpawner, out WolfEventDirector director);
         LevelUi ui = CreateLevelUi(scene);
         CreateGameController(
@@ -286,6 +290,7 @@ public static class AlphaFlockExpansionSceneSetup
             flock,
             movement,
             actions,
+            poopAbility,
             sheepSpawner,
             cameraFollow,
             wolfSpawner,
@@ -667,7 +672,7 @@ public static class AlphaFlockExpansionSceneSetup
         WorldSeed worldSeed,
         ProgressiveSheepSpawner sheepSpawner,
         GameObject fencePrefab,
-        ObstacleDefinition penFenceDefinition)
+        ObstacleDefinition fenceDefinition)
     {
         GameObject spawnerObject = new GameObject("WorldLandmarkSpawner");
         SceneManager.MoveGameObjectToScene(spawnerObject, scene);
@@ -683,7 +688,7 @@ public static class AlphaFlockExpansionSceneSetup
         serialized.FindProperty("barrelPrefab").objectReferenceValue =
             LoadRequired<GameObject>(WorldObstaclePrefabBuilder.PrefabFolder + "/Obstacle_Barrel.prefab");
         serialized.FindProperty("fencePrefab").objectReferenceValue = fencePrefab;
-        serialized.FindProperty("penFenceDefinition").objectReferenceValue = penFenceDefinition;
+        serialized.FindProperty("fenceDefinition").objectReferenceValue = fenceDefinition;
         serialized.FindProperty("redChestDefinition").objectReferenceValue =
             LoadRequired<ObstacleDefinition>(WorldObstaclePrefabBuilder.RedChestDefinitionPath);
         serialized.FindProperty("houseDefinition").objectReferenceValue =
@@ -708,7 +713,8 @@ public static class AlphaFlockExpansionSceneSetup
         GameObject sheepPrefab,
         out FlockController flock,
         out FlockMovementController movement,
-        out FlockActionController actions)
+        out FlockActionController actions,
+        out PoopAbility poopAbility)
     {
         GameObject flockObject = new GameObject("SheepFlock");
         SceneManager.MoveGameObjectToScene(flockObject, scene);
@@ -728,6 +734,16 @@ public static class AlphaFlockExpansionSceneSetup
         flock = flockObject.AddComponent<FlockController>();
         actions = flockObject.AddComponent<FlockActionController>();
         actions.Configure(flock, movement);
+        poopAbility = flockObject.AddComponent<PoopAbility>();
+        poopAbility.Configure(
+            LoadRequired<InputActionReference>(PoopActionPath),
+            LoadRequired<GameObject>(PoopPrefabPath),
+            2f,
+            10f,
+            100,
+            0.2f,
+            1.9f,
+            0.08f);
 
         ConfigureFootstepAudio(movement);
 
@@ -1009,8 +1025,14 @@ public static class AlphaFlockExpansionSceneSetup
                 checklistData.FindProperty("progressFill01").objectReferenceValue =
                     FindNamedComponent<Image>(taskRoot, "TaskProgressFill");
                 checklistData.FindProperty("taskRow02").objectReferenceValue = row02;
+                checklistData.FindProperty("taskTitle02").objectReferenceValue =
+                    FindNamedComponent<TMP_Text>(taskRoot, "Txt_Task_02");
                 checklistData.FindProperty("taskRow03").objectReferenceValue = row03;
+                checklistData.FindProperty("taskTitle03").objectReferenceValue =
+                    FindNamedComponent<TMP_Text>(taskRoot, "Txt_Task_03");
                 checklistData.FindProperty("taskRow04").objectReferenceValue = row04;
+                checklistData.FindProperty("taskTitle04").objectReferenceValue =
+                    FindNamedComponent<TMP_Text>(taskRoot, "Txt_Task_04");
                 checklistData.ApplyModifiedPropertiesWithoutUndo();
             }
 
@@ -1200,6 +1222,7 @@ public static class AlphaFlockExpansionSceneSetup
         FlockController flock,
         FlockMovementController movement,
         FlockActionController actions,
+        PoopAbility poopAbility,
         ProgressiveSheepSpawner sheepSpawner,
         CameraFollow2D cameraFollow,
         WolfSpawner wolfSpawner,
@@ -1216,6 +1239,7 @@ public static class AlphaFlockExpansionSceneSetup
         serialized.FindProperty("flock").objectReferenceValue = flock;
         serialized.FindProperty("flockMovement").objectReferenceValue = movement;
         serialized.FindProperty("flockActions").objectReferenceValue = actions;
+        serialized.FindProperty("poopAbility").objectReferenceValue = poopAbility;
         serialized.FindProperty("sheepSpawner").objectReferenceValue = sheepSpawner;
         serialized.FindProperty("cameraFollow").objectReferenceValue = cameraFollow;
         serialized.FindProperty("wolfDirector").objectReferenceValue = director;

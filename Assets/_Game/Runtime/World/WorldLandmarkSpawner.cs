@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// 单局固定地标：7 个红箱子、房屋，以及 2×2/2×3 成片农田。它们只在开局生成一次（Spawn 有一次性保护），
@@ -18,11 +19,15 @@ public sealed class WorldLandmarkSpawner : MonoBehaviour
     [SerializeField] private GameObject haystackPrefab;
     [SerializeField] private GameObject barrelPrefab;
     [SerializeField] private GameObject fencePrefab;
-    [SerializeField] private ObstacleDefinition penFenceDefinition;
+    [FormerlySerializedAs("penFenceDefinition")]
+    [SerializeField] private ObstacleDefinition fenceDefinition;
     [SerializeField] private ObstacleDefinition redChestDefinition;
     [SerializeField] private ObstacleDefinition houseDefinition;
     [SerializeField] private Sprite redChestSprite;
     [SerializeField] private Sprite houseSprite;
+    [Tooltip("洪山宝通寺：全图唯一一座，150 只羊用 E 冲刺才撞得动。")]
+    [SerializeField] private ObstacleDefinition pagodaDefinition;
+    [SerializeField] private Sprite pagodaSprite;
 
     [Header("Area")]
     [SerializeField] private Rect area = new(-120f, -70f, 240f, 140f);
@@ -44,10 +49,22 @@ public sealed class WorldLandmarkSpawner : MonoBehaviour
     [Tooltip("摆放红箱子时与其他地标 / 已有碰撞体的最小间距。")]
     [SerializeField, Min(0.5f)] private float redChestClearance = 6f;
 
+    [Header("Pagoda (洪山宝通寺)")]
+    [Tooltip("贴图 23.04 x 17.28 单位、塔身可见部分 7.46 x 14.90 单位（100 PPU）。")]
+    [SerializeField, Min(0.001f)] private float pagodaScale = 0.6f;
+    [SerializeField] private Vector2 pagodaColliderSize = new(4.2f, 2.4f);
+    [SerializeField] private Vector2 pagodaColliderOffset = new(0.23f, -2.91f);
+    [SerializeField, Min(0.5f)] private float pagodaClearance = 14f;
+    [Tooltip("宝塔落位后清掉这个半径内的花草石头，让它站得干净。")]
+    [SerializeField, Min(0f)] private float pagodaClearRadius = 7f;
+
     [Header("House")]
     [SerializeField, Min(0.001f)] private float houseScale = 1.25f;
     [SerializeField] private Vector2 houseColliderSize = new(2.8f, 3f);
     [SerializeField] private Vector2 houseColliderOffset = new(-0.02f, 0.13f);
+
+    /// <summary>找不到位置时依次放宽到的间距倍率。</summary>
+    private static readonly float[] RelaxSteps = { 1f, 0.75f, 0.55f, 0.4f, 0.28f, 0.18f };
 
     private readonly List<Vector2> occupied = new();
     private Transform root;
@@ -72,6 +89,9 @@ public sealed class WorldLandmarkSpawner : MonoBehaviour
         System.Random random = worldSeed.CreateRandom(3);
         root = new GameObject("WorldLandmarks").transform;
         root.SetParent(transform, false);
+
+        // 全图唯一的宝通寺，最先挑位置。
+        CreatePagoda(random);
 
         List<GameObject> createdChests = new();
         for (int index = 0; index < redChestCount; index++)
@@ -125,6 +145,32 @@ public sealed class WorldLandmarkSpawner : MonoBehaviour
             if (TryFindPosition(random, 5f, out Vector2 position))
                 CreateFarmCluster(position, random);
         }
+    }
+
+    /// <summary>洪山宝通寺：全图有且仅有一座。复用围栏的 FenceObstacle 判定，只是门槛是 150 只羊。</summary>
+    private void CreatePagoda(System.Random random)
+    {
+        if (pagodaDefinition == null || pagodaSprite == null)
+        {
+            Debug.LogWarning("宝通寺缺少 ObstacleDefinition 或贴图，这局不生成。", this);
+            return;
+        }
+
+        if (!TryFindPositionRelaxed(random, pagodaClearance, out Vector2 position))
+        {
+            Debug.LogWarning("找不到摆宝通寺的位置。", this);
+            return;
+        }
+
+        // 塔脚下的花草石头清掉，免得这座唯一地标插在一堆杂物里。
+        ClearDebrisAround(position, pagodaClearRadius);
+
+        GameObject pagoda = CreateBlockedObject(
+            "HongshanPagoda", position, pagodaScale, pagodaColliderSize, pagodaColliderOffset,
+            pagodaDefinition, pagodaSprite);
+
+        FenceObstacle fence = pagoda.AddComponent<FenceObstacle>();
+        pagoda.AddComponent<PagodaLandmark>().Configure(pagoda.GetComponent<BreakableObstacle>(), fence);
     }
 
     private GameObject CreateRedChest(Vector2 position)
@@ -231,7 +277,7 @@ public sealed class WorldLandmarkSpawner : MonoBehaviour
         fence.transform.rotation = Quaternion.Euler(0f, 0f, rotation);
         BreakableObstacle breakable = fence.GetComponent<BreakableObstacle>();
         if (breakable != null)
-            breakable.Configure(penFenceDefinition, fence.GetComponent<SpriteRenderer>());
+            breakable.Configure(fenceDefinition, fence.GetComponent<SpriteRenderer>());
     }
 
     private GameObject CreatePrefab(GameObject prefab, Vector2 position, string name)
@@ -281,6 +327,44 @@ public sealed class WorldLandmarkSpawner : MonoBehaviour
         BreakableObstacle breakable = result.AddComponent<BreakableObstacle>();
         breakable.Configure(definition, renderer);
         return result;
+    }
+
+    /// <summary>
+    /// 散布物是先于地标生成的（WorldDebrisSpawner 没有 DefaultExecutionOrder，默认 0，比这里的 30 早），
+    /// 整张图早就铺满了小碰撞体，间距要求一大就一个位置都找不到。所以从想要的间距开始逐级放宽。
+    /// </summary>
+    private bool TryFindPositionRelaxed(System.Random random, float clearance, out Vector2 position)
+    {
+        foreach (float factor in RelaxSteps)
+        {
+            if (TryFindPosition(random, Mathf.Max(2.5f, clearance * factor), out position))
+                return true;
+        }
+
+        position = default;
+        return false;
+    }
+
+    /// <summary>清掉一圈散布物；围栏（外围 / 羊圈）和已经放好的地标不动。</summary>
+    private void ClearDebrisAround(Vector2 center, float radius)
+    {
+        foreach (Collider2D hit in Physics2D.OverlapCircleAll(center, radius))
+        {
+            if (hit == null)
+                continue;
+
+            BreakableObstacle obstacle = hit.GetComponentInParent<BreakableObstacle>();
+            if (obstacle == null)
+                continue;
+
+            // 围栏别拆（外圈拆了羊就跑出去了），已经摆好的地标也别拆。
+            if (obstacle.GetComponent<FenceObstacle>() != null)
+                continue;
+            if (root != null && obstacle.transform.IsChildOf(root))
+                continue;
+
+            Destroy(obstacle.gameObject);
+        }
     }
 
     private bool TryFindPosition(System.Random random, float clearance, out Vector2 position)

@@ -75,7 +75,8 @@ public sealed class JoinToastView : MonoBehaviour
 
         RectTransform root = (RectTransform)transform;
         MvpUiFactory.Anchor(root, Vector2.one, Vector2.one,
-            new Vector2(-24f, -24f), new Vector2(520f, RowSpacing * Capacity));
+            // 右上角留给常驻的羊群数量和破坏得分，入队通知从状态区下方开始堆叠。
+            new Vector2(-24f, -164f), new Vector2(520f, RowSpacing * Capacity));
         stackGroup = gameObject.AddComponent<CanvasGroup>();
         stackGroup.blocksRaycasts = false;
         stackGroup.interactable = false;

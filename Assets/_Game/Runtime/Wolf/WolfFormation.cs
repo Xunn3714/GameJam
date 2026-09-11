@@ -53,7 +53,7 @@ public sealed class WolfFormation
     [Range(0f, 80f)] public float escortFanSpread = 35f;
 
     [Header("Pentagram (五角星)")]
-    [Tooltip("五角星外接圆半径：五条狼从圆上的五个顶点出发。顶点会被推到镜头外，所以这是下限。")]
+    [Tooltip("五角星核心路线的固定世界半径；镜头缩放不会改变它。狼会沿路线反向延伸到画外生成。")]
     [Min(1f)] public float pentagramRadius = 16f;
     [Tooltip("五角星用长狼还是普通狼。")]
     public bool pentagramUsesLongWolves = true;

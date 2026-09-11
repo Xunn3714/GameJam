@@ -8,36 +8,33 @@ public sealed class WolfAttackPlannerTests
     private static WolfAttackSchedule.Stage[] Stages() => WolfAttackSchedule.CreateDefaultStages();
 
     [Test]
-    public void StageIndexFollowsMemberCountThresholds()
+    public void StageIndexFollowsThreatUnlockThresholds()
     {
         WolfAttackSchedule.Stage[] stages = Stages();
         Assert.AreEqual(0, WolfAttackPlanner.GetStageIndex(stages, 1));
-        Assert.AreEqual(0, WolfAttackPlanner.GetStageIndex(stages, 5));
-        Assert.AreEqual(1, WolfAttackPlanner.GetStageIndex(stages, 6));
-        Assert.AreEqual(1, WolfAttackPlanner.GetStageIndex(stages, 19));
-        Assert.AreEqual(2, WolfAttackPlanner.GetStageIndex(stages, 20));
-        Assert.AreEqual(3, WolfAttackPlanner.GetStageIndex(stages, 50));
-        Assert.AreEqual(3, WolfAttackPlanner.GetStageIndex(stages, 89));
-        Assert.AreEqual(4, WolfAttackPlanner.GetStageIndex(stages, 90));
+        Assert.AreEqual(0, WolfAttackPlanner.GetStageIndex(stages, 19));
+        Assert.AreEqual(1, WolfAttackPlanner.GetStageIndex(stages, 20));
+        Assert.AreEqual(1, WolfAttackPlanner.GetStageIndex(stages, 49));
+        Assert.AreEqual(2, WolfAttackPlanner.GetStageIndex(stages, 50));
+        Assert.AreEqual(3, WolfAttackPlanner.GetStageIndex(stages, 90));
+        Assert.AreEqual(4, WolfAttackPlanner.GetStageIndex(stages, 130));
         Assert.AreEqual(4, WolfAttackPlanner.GetStageIndex(stages, 500));
     }
 
     [Test]
-    public void DefaultStagesUseTheRequestedRhythmAndLongWolfGrowth()
+    public void DefaultStagesControlOnlyRhythmAndIntensity()
     {
         WolfAttackSchedule.Stage[] stages = Stages();
-        Assert.AreEqual(8f, stages[1].calmDurationMin);
-        Assert.AreEqual(10f, stages[1].calmDurationMax);
-        Assert.AreEqual(6f, stages[2].calmDurationMin);
-        Assert.AreEqual(10f, stages[2].calmDurationMax);
-        Assert.AreEqual(6f, stages[3].calmDurationMin);
-        Assert.AreEqual(8f, stages[3].calmDurationMax);
-        Assert.Greater(stages[3].longWolfWidthMultiplier, 1f);
-        Assert.Greater(stages[4].longWolfWidthMultiplier, stages[3].longWolfWidthMultiplier);
+        Assert.AreEqual(5, stages.Length);
+        Assert.AreEqual(new[] { 0f, 0f, 0f }, stages[0].IntensityWeights);
+        Assert.AreEqual(new[] { 1f, 0f, 0f }, stages[1].IntensityWeights);
+        Assert.AreEqual(new[] { 3f, 4f, 0f }, stages[2].IntensityWeights);
+        Assert.AreEqual(new[] { 2f, 4f, 3f }, stages[3].IntensityWeights);
+        Assert.AreEqual(new[] { 2f, 3f, 4f }, stages[4].IntensityWeights);
     }
 
     [Test]
-    public void ScheduleUsesFiveSecondRhythmAtOneHundredThirtySheep()
+    public void ScheduleUsesFiveSecondRhythmAndWiderLongWolfAtOneHundredThirtySheep()
     {
         WolfAttackSchedule schedule = ScriptableObject.CreateInstance<WolfAttackSchedule>();
         try
@@ -55,13 +52,21 @@ public sealed class WolfAttackPlannerTests
     public void RuntimeLongWolfWidthMultiplierChangesTheEffectiveWidth()
     {
         GameObject wolfObject = new GameObject("TestLongWolf");
+        GameObject visualObject = new GameObject("BodyVisual");
         try
         {
+            visualObject.transform.SetParent(wolfObject.transform, false);
             LongWolfSweep sweep = wolfObject.AddComponent<LongWolfSweep>();
+            typeof(LongWolfSweep)
+                .GetField("bodyVisual", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                .SetValue(sweep, visualObject.transform);
+            sweep.SetDirection(Vector2.right);
             float originalWidth = sweep.BodyWidth;
             sweep.SetRuntimeWidthMultiplier(1.5f);
 
             Assert.AreEqual(originalWidth * 1.5f, sweep.BodyWidth, 0.0001f);
+            Assert.AreEqual(sweep.BodyWidth, visualObject.transform.localScale.y, 0.0001f,
+                "Changing stage width must immediately refresh the long-wolf visual.");
             Assert.IsTrue(LongWolfSweep.TouchesSweep(
                 new Vector2(0f, sweep.BodyWidth * 0.45f),
                 0f,
@@ -78,78 +83,129 @@ public sealed class WolfAttackPlannerTests
     }
 
     [Test]
-    public void TutorialStageNeverAttacks()
+    public void DormantStageNeverAttacks()
     {
-        WolfAttackSchedule.Stage stage = Stages()[0];
-        for (int index = 0; index < 20; index++)
+        WolfAttackSchedule schedule = ScriptableObject.CreateInstance<WolfAttackSchedule>();
+        try
         {
-            float roll = index / 20f;
-            Assert.IsNull(WolfAttackPlanner.Pick(stage, null, () => roll));
+            WolfAttackSelectionState state = new WolfAttackSelectionState();
+            state.ObserveStage(schedule, 0);
+            Assert.IsNull(state.Pick(schedule, () => 0.5f));
+        }
+        finally
+        {
+            UnityEngine.Object.DestroyImmediate(schedule);
         }
     }
 
     [Test]
-    public void StageOneIsAlwaysStraightWolf()
+    public void OpeningAttackStageUsesOnlyNormalSingleWolves()
     {
-        WolfAttackSchedule.Stage stage = Stages()[1];
-        System.Random random = new System.Random(7);
-        for (int index = 0; index < 200; index++)
+        WolfAttackSchedule schedule = ScriptableObject.CreateInstance<WolfAttackSchedule>();
+        try
         {
-            Assert.AreEqual(WolfAttackType.StraightWolf, WolfAttackPlanner.Pick(stage, null, () => (float)random.NextDouble()));
+            WolfAttackSchedule.AttackDefinition longWolf = Array.Find(
+                schedule.Attacks,
+                attack => attack.type == WolfAttackType.LongWolf);
+            Assert.IsNotNull(longWolf);
+            Assert.AreEqual(2, longWolf.unlockStageIndex,
+                "A long body must not appear during the opening single-wolf stage.");
+
+            WolfAttackSelectionState state = new WolfAttackSelectionState();
+            state.ObserveStage(schedule, 1);
+            float[] rolls = { 0f, 0.25f, 0.5f, 0.75f, 0.999f };
+            foreach (float roll in rolls)
+                Assert.AreEqual(WolfAttackType.StraightWolf, state.Pick(schedule, () => roll));
+        }
+        finally
+        {
+            UnityEngine.Object.DestroyImmediate(schedule);
         }
     }
 
     [Test]
-    public void StageTwoRollsCategoryThenAttack()
+    public void SmartWolfStaysConfiguredButCannotBeSelected()
     {
-        WolfAttackSchedule.Stage stage = Stages()[2];
-        // 第一次抽大类：0.5 落在 60% 的"一只狼"里；第二次抽 0.05 → 10% 的直冲狼。
-        Queue<float> rolls = new Queue<float>(new[] { 0.5f, 0.05f });
-        Assert.AreEqual(WolfAttackType.StraightWolf, WolfAttackPlanner.Pick(stage, null, rolls.Dequeue));
-
-        // 0.2 → 直冲(10%) 之后的聪明狼(45%)。
-        rolls = new Queue<float>(new[] { 0.1f, 0.2f });
-        Assert.AreEqual(WolfAttackType.SmartWolf, WolfAttackPlanner.Pick(stage, null, rolls.Dequeue));
-
-        // 0.7 落在 40% 的"多只狼"里；第二次 0.0 → 并排轮冲(40%)。
-        rolls = new Queue<float>(new[] { 0.7f, 0.0f });
-        Assert.AreEqual(WolfAttackType.ParallelSequential, WolfAttackPlanner.Pick(stage, null, rolls.Dequeue));
-
-        // 0.99 → 多只狼里最后一个有权重的：包夹(5%)，五角星在阶段二是 0%。
-        rolls = new Queue<float>(new[] { 0.7f, 0.99f });
-        Assert.AreEqual(WolfAttackType.LongWolfWithEscorts, WolfAttackPlanner.Pick(stage, null, rolls.Dequeue));
-    }
-
-    [Test]
-    public void StageFourMostLossUsesRecordedAttackAndFallsBackWithoutIt()
-    {
-        WolfAttackSchedule.Stage stage = Stages()[4];
-        // 大类权重 20 / 65 / 15：0.9 落在"损失最多"里。
-        Queue<float> rolls = new Queue<float>(new[] { 0.9f });
-        Assert.AreEqual(WolfAttackType.PerpendicularChain,
-            WolfAttackPlanner.Pick(stage, WolfAttackType.PerpendicularChain, rolls.Dequeue));
-
-        // 没有损失记录时"损失最多"权重归零，0.9 落在多只狼里（20/65），再抽 0.0 → 并排轮冲。
-        rolls = new Queue<float>(new[] { 0.9f, 0.0f });
-        Assert.AreEqual(WolfAttackType.ParallelSequential, WolfAttackPlanner.Pick(stage, null, rolls.Dequeue));
-    }
-
-    [Test]
-    public void DistributionRoughlyMatchesWeights()
-    {
-        WolfAttackSchedule.Stage stage = Stages()[3];
-        System.Random random = new System.Random(42);
-        int single = 0, pack = 0;
-        const int samples = 20000;
-        for (int index = 0; index < samples; index++)
+        WolfAttackSchedule schedule = ScriptableObject.CreateInstance<WolfAttackSchedule>();
+        try
         {
-            WolfAttackType? type = WolfAttackPlanner.Pick(stage, null, () => (float)random.NextDouble());
-            Assert.IsTrue(type.HasValue);
-            if (WolfAttackTypes.IsPack(type.Value)) pack++; else single++;
+            WolfAttackSchedule.AttackDefinition smart = Array.Find(
+                schedule.Attacks,
+                attack => attack.type == WolfAttackType.SmartWolf);
+            Assert.IsNotNull(smart);
+            Assert.IsFalse(smart.enabled);
+
+            WolfAttackSelectionState state = new WolfAttackSelectionState();
+            state.ObserveStage(schedule, 4);
+            System.Random random = new System.Random(42);
+            for (int index = 0; index < 500; index++)
+            {
+                WolfAttackType? picked = state.Pick(schedule, () => (float)random.NextDouble());
+                Assert.AreNotEqual(WolfAttackType.SmartWolf, picked);
+            }
         }
-        // 阶段三：一只狼 20% / 多只狼 80%。
-        Assert.That(single / (float)samples, Is.EqualTo(0.2f).Within(0.02f));
-        Assert.That(pack / (float)samples, Is.EqualTo(0.8f).Within(0.02f));
+        finally
+        {
+            UnityEngine.Object.DestroyImmediate(schedule);
+        }
+    }
+
+    [Test]
+    public void NewlyUnlockedIntensityGetsTheNextAttackWithoutInterruptingTheCurrentOne()
+    {
+        WolfAttackSchedule schedule = ScriptableObject.CreateInstance<WolfAttackSchedule>();
+        try
+        {
+            WolfAttackSelectionState state = new WolfAttackSelectionState();
+            state.ObserveStage(schedule, 1);
+            Assert.That(state.Pick(schedule, () => 0f), Is.EqualTo(WolfAttackType.StraightWolf));
+
+            state.ObserveStage(schedule, 2);
+            WolfAttackType? debut = state.Pick(schedule, () => 0.99f);
+            Assert.That(debut, Is.EqualTo(WolfAttackType.PerpendicularChain));
+        }
+        finally
+        {
+            UnityEngine.Object.DestroyImmediate(schedule);
+        }
+    }
+
+    [Test]
+    public void MajorAttackIsFollowedByBasicRecovery()
+    {
+        WolfAttackSchedule schedule = ScriptableObject.CreateInstance<WolfAttackSchedule>();
+        try
+        {
+            WolfAttackSelectionState state = new WolfAttackSelectionState();
+            state.ObserveStage(schedule, 3);
+            WolfAttackType? major = state.Pick(schedule, () => 0.99f);
+            Assert.AreEqual(WolfAttackIntensity.Major, WolfAttackTypes.Intensity(major.Value));
+
+            Queue<float> rolls = new Queue<float>(new[] { 0.5f, 0.5f });
+            WolfAttackType? recovery = state.Pick(schedule, rolls.Dequeue);
+            Assert.AreEqual(WolfAttackIntensity.Basic, WolfAttackTypes.Intensity(recovery.Value));
+        }
+        finally
+        {
+            UnityEngine.Object.DestroyImmediate(schedule);
+        }
+    }
+
+    [Test]
+    public void UnlockedStageNeverDropsAfterFlockLosses()
+    {
+        WolfAttackSchedule schedule = ScriptableObject.CreateInstance<WolfAttackSchedule>();
+        try
+        {
+            WolfAttackSelectionState state = new WolfAttackSelectionState();
+            state.ObserveStage(schedule, 3);
+            state.ObserveStage(schedule, 1);
+            Assert.AreEqual(3, state.HighestStageIndex);
+        }
+        finally
+        {
+            UnityEngine.Object.DestroyImmediate(schedule);
+        }
     }
 
     [Test]

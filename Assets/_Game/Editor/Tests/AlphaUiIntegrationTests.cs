@@ -17,6 +17,10 @@ public sealed class AlphaUiIntegrationTests
         "Assets/_Game/Content/Perfabs/UI/PauseSystem.prefab";
     private const string TaskSystemPrefabPath =
         "Assets/_Game/Content/Perfabs/UI/TaskSystem.prefab";
+    private const string PoopPrefabPath =
+        "Assets/_Game/Content/Perfabs/SheepMvp/Poop.prefab";
+    private const string BreakParticlesPrefabPath =
+        "Assets/_Game/Content/Perfabs/World/VFX/BreakParticles.prefab";
     private const string MainMenuScenePath =
         "Assets/_Game/Scenes/MainMenu.unity";
     private const string ResultPanelPrefabPath =
@@ -25,6 +29,8 @@ public sealed class AlphaUiIntegrationTests
         "Assets/_Game/Content/Perfabs/UI/SettingPanel.prefab";
     private const string CollectionPanelPrefabPath =
         "Assets/_Game/Content/Perfabs/UI/CollectionPanel.prefab";
+    private const string SheepCardPrefabPath =
+        "Assets/_Game/Content/Perfabs/UI/SheepCard.prefab";
     private const string FenceSpritePath =
         "Assets/Art/Debris/obstacle_fence_256x128.png";
     private const string CatalogPath =
@@ -127,6 +133,44 @@ public sealed class AlphaUiIntegrationTests
     }
 
     [Test]
+    public void OpeningPausePreservesOpenTaskPanelState()
+    {
+        GameObject pausePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(PauseSystemPrefabPath);
+        GameObject taskPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(TaskSystemPrefabPath);
+        GameObject pauseInstance = Object.Instantiate(pausePrefab);
+        GameObject taskInstance = Object.Instantiate(taskPrefab);
+        try
+        {
+            PauseManager manager = pauseInstance.GetComponent<PauseManager>();
+            TaskPanelToggle taskPanelToggle = taskInstance.GetComponentInChildren<TaskPanelToggle>(true);
+            Assert.That(taskPanelToggle, Is.Not.Null);
+
+            SerializedObject pauseData = new SerializedObject(manager);
+            pauseData.FindProperty("taskPanelToggle").objectReferenceValue = taskPanelToggle;
+            pauseData.ApplyModifiedPropertiesWithoutUndo();
+
+            taskPanelToggle.OpenTaskPanel();
+            Assert.That(taskPanelToggle.IsOpen, Is.True);
+
+            manager.OpenPause();
+            Assert.That(manager.IsPaused, Is.True);
+            Assert.That(taskPanelToggle.gameObject.activeSelf, Is.False);
+            Assert.That(taskPanelToggle.IsOpen, Is.True,
+                "Opening pause should hide the task system without closing the task panel.");
+
+            manager.ResumeGame();
+            Assert.That(taskPanelToggle.gameObject.activeSelf, Is.True);
+            Assert.That(taskPanelToggle.IsOpen, Is.True);
+        }
+        finally
+        {
+            Time.timeScale = 1f;
+            Object.DestroyImmediate(taskInstance);
+            Object.DestroyImmediate(pauseInstance);
+        }
+    }
+
+    [Test]
     public void AlphaSceneKeepsMainGameplayAndUsesSingleUiStack()
     {
         Scene scene = EditorSceneManager.OpenScene(AlphaScenePath, OpenSceneMode.Additive);
@@ -141,8 +185,19 @@ public sealed class AlphaUiIntegrationTests
                 Has.Length.EqualTo(1));
             Assert.That(objects.SelectMany(item => item.GetComponents<EventSystem>()).ToArray(),
                 Has.Length.EqualTo(1));
-            Assert.That(objects.SelectMany(item => item.GetComponents<FlockActionController>()).ToArray(),
-                Has.Length.EqualTo(1));
+            FlockActionController[] flockActions = objects
+                .SelectMany(item => item.GetComponents<FlockActionController>())
+                .ToArray();
+            Assert.That(flockActions, Has.Length.EqualTo(1));
+            SerializedObject actionData = new SerializedObject(flockActions[0]);
+            Assert.That(actionData.FindProperty("dashSpeed").floatValue,
+                Is.EqualTo(9f).Within(0.001f));
+            Assert.That(actionData.FindProperty("dashDistance").floatValue,
+                Is.EqualTo(3.2f).Within(0.001f));
+            Assert.That(actionData.FindProperty("impactFollowThroughDuration").floatValue,
+                Is.EqualTo(0.28f).Within(0.001f));
+            Assert.That(actionData.FindProperty("impactFollowThroughSpeedFactor").floatValue,
+                Is.EqualTo(0.78f).Within(0.001f));
             Assert.That(objects.SelectMany(item => item.GetComponents<AlphaFlockExpansionController>()).ToArray(),
                 Has.Length.EqualTo(1));
             Assert.That(objects.SelectMany(item => item.GetComponents<WorldDebrisSpawner>()).ToArray(),
@@ -202,6 +257,17 @@ public sealed class AlphaUiIntegrationTests
             Assert.That(pauseData.FindProperty("taskPanelToggle").objectReferenceValue, Is.Not.Null);
             Assert.That(pauseData.FindProperty("bannerView").objectReferenceValue, Is.Not.Null);
 
+            CollectionPanelController inGameCollection = objects
+                .Select(item => item.GetComponent<CollectionPanelController>())
+                .FirstOrDefault(item => item != null);
+            Assert.That(inGameCollection, Is.Not.Null);
+            RectTransform inGameDetailPanel =
+                inGameCollection.detailImage.transform.parent as RectTransform;
+            Assert.That(inGameDetailPanel, Is.Not.Null);
+            Assert.That(inGameDetailPanel.sizeDelta, Is.EqualTo(new Vector2(590f, 620f)));
+            Assert.That(inGameCollection.detailImage.rectTransform.sizeDelta,
+                Is.EqualTo(new Vector2(320f, 320f)));
+
             TMP_Text gatherHint = objects
                 .Select(item => item.GetComponent<TMP_Text>())
                 .FirstOrDefault(item => item != null && item.gameObject.name == "Gather_Hint");
@@ -258,6 +324,12 @@ public sealed class AlphaUiIntegrationTests
                 .SelectMany(root => root.GetComponentsInChildren<MainMenuController>(true))
                 .FirstOrDefault();
             Assert.That(menu, Is.Not.Null);
+            SerializedObject menuData = new SerializedObject(menu);
+            Object sharedCollectionPrefab =
+                menuData.FindProperty("collectionPanelPrefab").objectReferenceValue;
+            Assert.That(sharedCollectionPrefab, Is.Not.Null);
+            Assert.That(AssetDatabase.GetAssetPath(sharedCollectionPrefab),
+                Is.EqualTo(CollectionPanelPrefabPath));
             Assert.That(menu.creditsPanel, Is.Not.Null);
             Button developers = scene.GetRootGameObjects()
                 .SelectMany(root => root.GetComponentsInChildren<Button>(true))
@@ -268,6 +340,49 @@ public sealed class AlphaUiIntegrationTests
         finally
         {
             EditorSceneManager.CloseScene(scene, true);
+        }
+    }
+
+    [Test]
+    public void MainMenuReplacesItsLegacyCatalogWithSharedGameplayPrefab()
+    {
+        GameObject root = new GameObject("MainMenuCatalogBindingTest");
+        root.SetActive(false);
+        try
+        {
+            MainMenuController menu = root.AddComponent<MainMenuController>();
+            menu.menuPanel = new GameObject("MenuPanel");
+            menu.menuPanel.transform.SetParent(root.transform, false);
+            menu.collectionPanel = new GameObject("LegacyCollectionPanel");
+            menu.collectionPanel.transform.SetParent(root.transform, false);
+            menu.collectionPanel.SetActive(false);
+
+            SerializedObject menuData = new SerializedObject(menu);
+            menuData.FindProperty("collectionPanelPrefab").objectReferenceValue =
+                AssetDatabase.LoadAssetAtPath<GameObject>(CollectionPanelPrefabPath);
+            menuData.ApplyModifiedPropertiesWithoutUndo();
+
+            MethodInfo bindSharedCollection = typeof(MainMenuController).GetMethod(
+                "BindSharedCollectionPanel",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(bindSharedCollection, Is.Not.Null);
+            bindSharedCollection.Invoke(menu, null);
+
+            Assert.That(menu.collectionPanel, Is.Not.Null);
+            Assert.That(menu.collectionPanel.name, Is.EqualTo("CollectionPanel"));
+            Assert.That(menu.collectionPanel.GetComponent<CollectionPanelController>(), Is.Not.Null);
+
+            Button backButton = menu.collectionPanel.GetComponentsInChildren<Button>(true)
+                .Single(button => button.gameObject.name == "Btn_Back");
+            menu.menuPanel.SetActive(false);
+            menu.collectionPanel.SetActive(true);
+            backButton.onClick.Invoke();
+            Assert.That(menu.menuPanel.activeSelf, Is.True);
+            Assert.That(menu.collectionPanel.activeSelf, Is.False);
+        }
+        finally
+        {
+            Object.DestroyImmediate(root);
         }
     }
 
@@ -301,7 +416,78 @@ public sealed class AlphaUiIntegrationTests
         Assert.That(collection, Is.Not.Null);
         RectTransform sheepImage = collection.GetComponentsInChildren<RectTransform>(true)
             .Single(item => item.gameObject.name == "SheepImage");
-        Assert.That(sheepImage.sizeDelta, Is.EqualTo(new Vector2(220f, 190f)));
+        Assert.That(sheepImage.sizeDelta, Is.EqualTo(new Vector2(320f, 320f)));
+        Assert.That(sheepImage.GetComponent<Image>().preserveAspect, Is.True);
+
+        RectTransform detailPanel = collection.GetComponentsInChildren<RectTransform>(true)
+            .Single(item => item.gameObject.name == "DetailPanel");
+        Assert.That(detailPanel.sizeDelta, Is.EqualTo(new Vector2(590f, 620f)));
+    }
+
+    [Test]
+    public void CollectionCardShowsQualityBeyondItsOutline()
+    {
+        GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(SheepCardPrefabPath);
+        GameObject instance = Object.Instantiate(prefab);
+        try
+        {
+            SheepCardView card = instance.GetComponent<SheepCardView>();
+            Assert.That(card, Is.Not.Null);
+
+            card.Setup(null, "一只名字特别特别长的测试羊", 12,
+                SheepQuality.Gold, true, null);
+
+            Assert.That(card.sheepImage.preserveAspect, Is.True);
+            Assert.That(card.nameText.overflowMode, Is.EqualTo(TextOverflowModes.Ellipsis));
+            Assert.That(card.countText.text, Is.EqualTo("发现 12 次"));
+            Assert.That(card.QualityWash, Is.Not.Null);
+            Assert.That(card.QualityWash.color.a, Is.GreaterThan(0.1f));
+            Assert.That(card.QualityBadge, Is.Not.Null);
+            Assert.That(card.QualityBadge.color, Is.EqualTo(
+                SheepCardView.GetQualityColor(SheepQuality.Gold)));
+            Assert.That(card.QualityBadgeText.text, Is.EqualTo("金色"));
+
+            card.Setup(null, "彩色测试羊", 1,
+                SheepQuality.EasterEgg, true, null);
+            Transform rainbow = card.QualityBadge.transform.Find("RainbowSegments");
+            Assert.That(rainbow, Is.Not.Null);
+            Assert.That(rainbow.gameObject.activeSelf, Is.True);
+            Assert.That(rainbow.childCount, Is.EqualTo(5));
+        }
+        finally
+        {
+            Object.DestroyImmediate(instance);
+        }
+    }
+
+    [Test]
+    public void CollectionDetailPreservesImageAndEllipsizesOverflow()
+    {
+        GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(CollectionPanelPrefabPath);
+        GameObject instance = Object.Instantiate(prefab);
+        try
+        {
+            CollectionPanelController controller = instance.GetComponent<CollectionPanelController>();
+            SheepDetailCardView detail = controller.GetOrCreateDetailCard();
+            SheepCollectionEntry entry = new()
+            {
+                displayName = "测试羊",
+                quality = SheepQuality.Purple,
+                description = new string('长', 200)
+            };
+
+            detail.Show(entry, 7);
+
+            Assert.That(detail.SheepImage.preserveAspect, Is.True);
+            Assert.That(detail.CountText.text, Is.EqualTo("发现次数：7"));
+            Assert.That(detail.DescriptionText.overflowMode,
+                Is.EqualTo(TextOverflowModes.Ellipsis));
+            Assert.That(detail.DescriptionText.maxVisibleLines, Is.EqualTo(12));
+        }
+        finally
+        {
+            Object.DestroyImmediate(instance);
+        }
     }
 
     [Test]
@@ -391,6 +577,17 @@ public sealed class AlphaUiIntegrationTests
             Assert.That(fenceTitle.text, Is.EqualTo("撞开羊圈！"));
 
             Assert.That(transforms.Any(item => item.name == "Key_Q"), Is.False);
+            PoopAbility poopAbility = transforms.Select(item => item.GetComponent<PoopAbility>())
+                .First(item => item != null);
+            Assert.That(poopAbility.CooldownSeconds, Is.EqualTo(2f));
+            Assert.That(poopAbility.LifetimeSeconds, Is.EqualTo(10f));
+            Assert.That(poopAbility.MaxActivePoops, Is.EqualTo(100));
+            Assert.That(poopAbility.RingIntervalSeconds, Is.EqualTo(0.2f));
+            Assert.That(poopAbility.RingWidth, Is.EqualTo(1.9f));
+            SerializedObject poopData = new SerializedObject(poopAbility);
+            Assert.That(poopData.FindProperty("poopAction").objectReferenceValue, Is.Not.Null);
+            Assert.That(poopData.FindProperty("poopPrefab").objectReferenceValue, Is.Not.Null);
+            Assert.That(poopData.FindProperty("footOffset").floatValue, Is.EqualTo(0.08f));
             Transform moveTutorial = transforms.Single(item => item.name == "MoveTutorial");
             Transform recruitTutorial = transforms.Single(item => item.name == "RecruitTutorial");
             Transform fenceTutorial = transforms.Single(item => item.name == "FenceTutorial");
@@ -401,6 +598,102 @@ public sealed class AlphaUiIntegrationTests
         finally
         {
             EditorSceneManager.CloseScene(scene, true);
+        }
+    }
+
+    [Test]
+    public void PoopPrefabReusesExistingBreakParticlesEffect()
+    {
+        GameObject poopPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(PoopPrefabPath);
+        GameObject breakParticles = AssetDatabase.LoadAssetAtPath<GameObject>(BreakParticlesPrefabPath);
+        Assert.That(poopPrefab, Is.Not.Null);
+        Assert.That(breakParticles, Is.Not.Null);
+
+        PoopVisual visual = poopPrefab.GetComponent<PoopVisual>();
+        Assert.That(visual, Is.Not.Null);
+        SerializedObject serialized = new SerializedObject(visual);
+        Assert.That(
+            serialized.FindProperty("despawnEffectPrefab").objectReferenceValue,
+            Is.SameAs(breakParticles));
+    }
+
+    [Test]
+    public void SideTaskExpandsPanelAndStaysInsideItsBackground()
+    {
+        GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(TaskSystemPrefabPath);
+        GameObject instance = Object.Instantiate(prefab);
+        try
+        {
+            TaskChecklistView checklist = instance.GetComponentInChildren<TaskChecklistView>(true);
+            RectTransform taskPanel = instance.GetComponentsInChildren<RectTransform>(true)
+                .Single(item => item.name == "TaskPanel");
+            float originalHeight = taskPanel.sizeDelta.y;
+
+            checklist.ApplyObjectives(new[]
+            {
+                new MvpObjectiveSnapshot("alpha.grow", "壮大羊群！", true, false, false, 17, 20),
+                new MvpObjectiveSnapshot("alpha.pagoda", "寻找？？", false, true, false, 30, 150)
+            }, 17);
+
+            RectTransform sideTask = taskPanel.GetComponentsInChildren<RectTransform>(true)
+                .Single(item => item.name == "TaskRow_02");
+            Assert.That(sideTask.gameObject.activeSelf, Is.True);
+            Assert.That(taskPanel.sizeDelta.y, Is.GreaterThan(originalHeight));
+            float rowBottomFromPanelTop = -sideTask.anchoredPosition.y + sideTask.rect.height * 0.5f;
+            Assert.That(rowBottomFromPanelTop, Is.LessThanOrEqualTo(taskPanel.rect.height));
+            Assert.That(sideTask.GetComponentsInChildren<TMP_Text>(true)
+                .Single(item => item.name == "Txt_Task_02").text, Is.EqualTo("寻找？？"));
+            TMP_Text counter = sideTask.GetComponentsInChildren<TMP_Text>(true)
+                .Single(item => item.name == "Progress_02");
+            Assert.That(counter.text, Is.EqualTo("30/150"));
+            Assert.That(counter.rectTransform.sizeDelta.x, Is.GreaterThanOrEqualTo(96f));
+            Assert.That(counter.overflowMode, Is.EqualTo(TextOverflowModes.Overflow));
+        }
+        finally
+        {
+            Object.DestroyImmediate(instance);
+        }
+    }
+
+    [Test]
+    public void PoopCounterAndPagodaTaskOccupySeparateRows()
+    {
+        GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(TaskSystemPrefabPath);
+        GameObject instance = Object.Instantiate(prefab);
+        try
+        {
+            TaskChecklistView checklist = instance.GetComponentInChildren<TaskChecklistView>(true);
+            checklist.ApplyObjectives(new[]
+            {
+                new MvpObjectiveSnapshot("alpha.grow", "壮大羊群！", true, false, false, 17, 20),
+                AlphaTaskSequence.PoopCounter(7),
+                AlphaTaskSequence.Pagoda(30, 150, false)
+            }, 17);
+
+            Transform taskPanel = instance.GetComponentsInChildren<Transform>(true)
+                .Single(item => item.name == "TaskPanel");
+            Transform[] visibleRows = taskPanel.GetComponentsInChildren<Transform>(true)
+                .Where(item => item.name.StartsWith("TaskRow_") && item.gameObject.activeSelf)
+                .ToArray();
+            Assert.That(visibleRows, Has.Length.EqualTo(3));
+
+            TMP_Text poopTitle = taskPanel.GetComponentsInChildren<TMP_Text>(true)
+                .Single(item => item.name == "Txt_Task_02");
+            TMP_Text poopCount = taskPanel.GetComponentsInChildren<TMP_Text>(true)
+                .Single(item => item.name == "Progress_02");
+            Assert.That(poopTitle.text, Is.EqualTo("Space 拉屎"));
+            Assert.That(poopCount.text, Is.EqualTo("7 次"));
+
+            TMP_Text pagodaTitle = taskPanel.GetComponentsInChildren<TMP_Text>(true)
+                .Single(item => item.name == "Txt_Task_03");
+            TMP_Text pagodaProgress = taskPanel.GetComponentsInChildren<TMP_Text>(true)
+                .Single(item => item.name == "Progress_03");
+            Assert.That(pagodaTitle.text, Is.EqualTo("寻找？？"));
+            Assert.That(pagodaProgress.text, Is.EqualTo("30/150"));
+        }
+        finally
+        {
+            Object.DestroyImmediate(instance);
         }
     }
 
@@ -425,6 +718,40 @@ public sealed class AlphaUiIntegrationTests
         {
             Object.DestroyImmediate(instance);
         }
+    }
+
+    [Test]
+    public void ResultPanelAcceptsTrueEndingTitle()
+    {
+        GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(ResultPanelPrefabPath);
+        GameObject instance = Object.Instantiate(prefab);
+        try
+        {
+            ResultPanelView view = instance.GetComponent<ResultPanelView>();
+            view.ShowVictory("结算说明", 150, 150, 149, 0, 83f, "寻得美食");
+
+            TMP_Text title = instance.GetComponentsInChildren<TMP_Text>(true)
+                .First(text => text.gameObject.name == "ResultTitle");
+            Assert.That(title.text, Is.EqualTo("寻得美食"));
+        }
+        finally
+        {
+            Object.DestroyImmediate(instance);
+        }
+    }
+
+    [Test]
+    public void EndingIllustrationTexturesAreAvailableThroughResources()
+    {
+        Texture2D fakeEnding = Resources.Load<Texture2D>(EndingIllustrationSequence.FakeEndingResourcePath);
+        Texture2D trueEnding = Resources.Load<Texture2D>(EndingIllustrationSequence.TrueEndingResourcePath);
+
+        Assert.That(fakeEnding, Is.Not.Null);
+        Assert.That(fakeEnding.width, Is.EqualTo(1920));
+        Assert.That(fakeEnding.height, Is.EqualTo(478));
+        Assert.That(trueEnding, Is.Not.Null);
+        Assert.That(trueEnding.width, Is.EqualTo(1920));
+        Assert.That(trueEnding.height, Is.EqualTo(1080));
     }
 
     [Test]

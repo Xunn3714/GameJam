@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: "\u56F4\u680F"
   sizeCategory: 1
   breakRule: 1
-  requiredFlockCount: 5
+  requiredFlockCount: 6
   brokenBehavior: 0
   breakAnimationDuration: 0.4
   brokenSortingLayer: Background

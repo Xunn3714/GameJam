@@ -58,7 +58,7 @@ public sealed class WolfEventDirector : MonoBehaviour
     [SerializeField] private WolfFormationEntry[] formations = Array.Empty<WolfFormationEntry>();
 
     [Header("Attack Schedule (正式节奏表)")]
-    [Tooltip("指定后每次攻击按阶段表抽取（一只狼 / 多只狼 / 本场损失最多的攻击），忽略上面的 formations 列表。")]
+    [Tooltip("指定后由阶段解锁、威胁强度与新鲜度共同选择攻击，忽略上面的 formations 列表。")]
     [SerializeField] private WolfAttackSchedule schedule;
     [Tooltip("节奏表动态生成编队时用的参数模板：普通狼 / 长狼 prefab、间距、时长等；type 字段会被覆盖。")]
     [SerializeField] private WolfFormation formationTemplate = new WolfFormation();
@@ -72,9 +72,7 @@ public sealed class WolfEventDirector : MonoBehaviour
     private bool isRunning;
     private bool formationActive;
     private readonly WolfLossTracker lossTracker = new WolfLossTracker();
-    private WolfAttackType? queuedAttack;
-    private int lastStageIndex = -1;
-    private bool pentagramTriggered;
+    private readonly WolfAttackSelectionState attackSelection = new WolfAttackSelectionState();
 
     public WolfEventPhase Phase { get; private set; } = WolfEventPhase.Dormant;
     public int RoundIndex { get; private set; }
@@ -89,8 +87,14 @@ public sealed class WolfEventDirector : MonoBehaviour
     public WolfLossTracker LossTracker => lossTracker;
     public WolfAttackSchedule Schedule => schedule;
     public AudioClip HowlClip => howlClip;
+    /// <summary>边缘来袭提示统一使用普通狼头像，避免长狼的横向皮肤被压成细条。</summary>
+    public Sprite ThreatIndicatorSprite => spawner != null && spawner.WolfPrefab != null
+        ? spawner.WolfPrefab.ThreatIndicatorSprite
+        : null;
     /// <summary>当前羊数对应的节奏表阶段下标；没用节奏表为 -1。</summary>
     public int CurrentStageIndex => schedule != null ? schedule.GetStageIndex(CurrentMemberCount) : -1;
+    /// <summary>本局已经解锁的最高狼袭阶段；阶段不会因暂时减员降低。</summary>
+    public int HighestStageIndex => schedule != null ? attackSelection.HighestStageIndex : -1;
 
     /// <summary>当前阶段剩余秒数；攻击 / 蛰伏阶段返回 -1（没有倒计时）。</summary>
     public float PhaseTimeRemaining =>
@@ -165,9 +169,8 @@ public sealed class WolfEventDirector : MonoBehaviour
         isRunning = true;
         RoundIndex = 0;
         lossTracker.Clear();
-        queuedAttack = null;
-        pentagramTriggered = false;
-        lastStageIndex = CurrentStageIndex;
+        attackSelection.Reset();
+        attackSelection.ObserveStage(schedule, CurrentStageIndex);
         EnterPhase(HasReachedStartCondition() ? WolfEventPhase.Calm : WolfEventPhase.Dormant);
     }
 
@@ -226,8 +229,13 @@ public sealed class WolfEventDirector : MonoBehaviour
                 break;
 
             case WolfEventPhase.Attack:
-                if (IsAttackFinished() || phaseTimer >= attackTimeout)
+                if (IsAttackFinished())
                 {
+                    EnterPhase(WolfEventPhase.Retreat);
+                }
+                else if (phaseTimer >= attackTimeout)
+                {
+                    AbortTimedOutAttack();
                     EnterPhase(WolfEventPhase.Retreat);
                 }
                 break;
@@ -260,7 +268,7 @@ public sealed class WolfEventDirector : MonoBehaviour
                 }
                 else if (schedule != null)
                 {
-                    Vector2 range = schedule.GetCalmDurationRange(CurrentMemberCount);
+                    Vector2 range = schedule.GetCalmDurationRangeForStage(attackSelection.HighestStageIndex);
                     phaseDuration = UnityEngine.Random.Range(range.x, range.y);
                 }
                 else
@@ -295,28 +303,13 @@ public sealed class WolfEventDirector : MonoBehaviour
         PhaseChanged?.Invoke(phase);
     }
 
-    /// <summary>阶段变化：进入指定阶段时立刻安排一次五角星围猎（空挡阶段直接跳到狼嚎）。</summary>
+    /// <summary>只记录本局达到过的最高阶段；升级不会打断当前狼袭或空挡。</summary>
     private void UpdateStageTransitions()
     {
         if (schedule == null)
             return;
 
-        int stageIndex = CurrentStageIndex;
-        if (stageIndex == lastStageIndex)
-            return;
-
-        lastStageIndex = stageIndex;
-        if (!pentagramTriggered
-            && schedule.PentagramOnEnterStage >= 0
-            && stageIndex >= schedule.PentagramOnEnterStage)
-        {
-            pentagramTriggered = true;
-            queuedAttack = WolfAttackType.Pentagram;
-            if (Phase == WolfEventPhase.Calm || Phase == WolfEventPhase.Dormant)
-            {
-                EnterPhase(WolfEventPhase.Howl);
-            }
-        }
+        attackSelection.ObserveStage(schedule, CurrentStageIndex);
     }
 
     private bool IsAttackFinished()
@@ -324,6 +317,16 @@ public sealed class WolfEventDirector : MonoBehaviour
         bool singleDone = activeWolf == null;
         bool formationDone = !formationActive || formationRunner == null || !formationRunner.IsRunning;
         return singleDone && formationDone;
+    }
+
+    private void AbortTimedOutAttack()
+    {
+        if (activeWolf != null)
+            activeWolf.ForceRetreat();
+        if (formationRunner != null)
+            formationRunner.AbortAndRetreat();
+        formationActive = false;
+        Debug.LogWarning($"Wolf attack timed out after {attackTimeout:0.0}s and was forced to retreat.", this);
     }
 
     private void ReleaseAttack()
@@ -359,15 +362,14 @@ public sealed class WolfEventDirector : MonoBehaviour
     }
 
     /// <summary>
-    /// 节奏表模式：先按阶段抽大类（一只狼 / 多只狼 / 本场损失最多），再抽具体攻击方式。
-    /// 普通狼在羊数超过 ScareThreshold 后只会露面吓跑；长狼 / 编队走 WolfFormationRunner。
+    /// 节奏表模式：阶段解锁攻击，导演先抽威胁强度，再在同档中按基础权重与新鲜度抽具体攻击。
+    /// 阶段首次解锁时优先展示新攻击；大型袭击后安排基础袭击恢复。
     /// </summary>
     private void ReleaseScheduledAttack()
     {
         int members = CurrentMemberCount;
-        WolfAttackSchedule.Stage stage = schedule.GetStage(members);
-        WolfAttackType? picked = queuedAttack ?? WolfAttackPlanner.Pick(stage, lossTracker.MostLossType, () => UnityEngine.Random.value);
-        queuedAttack = null;
+        attackSelection.ObserveStage(schedule, schedule.GetStageIndex(members));
+        WolfAttackType? picked = attackSelection.Pick(schedule, () => UnityEngine.Random.value);
 
         if (!picked.HasValue)
         {
@@ -495,7 +497,7 @@ public sealed class WolfEventDirector : MonoBehaviour
 
         LongWolfSweep sweep = wolf.GetComponent<LongWolfSweep>();
         if (sweep != null)
-            sweep.SetRuntimeWidthMultiplier(schedule.GetLongWolfWidthMultiplier(CurrentMemberCount));
+            sweep.SetRuntimeWidthMultiplier(schedule.GetLongWolfWidthMultiplierForStage(attackSelection.HighestStageIndex));
     }
 
     private void HandleWolfFinished(Wolf wolf)

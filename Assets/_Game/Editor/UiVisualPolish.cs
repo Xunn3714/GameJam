@@ -152,8 +152,6 @@ public static class UiVisualPolish
         GameObject developersButton = Find(scene, "Btn_Developers");
         StyleButton(developersButton, SmallButtonPath, "制作人员", new Vector2(116f, 62f), new Vector2(190f, 75f), 20f, new Vector2(0f, 0f));
 
-        GameObject collection = Find(scene, "CollectionPanel");
-        StyleCollection(collection);
         GameObject statistics = Find(scene, "StatisticsPanel");
         StyleStatistics(statistics);
 
@@ -164,6 +162,14 @@ public static class UiVisualPolish
         if (menuController != null)
         {
             menuController.creditsPanel = credits;
+            SerializedObject menuData = new SerializedObject(menuController);
+            SerializedProperty collectionPrefab = menuData.FindProperty("collectionPanelPrefab");
+            if (collectionPrefab != null)
+            {
+                collectionPrefab.objectReferenceValue =
+                    AssetDatabase.LoadAssetAtPath<GameObject>(CollectionPrefabPath);
+                menuData.ApplyModifiedPropertiesWithoutUndo();
+            }
             Button openCredits = developersButton != null ? developersButton.GetComponent<Button>() : null;
             ReplacePersistentListener(openCredits, menuController.ShowCredits);
             EditorUtility.SetDirty(menuController);
@@ -319,28 +325,35 @@ public static class UiVisualPolish
         }
 
         GameObject detail = Find(window, "DetailPanel");
-        SetRect(detail, new Vector2(0.5f, 0.5f), new Vector2(465f, -58f), new Vector2(470f, 570f));
+        SetRect(detail, new Vector2(0.5f, 0.5f), new Vector2(400f, -58f), new Vector2(590f, 620f));
         SetSoftPanel(detail);
         if (detail != null)
         {
             TMP_Text sheepName = FindComponent<TMP_Text>(detail, "Txt_SheepName");
+            TMP_Text rarity = FindComponent<TMP_Text>(detail, "Txt_Rarity");
             TMP_Text count = FindComponent<TMP_Text>(detail, "Txt_Count");
             TMP_Text description = FindComponent<TMP_Text>(detail, "Txt_Description");
             TMP_Text abilityName = FindComponent<TMP_Text>(detail, "Txt_AbilityName");
             TMP_Text ability = FindComponent<TMP_Text>(detail, "Txt_AbilityDescription");
             GameObject sheepImage = Find(detail, "SheepImage");
             Image sheepGraphic = sheepImage != null ? sheepImage.GetComponent<Image>() : null;
-            if (sheepGraphic != null && sheepGraphic.sprite == null)
-                sheepGraphic.enabled = false;
+            if (sheepGraphic != null)
+            {
+                sheepGraphic.type = Image.Type.Simple;
+                sheepGraphic.preserveAspect = true;
+                if (sheepGraphic.sprite == null)
+                    sheepGraphic.enabled = false;
+            }
             Image sentenceGraphic = FindComponent<Image>(detail, "Sheep_Sentence");
             if (sentenceGraphic != null && sentenceGraphic.sprite == null)
                 sentenceGraphic.enabled = false;
-            SetRect(sheepImage, new Vector2(0.5f, 1f), new Vector2(0f, -132f), new Vector2(220f, 190f));
-            PlaceDetailText(sheepName, new Vector2(0f, -245f), new Vector2(400f, 48f), 30f, FontStyles.Bold);
-            PlaceDetailText(count, new Vector2(0f, -287f), new Vector2(400f, 34f), 18f);
-            PlaceDetailText(description, new Vector2(0f, -354f), new Vector2(392f, 82f), 19f);
-            PlaceDetailText(abilityName, new Vector2(0f, -425f), new Vector2(392f, 36f), 21f, FontStyles.Bold);
-            PlaceDetailText(ability, new Vector2(0f, -482f), new Vector2(392f, 72f), 18f);
+            SetRect(sheepImage, new Vector2(0.5f, 1f), new Vector2(0f, -135f), new Vector2(320f, 320f));
+            PlaceDetailText(sheepName, new Vector2(0f, -268f), new Vector2(520f, 44f), 30f, FontStyles.Bold);
+            PlaceDetailText(count, new Vector2(0f, -310f), new Vector2(520f, 30f), 18f);
+            PlaceDetailText(rarity, new Vector2(0f, -342f), new Vector2(520f, 32f), 20f, FontStyles.Bold);
+            PlaceDetailText(description, new Vector2(0f, -378f), new Vector2(520f, 215f), 19f);
+            PlaceDetailText(abilityName, new Vector2(0f, -500f), new Vector2(520f, 32f), 21f, FontStyles.Bold);
+            PlaceDetailText(ability, new Vector2(0f, -535f), new Vector2(520f, 62f), 18f);
             if (sheepName != null) sheepName.text = "选择一只羊";
             if (count != null) count.text = string.Empty;
             if (description != null) description.text = "在草原上遇见新的羊，\n它的资料就会记录在这里。";
@@ -410,6 +423,12 @@ public static class UiVisualPolish
             PlaceDetailText(name, new Vector2(0f, -82f), new Vector2(190f, 38f), 21f, FontStyles.Bold);
             PlaceDetailText(count, new Vector2(0f, -110f), new Vector2(190f, 28f), 15f);
             SetRect(Find(root, "SheepImage"), new Vector2(0.5f, 0.5f), new Vector2(0f, 28f), new Vector2(132f, 132f));
+            Image sheepGraphic = FindComponent<Image>(root, "SheepImage");
+            if (sheepGraphic != null)
+            {
+                sheepGraphic.type = Image.Type.Simple;
+                sheepGraphic.preserveAspect = true;
+            }
             SheepCardView view = root.GetComponent<SheepCardView>();
             if (view != null)
             {

@@ -107,4 +107,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PoopVisual
   spriteRenderer: {fileID: 5015145171717607384}
   rareSprite: {fileID: 21300000, guid: 6f7ae8c1c27d4c1fbe9e4253a9c47f31, type: 3}
-  rareChance: 0.07
+  rareChance: 0
+  despawnEffectPrefab: {fileID: 4282184494093796171, guid: 85d4791578168dd449df7c2c5edbe9cf, type: 3}

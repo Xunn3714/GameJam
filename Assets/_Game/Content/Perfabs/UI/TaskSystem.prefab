@@ -765,7 +765,7 @@ MonoBehaviour:
   taskPanel: {fileID: 6483133024937561643}
   taskButton: {fileID: 103055889770740391}
   closeButton: {fileID: 6581504509584506315}
-  openOnStart: 0
+  openOnStart: 1
 --- !u!1 &3607443175564611805
 GameObject:
   m_ObjectHideFlags: 0

@@ -11,6 +11,9 @@ public sealed class SheepVisualAnimator : MonoBehaviour
     private const float IdleAnimationDuration = 0.78f;
     private const float SoftImpactDuration = 0.26f;
     private const float HardImpactDuration = 0.62f;
+    private const float PoopReactionDuration = 0.82f;
+    private const float PoopCompressionEnd = 0.18f;
+    private const float PoopAirborneEnd = 0.58f;
 
     [Header("Movement")]
     [SerializeField, Min(0f)] private float movementStretch = 0.055f;
@@ -24,6 +27,10 @@ public sealed class SheepVisualAnimator : MonoBehaviour
     [SerializeField, Min(0f)] private float idleStretch = 0.11f;
     [SerializeField, Min(0.1f)] private float minimumIdleDelay = 1.6f;
     [SerializeField, Min(0.1f)] private float maximumIdleDelay = 4.8f;
+
+    [Header("Group Action")]
+    [SerializeField, Min(0f)] private float windupAnticipationSquash = 0.1f;
+    [SerializeField, Min(0f)] private float windupAnticipationBlendSpeed = 8f;
 
     [Header("Obstacle Impact")]
     [SerializeField, Min(0f)] private float softImpactSquash = 0.16f;
@@ -52,8 +59,12 @@ public sealed class SheepVisualAnimator : MonoBehaviour
     private bool hasFlockFacingIntent;
     private bool flockFacingIntentLeft;
     private bool groupActionVisualActive;
+    private float poopReactionAge = -1f;
+    private bool groupActionHolding;
+    private float groupActionHoldBlend;
 
     public bool IsHardImpactPlaying => impactAge >= 0f && hardImpact;
+    public bool IsPoopReactionPlaying => poopReactionAge >= 0f;
     public bool IsMovementLocked => IsHardImpactPlaying;
     public float HardImpactCooldownRemaining => Mathf.Max(0f, nextHardImpactAllowedTime - Time.time);
 
@@ -78,9 +89,10 @@ public sealed class SheepVisualAnimator : MonoBehaviour
     }
 
     /// <summary>主动动作期间保留伸缩反馈，但禁止 Sprite 绕 Z 轴摇摆。</summary>
-    public void SetGroupActionVisual(bool active)
+    public void SetGroupActionVisual(bool active, bool holding = false)
     {
         groupActionVisualActive = active;
+        groupActionHolding = active && holding;
     }
 
     public bool PlayObstacleImpact(bool cannotBreak, Vector2 movementDirection)
@@ -115,6 +127,26 @@ public sealed class SheepVisualAnimator : MonoBehaviour
         idleCountdown = IdleAnimationDuration;
     }
 
+    /// <summary>拉屎后的挤压、轻跳和落地回弹；只改显示子节点，不移动羊的物理根节点。</summary>
+    public void PlayPoopReaction()
+    {
+        poopReactionAge = 0f;
+        idleAge = -1f;
+        idleCountdown = Mathf.Max(idleCountdown, PoopReactionDuration);
+    }
+
+    private float jumpAge = -1f;
+    private float jumpHeight;
+    private float jumpDuration = 0.55f;
+
+    /// <summary>真结局用的整群起跳：把 offsetY 抬起来再落下，走的是和走路弹跳同一条通道。</summary>
+    public void PlayJump(float height = 1.6f, float duration = 0.55f)
+    {
+        jumpHeight = Mathf.Max(0f, height);
+        jumpDuration = Mathf.Max(0.05f, duration);
+        jumpAge = 0f;
+    }
+
     public static SheepVisualAnimator Ensure(GameObject sheep)
     {
         if (sheep == null || sheep.GetComponent<SpriteRenderer>() == null)
@@ -145,6 +177,9 @@ public sealed class SheepVisualAnimator : MonoBehaviour
     private void OnDisable()
     {
         groupActionVisualActive = false;
+        poopReactionAge = -1f;
+        groupActionHolding = false;
+        groupActionHoldBlend = 0f;
         if (sourceRenderer != null)
             sourceRenderer.forceRenderingOff = false;
         if (animatedRenderer != null)
@@ -169,6 +204,11 @@ public sealed class SheepVisualAnimator : MonoBehaviour
         UpdateFacing(frameVelocity);
         UpdateIdle(isMoving);
         UpdateImpact();
+        bool anticipating = groupActionHolding && impactAge < 0f;
+        groupActionHoldBlend = Mathf.MoveTowards(
+            groupActionHoldBlend,
+            anticipating ? 1f : 0f,
+            Mathf.Max(0f, windupAnticipationBlendSpeed) * Time.deltaTime);
         ApplyAnimation(isMoving);
         wasMoving = isMoving;
     }
@@ -297,6 +337,14 @@ public sealed class SheepVisualAnimator : MonoBehaviour
             }
         }
 
+        if (groupActionHoldBlend > 0f)
+        {
+            float anticipation = windupAnticipationSquash * groupActionHoldBlend;
+            scaleX += anticipation * 0.8f;
+            scaleY -= anticipation;
+            offsetY -= anticipation * 0.16f;
+        }
+
         float flipFold = 1f;
         if (flipAge >= 0f)
         {
@@ -334,8 +382,54 @@ public sealed class SheepVisualAnimator : MonoBehaviour
             }
         }
 
+        if (poopReactionAge >= 0f)
+        {
+            poopReactionAge += Time.deltaTime;
+            float reactionTime = Mathf.Min(poopReactionAge, PoopReactionDuration);
+
+            if (reactionTime < PoopCompressionEnd)
+            {
+                float compression = Mathf.Sin(reactionTime / PoopCompressionEnd * Mathf.PI) * 0.16f;
+                scaleX += compression;
+                scaleY -= compression;
+            }
+            else if (reactionTime < PoopAirborneEnd)
+            {
+                float airProgress = Mathf.InverseLerp(PoopCompressionEnd, PoopAirborneEnd, reactionTime);
+                float airArc = Mathf.Sin(airProgress * Mathf.PI);
+                offsetY += airArc * 0.2f;
+                scaleX -= airArc * 0.035f;
+                scaleY += airArc * 0.05f;
+            }
+            else
+            {
+                float landingProgress = Mathf.InverseLerp(PoopAirborneEnd, PoopReactionDuration, reactionTime);
+                float landingSquash = Mathf.Sin(landingProgress * Mathf.PI) * 0.13f;
+                scaleX += landingSquash;
+                scaleY -= landingSquash;
+            }
+
+            if (poopReactionAge >= PoopReactionDuration)
+                poopReactionAge = -1f;
+        }
+
         visualTransform.localScale = new Vector3(scaleX * flipFold, scaleY, 1f);
-        visualTransform.localPosition = new Vector3(impactOffset.x, offsetY + impactOffset.y, 0f);
+        // 跳跃：半个正弦当抛物线，叠在原有的弹跳偏移上。
+        float jumpOffset = 0f;
+        if (jumpAge >= 0f)
+        {
+            jumpAge += Time.unscaledDeltaTime;
+            if (jumpAge >= jumpDuration)
+            {
+                jumpAge = -1f;
+            }
+            else
+            {
+                jumpOffset = Mathf.Sin(Mathf.Clamp01(jumpAge / jumpDuration) * Mathf.PI) * jumpHeight;
+            }
+        }
+
+        visualTransform.localPosition = new Vector3(impactOffset.x, offsetY + impactOffset.y + jumpOffset, 0f);
         visualTransform.localRotation = Quaternion.Euler(
             0f,
             0f,
@@ -371,5 +465,7 @@ public sealed class SheepVisualAnimator : MonoBehaviour
     {
         maximumIdleDelay = Mathf.Max(maximumIdleDelay, minimumIdleDelay);
         hardImpactCooldown = Mathf.Max(0f, hardImpactCooldown);
+        windupAnticipationSquash = Mathf.Max(0f, windupAnticipationSquash);
+        windupAnticipationBlendSpeed = Mathf.Max(0f, windupAnticipationBlendSpeed);
     }
 }

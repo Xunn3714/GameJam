@@ -112,7 +112,7 @@ public sealed class FlockSeparationTests
     }
 
     [Test]
-    public void LastMemberCanBeLostOutsideMembershipField()
+    public void LastMemberIsRetainedOutsideMembershipField()
     {
         List<GameObject> objects = new List<GameObject>();
         try
@@ -127,13 +127,167 @@ public sealed class FlockSeparationTests
             SetField(flock, "detachScatterSpeed", 0f);
             evaluate.Invoke(flock, new object[] { 10f });
 
-            Assert.AreEqual(0, flock.MemberCount);
-            Assert.IsNull(member.Flock);
+            Assert.AreEqual(1, flock.MemberCount);
+            Assert.AreSame(flock, member.Flock);
         }
         finally
         {
             DestroyObjects(objects);
         }
+    }
+
+    [Test]
+    public void AllDistantMembersStillRetainNearestMember()
+    {
+        List<GameObject> objects = new List<GameObject>();
+        try
+        {
+            FlockController flock = CreateFlock(objects);
+            MethodInfo addMember = GetPrivateMethod("AddMember");
+            MethodInfo evaluate = GetPrivateMethod("EvaluateMemberSeparation");
+            SheepMember nearest = CreateMember("Nearest", new Vector2(10f, 0f), objects);
+            SheepMember middle = CreateMember("Middle", new Vector2(12f, 0f), objects);
+            SheepMember farthest = CreateMember("Farthest", new Vector2(14f, 0f), objects);
+            Assert.IsTrue((bool)addMember.Invoke(flock, new object[] { nearest }));
+            Assert.IsTrue((bool)addMember.Invoke(flock, new object[] { middle }));
+            Assert.IsTrue((bool)addMember.Invoke(flock, new object[] { farthest }));
+
+            SetField(flock, "detachDelay", 0f);
+            SetField(flock, "detachScatterSpeed", 0f);
+            evaluate.Invoke(flock, new object[] { 10f });
+
+            Assert.AreEqual(1, flock.MemberCount);
+            Assert.AreSame(nearest, flock.Members[0]);
+            Assert.AreSame(flock, nearest.Flock);
+            Assert.IsNull(middle.Flock);
+            Assert.IsNull(farthest.Flock);
+        }
+        finally
+        {
+            DestroyObjects(objects);
+        }
+    }
+
+    [Test]
+    public void CenterCanAdvanceUntilEveryMemberPathIsBlocked()
+    {
+        List<GameObject> objects = new List<GameObject>();
+        try
+        {
+            FlockController flock = CreateFlock(objects);
+            MethodInfo addMember = GetPrivateMethod("AddMember");
+            MethodInfo allBlocked = GetPrivateMethod("AreAllMembersBlocked");
+
+            SheepMember blocked = CreateMember("Blocked", Vector2.zero, objects);
+            SheepMember free = CreateMember("Free", Vector2.one, objects);
+            Assert.IsTrue((bool)addMember.Invoke(flock, new object[] { blocked }));
+            Assert.IsTrue((bool)addMember.Invoke(flock, new object[] { free }));
+            SetMovementReport(blocked.Agent, Vector2.right, true);
+            SetMovementReport(free.Agent, Vector2.right, false);
+
+            Assert.IsFalse((bool)allBlocked.Invoke(flock, new object[] { Vector2.right }));
+
+            SetMovementReport(free.Agent, Vector2.right, true);
+            Assert.IsTrue((bool)allBlocked.Invoke(flock, new object[] { Vector2.right }));
+
+            // 转向后旧方向的报告不能把中心误锁一帧。
+            Assert.IsFalse((bool)allBlocked.Invoke(flock, new object[] { Vector2.up }));
+
+            Assert.IsTrue(flock.Remove(free));
+            Assert.IsTrue((bool)allBlocked.Invoke(flock, new object[] { Vector2.right }));
+            SetMovementReport(blocked.Agent, Vector2.right, false);
+            Assert.IsFalse((bool)allBlocked.Invoke(flock, new object[] { Vector2.right }));
+        }
+        finally
+        {
+            DestroyObjects(objects);
+        }
+    }
+
+    [Test]
+    public void DesiredCenterIsNotAWorldObstacleContact()
+    {
+        List<GameObject> objects = new List<GameObject>();
+        try
+        {
+            GameObject center = CreateObject("DesiredCenter", Vector2.zero, objects);
+            center.AddComponent<FlockController>();
+            CircleCollider2D centerCollider = center.AddComponent<CircleCollider2D>();
+
+            Assert.IsFalse(BreakableObstacle.IsFlockContact(centerCollider));
+
+            MethodInfo addMember = GetPrivateMethod("AddMember");
+            FlockController flock = center.GetComponent<FlockController>();
+            SheepMember member = CreateMember("RealMember", Vector2.zero, objects);
+            CircleCollider2D memberCollider = member.gameObject.AddComponent<CircleCollider2D>();
+            Assert.IsTrue((bool)addMember.Invoke(flock, new object[] { member }));
+
+            Assert.IsTrue(BreakableObstacle.IsFlockContact(memberCollider));
+        }
+        finally
+        {
+            DestroyObjects(objects);
+        }
+    }
+
+    [Test]
+    public void CenterLeashKeepsMemberInsideSafeEllipse()
+    {
+        Vector2 halfExtents = new Vector2(4f, 3f);
+        Vector2 memberPosition = new Vector2(2f, -1f);
+
+        Assert.AreEqual(
+            new Vector2(3f, 0f),
+            FlockMovementController.ClampCenterToMemberEllipse(
+                new Vector2(3f, 0f),
+                memberPosition,
+                halfExtents));
+
+        Vector2 clamped = FlockMovementController.ClampCenterToMemberEllipse(
+            new Vector2(12f, -1f),
+            memberPosition,
+            halfExtents);
+        Assert.That(clamped.x, Is.EqualTo(6f).Within(0.001f));
+        Assert.That(clamped.y, Is.EqualTo(-1f).Within(0.001f));
+    }
+
+    [Test]
+    public void CameraFocusUsesDesiredCenterBeforeLeashPressure()
+    {
+        Vector2 focus = FlockMovementController.CalculateCameraFocus(
+            desiredCenter: new Vector2(2f, 0f),
+            flockFocus: Vector2.zero,
+            halfExtents: new Vector2(4f, 3f),
+            recoveryStartRatio: 0.72f);
+
+        Assert.That(focus, Is.EqualTo(new Vector2(2f, 0f)));
+    }
+
+    [Test]
+    public void CameraFocusRecentersOnOperableFlockAtLeashEdge()
+    {
+        Vector2 focus = FlockMovementController.CalculateCameraFocus(
+            desiredCenter: new Vector2(4f, 0f),
+            flockFocus: Vector2.zero,
+            halfExtents: new Vector2(4f, 3f),
+            recoveryStartRatio: 0.72f);
+
+        Assert.That(focus, Is.EqualTo(Vector2.zero));
+    }
+
+    [Test]
+    public void CameraFocusBlendsSmoothlyInsideLeashSoftZone()
+    {
+        Vector2 desiredCenter = new Vector2(3.44f, 0f);
+        Vector2 focus = FlockMovementController.CalculateCameraFocus(
+            desiredCenter,
+            flockFocus: Vector2.zero,
+            halfExtents: new Vector2(4f, 3f),
+            recoveryStartRatio: 0.72f);
+
+        Assert.That(focus.x, Is.GreaterThan(0f));
+        Assert.That(focus.x, Is.LessThan(desiredCenter.x));
+        Assert.That(focus.y, Is.EqualTo(0f).Within(0.001f));
     }
 
     [Test]
@@ -321,5 +475,24 @@ public sealed class FlockSeparationTests
             BindingFlags.Instance | BindingFlags.NonPublic);
         Assert.IsNotNull(field);
         field.SetValue(flock, value);
+    }
+
+    private static void SetAgentField<T>(SheepFlockAgent agent, string name, T value)
+    {
+        FieldInfo field = typeof(SheepFlockAgent).GetField(
+            name,
+            BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.IsNotNull(field);
+        field.SetValue(agent, value);
+    }
+
+    private static void SetMovementReport(
+        SheepFlockAgent agent,
+        Vector2 direction,
+        bool blocked)
+    {
+        SetAgentField(agent, "hasNormalMovementReport", true);
+        SetAgentField(agent, "normalMovementReportDirection", direction.normalized);
+        SetAgentField(agent, "wasNormalMovementBlocked", blocked);
     }
 }

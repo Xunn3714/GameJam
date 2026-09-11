@@ -70,5 +70,43 @@ public sealed class AlphaRunStatsTests
         StringAssert.Contains("黑羊 1", report);
         StringAssert.Contains("普通羊 1", report);
         StringAssert.Contains("被狼抓走（0）：无", report);
+        StringAssert.Contains("破坏得分：0", report);
+    }
+
+    [Test]
+    public void DestructionTracksScoreCountAndMergedDisplayNames()
+    {
+        AlphaRunStats stats = new AlphaRunStats();
+        stats.RecordDestruction("obstacle.grass_1", "小草", 1);
+        stats.RecordDestruction("obstacle.grass_2", "小草", 1);
+        stats.RecordDestruction("obstacle.fence", "围栏", 6);
+
+        Assert.That(stats.DestructionScore, Is.EqualTo(8));
+        Assert.That(stats.TotalDestroyed, Is.EqualTo(3));
+        Assert.That(stats.DestroyedByType["obstacle.fence"].Score, Is.EqualTo(6));
+        Assert.That(stats.BuildDestructionSummary(), Does.Contain("破坏得分：8"));
+        Assert.That(stats.BuildDestructionSummary(), Does.Contain("小草 ×2"));
+        Assert.That(stats.BuildDestructionSummary(), Does.Contain("围栏 ×1"));
+    }
+
+    [Test]
+    public void DestructionScoreHasMinimumOfOne()
+    {
+        AlphaRunStats stats = new AlphaRunStats();
+        stats.RecordDestruction(null, null, 0);
+
+        Assert.That(stats.DestructionScore, Is.EqualTo(1));
+        Assert.That(stats.TotalDestroyed, Is.EqualTo(1));
+    }
+
+    [Test]
+    public void TrueEndingHighlightsUseHoleAreaAndMuYieldFormula()
+    {
+        AlphaRunStats stats = new AlphaRunStats();
+        stats.RecordTrueEnding(150);
+
+        Assert.That(AlphaRunStats.CaitaiJinPerSheep, Is.EqualTo(0.9f).Within(0.0001f));
+        Assert.That(stats.BuildTrueEndingHighlights(), Is.EqualTo(
+            "踩出了 300 平方米的大洞\n找到了 135 斤的美味洪山菜薹"));
     }
 }

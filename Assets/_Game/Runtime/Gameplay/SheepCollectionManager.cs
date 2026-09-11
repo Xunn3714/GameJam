@@ -376,13 +376,7 @@ public class SheepCollectionManager : MonoBehaviour
                     "普通羊",
 
                 description =
-                    "最常见、也最可靠的羊群伙伴。",
-
-                abilityName =
-                    "群体行动",
-
-                abilityDescription =
-                    "会跟随羊群一起移动与冲刺。",
+                    "最常见的伙伴，也是羊群可靠的起点。",
 
                 order =
                     0
@@ -474,16 +468,6 @@ public class SheepCollectionManager : MonoBehaviour
                                 entry.CodexDescription)
                                 ? $"一只独特的{entry.DisplayName}。"
                                 : entry.CodexDescription,
-
-                        abilityName =
-                            string.IsNullOrWhiteSpace(effect)
-                                ? "外观特征"
-                                : "特殊效果",
-
-                        abilityDescription =
-                            string.IsNullOrWhiteSpace(effect)
-                                ? "暂无额外能力说明。"
-                                : effect,
 
                         order =
                             order++

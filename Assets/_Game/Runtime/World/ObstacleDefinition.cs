@@ -66,6 +66,11 @@ public sealed class ObstacleDefinition : ScriptableObject
     public ObstacleSizeCategory SizeCategory => sizeCategory;
     public ObstacleBreakRule BreakRule => breakRule;
     public int RequiredFlockCount => requiredFlockCount;
+    /// <summary>
+    /// 完全破坏时获得的分数。直接复用破坏门槛，避免门槛和分值分别维护；
+    /// 没有显式门槛的接触破坏物至少值 1 分。
+    /// </summary>
+    public int DestructionScore => Mathf.Max(1, requiredFlockCount);
     public int RequiredDashHits => requiredDashHits;
     public ObstacleCountSource CountSource => countSource;
     public ObstacleBrokenBehavior BrokenBehavior => brokenBehavior;

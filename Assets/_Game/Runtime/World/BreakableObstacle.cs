@@ -23,9 +23,15 @@ public sealed class BreakableObstacle : MonoBehaviour
     public bool IsBroken => isBroken;
     public int ReceivedDashHits => receivedDashHits;
     public int RequiredDashHits => definition != null ? definition.RequiredDashHits : 1;
+    public int DestructionScore => definition != null ? definition.DestructionScore : 1;
     public bool IsDamaged => receivedDashHits > 0 && !isBroken;
 
     public event Action<BreakableObstacle> Broken;
+    /// <summary>
+    /// 当前场景中任意可破坏物被完全破坏时发出。用于关卡级单局统计；
+    /// 仍保留实例事件给物件自己的奖励、演出和关卡逻辑使用。
+    /// </summary>
+    public static event Action<BreakableObstacle> AnyBroken;
 
     private void Awake()
     {
@@ -70,12 +76,10 @@ public sealed class BreakableObstacle : MonoBehaviour
         }
     }
 
-    /// 判断碰上来的是不是羊群的一员（中心点或任意已入群成员）。野外未招募的羊不算。
+    /// 判断碰上来的是不是已入群的真实羊。羊群目标中心只表达移动意图，
+    /// 不能隔着障碍代替成员触发破坏或围栏范围。
     public static bool IsFlockContact(Collider2D other)
     {
-        if (other.GetComponentInParent<FlockController>() != null)
-            return true;
-
         SheepMember member = other.GetComponentInParent<SheepMember>();
         return member != null && member.Flock != null;
     }
@@ -105,6 +109,7 @@ public sealed class BreakableObstacle : MonoBehaviour
         }
 
         Broken?.Invoke(this);
+        AnyBroken?.Invoke(this);
 
         ObstacleBrokenBehavior behavior = definition != null
             ? definition.BrokenBehavior

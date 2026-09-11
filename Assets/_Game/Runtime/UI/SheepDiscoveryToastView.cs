@@ -8,7 +8,8 @@ public sealed class SheepDiscoveryToastView : MonoBehaviour
 {
     private const float EnterDuration = 0.28f;
     private const float FadeDuration = 0.18f;
-    private const float DisplayScale = 0.72f;
+    private const float DisplayScale = 0.78f;
+    private static readonly Vector2 PopupSize = new Vector2(420f, 560f);
     private static readonly Vector2 DisplayPosition = new Vector2(28f, 28f);
 
     private readonly Queue<Discovery> pending = new Queue<Discovery>();
@@ -45,6 +46,7 @@ public sealed class SheepDiscoveryToastView : MonoBehaviour
         if (popupCard == null)
             return null;
 
+        ApplyCompactLayout(popupCard);
         GameObject cardObject = popupCard.gameObject;
         cardObject.name = "SheepDiscoveryCard";
         cardObject.SetActive(true);
@@ -129,6 +131,7 @@ public sealed class SheepDiscoveryToastView : MonoBehaviour
 
             current = pending.Dequeue();
             card.Show(current.Entry, current.EncounterCount);
+            ApplyCompactLayout(card);
             if (rarityBorder != null)
                 rarityBorder.effectColor = SheepCardView.GetQualityColor(current.Entry.quality);
             age = 0f;
@@ -158,6 +161,87 @@ public sealed class SheepDiscoveryToastView : MonoBehaviour
         cardRect.anchoredPosition = DisplayPosition;
         cardRect.localRotation = Quaternion.identity;
         cardRect.localScale = Vector3.one * DisplayScale;
+    }
+
+    private static void ApplyCompactLayout(SheepDetailCardView popupCard)
+    {
+        if (popupCard == null)
+            return;
+
+        RectTransform panel = popupCard.transform as RectTransform;
+        if (panel != null)
+            panel.sizeDelta = PopupSize;
+
+        SetImageRect(popupCard.SheepImage != null ? popupCard.SheepImage.rectTransform : null,
+            new Vector2(0f, -205f), new Vector2(360f, 300f));
+        ConfigurePopupText(popupCard.SheepNameText,
+            new Vector2(0f, -18f), new Vector2(380f, 48f), 28f, 36f, 1);
+        ConfigurePopupText(popupCard.CountText,
+            new Vector2(0f, -360f), new Vector2(380f, 34f), 18f, 22f, 1);
+        if (popupCard.CountText != null)
+            popupCard.CountText.text = "首次发现！";
+        ConfigurePopupText(popupCard.DescriptionText,
+            new Vector2(0f, -410f), new Vector2(380f, 120f), 18f, 22f, 4);
+
+        if (popupCard.RarityText != null)
+            popupCard.RarityText.gameObject.SetActive(false);
+        SetChildActive(popupCard.transform, "Txt_AbilityName", false);
+        SetChildActive(popupCard.transform, "Txt_AbilityDescription", false);
+        SetChildActive(popupCard.transform, "Sheep_Sentence", false);
+    }
+
+    private static void SetRect(RectTransform rect, Vector2 position, Vector2 size)
+    {
+        if (rect == null)
+            return;
+
+        rect.anchorMin = new Vector2(0.5f, 1f);
+        rect.anchorMax = new Vector2(0.5f, 1f);
+        rect.pivot = new Vector2(0.5f, 1f);
+        rect.anchoredPosition = position;
+        rect.sizeDelta = size;
+    }
+
+    private static void SetImageRect(RectTransform rect, Vector2 position, Vector2 size)
+    {
+        if (rect == null)
+            return;
+
+        rect.anchorMin = new Vector2(0.5f, 1f);
+        rect.anchorMax = new Vector2(0.5f, 1f);
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = position;
+        rect.sizeDelta = size;
+    }
+
+    private static void ConfigurePopupText(
+        TMP_Text text,
+        Vector2 position,
+        Vector2 size,
+        float minimumSize,
+        float maximumSize,
+        int maximumLines)
+    {
+        if (text == null)
+            return;
+
+        SetRect(text.rectTransform, position, size);
+        text.alignment = TextAlignmentOptions.Center;
+        text.enableAutoSizing = true;
+        text.fontSizeMin = minimumSize;
+        text.fontSizeMax = maximumSize;
+        text.maxVisibleLines = maximumLines;
+        text.textWrappingMode = maximumLines > 1
+            ? TextWrappingModes.Normal
+            : TextWrappingModes.NoWrap;
+        text.overflowMode = TextOverflowModes.Ellipsis;
+    }
+
+    private static void SetChildActive(Transform parent, string childName, bool active)
+    {
+        Transform child = parent != null ? parent.Find(childName) : null;
+        if (child != null)
+            child.gameObject.SetActive(active);
     }
 
     private static SheepDetailCardView CreateFallbackCard(Transform parent, Sprite panelSprite)
