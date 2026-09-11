@@ -252,6 +252,45 @@ public sealed class FlockSeparationTests
     }
 
     [Test]
+    public void CameraFocusUsesDesiredCenterBeforeLeashPressure()
+    {
+        Vector2 focus = FlockMovementController.CalculateCameraFocus(
+            desiredCenter: new Vector2(2f, 0f),
+            flockFocus: Vector2.zero,
+            halfExtents: new Vector2(4f, 3f),
+            recoveryStartRatio: 0.72f);
+
+        Assert.That(focus, Is.EqualTo(new Vector2(2f, 0f)));
+    }
+
+    [Test]
+    public void CameraFocusRecentersOnOperableFlockAtLeashEdge()
+    {
+        Vector2 focus = FlockMovementController.CalculateCameraFocus(
+            desiredCenter: new Vector2(4f, 0f),
+            flockFocus: Vector2.zero,
+            halfExtents: new Vector2(4f, 3f),
+            recoveryStartRatio: 0.72f);
+
+        Assert.That(focus, Is.EqualTo(Vector2.zero));
+    }
+
+    [Test]
+    public void CameraFocusBlendsSmoothlyInsideLeashSoftZone()
+    {
+        Vector2 desiredCenter = new Vector2(3.44f, 0f);
+        Vector2 focus = FlockMovementController.CalculateCameraFocus(
+            desiredCenter,
+            flockFocus: Vector2.zero,
+            halfExtents: new Vector2(4f, 3f),
+            recoveryStartRatio: 0.72f);
+
+        Assert.That(focus.x, Is.GreaterThan(0f));
+        Assert.That(focus.x, Is.LessThan(desiredCenter.x));
+        Assert.That(focus.y, Is.EqualTo(0f).Within(0.001f));
+    }
+
+    [Test]
     public void OutsideMemberMustRemainOutsideForConfiguredDelay()
     {
         List<GameObject> objects = new List<GameObject>();

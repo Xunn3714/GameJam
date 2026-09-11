@@ -76,6 +76,28 @@ public sealed class FlockMovementController : MonoBehaviour
     public Vector2 DesiredVelocity => IsAutoReturning ? Vector2.zero : velocity;
     public Vector2 Velocity => velocity;
     public bool IsAutoReturning { get; private set; }
+    /// <summary>
+    /// 镜头可以在玩家持续移动时独立向可操作羊群修正；
+    /// 这不会改变羊群目标中心或成员的移动意图。
+    /// </summary>
+    public Vector2 CameraFocus
+    {
+        get
+        {
+            Vector2 center = body != null ? body.position : (Vector2)transform.position;
+            if (externalMovementActive
+                || !TryGetReturnFocus(center, out Vector2 flockFocus))
+            {
+                return center;
+            }
+
+            return CalculateCameraFocus(
+                center,
+                flockFocus,
+                GetLeashHalfExtents(),
+                leashSoftZoneStart);
+        }
+    }
     public float NormalSpeedLimit => normalSpeedLimit;
     public float UnmodifiedCurrentSpeedLimit => (HasTemporarySpeedLimit
         ? Mathf.Max(normalSpeedLimit, temporarySpeedLimit)
@@ -230,6 +252,30 @@ public sealed class FlockMovementController : MonoBehaviour
             return center;
 
         return memberPosition + offset / normalizedLength;
+    }
+
+    /// <summary>
+    /// 中心与可操作羊群已明显错开时，只修正镜头焦点。
+    /// 进入软边界前仍完全跟随目标中心，到达边界时完全对准羊群焦点。
+    /// </summary>
+    public static Vector2 CalculateCameraFocus(
+        Vector2 desiredCenter,
+        Vector2 flockFocus,
+        Vector2 halfExtents,
+        float recoveryStartRatio)
+    {
+        float radiusX = Mathf.Max(0.01f, halfExtents.x);
+        float radiusY = Mathf.Max(0.01f, halfExtents.y);
+        Vector2 offset = desiredCenter - flockFocus;
+        float normalizedDistance = Mathf.Sqrt(
+            offset.x * offset.x / (radiusX * radiusX)
+            + offset.y * offset.y / (radiusY * radiusY));
+        float start = Mathf.Clamp(recoveryStartRatio, 0f, 0.99f);
+        float blend = Mathf.SmoothStep(
+            0f,
+            1f,
+            Mathf.InverseLerp(start, 1f, normalizedDistance));
+        return Vector2.Lerp(desiredCenter, flockFocus, blend);
     }
 
     public void ConfigureLeashView(CameraFollow2D cameraFollow)

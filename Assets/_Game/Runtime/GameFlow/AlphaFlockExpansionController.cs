@@ -106,6 +106,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     private bool pagodaTaskUnlocked;
     private bool trueEndingRunning;
     private ScreenFlashView screenFlashView;
+    private WolfEdgeThreatView wolfThreatView;
     private PagodaLandmark hookedPagoda;
     private bool firstWolfEventCompleted;
     private int newRecruitCount;
@@ -260,6 +261,16 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
 
         if (uiCanvas != null)
             screenFlashView = ScreenFlashView.Create(uiCanvas.transform);
+        if (uiCanvas != null && wolfDirector != null)
+        {
+            Camera threatCamera = cameraFollow != null
+                ? cameraFollow.GetComponent<Camera>()
+                : Camera.main;
+            wolfThreatView = WolfEdgeThreatView.Create(
+                uiCanvas.transform,
+                wolfDirector,
+                threatCamera);
+        }
         if (taskPanelToggle == null)
             taskPanelToggle = FindFirstObjectByType<TaskPanelToggle>(FindObjectsInactive.Include);
         if (trueEndingSequence == null)
