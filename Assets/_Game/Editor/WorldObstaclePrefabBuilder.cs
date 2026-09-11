@@ -161,8 +161,7 @@ public static class WorldObstaclePrefabBuilder
 
             ObstacleDefinition definition = GetOrCreateDefinition(
                 spec.DefinitionPath, spec.Id, spec.DisplayName, spec.Size,
-            spec.Id == "obstacle.rock" ? ObstacleBreakRule.RequireCountAndInteract
-                : IsTree(spec) ? ObstacleBreakRule.ContactWhenCountElseInteract
+            spec.Id == "obstacle.rock" || IsTree(spec) ? ObstacleBreakRule.RequireCountAndInteract
                 : ObstacleBreakRule.OnAnyContact,
             spec.Id == "obstacle.rock" || IsTree(spec) ? 20 : 1, ObstacleCountSource.CurrentFlockCount,
             spec.Id == "obstacle.rock" || spec.Disappears
@@ -482,7 +481,7 @@ public static class WorldObstaclePrefabBuilder
             fragmentSpawnRadius);
     }
 
-    /// <summary>树：20 只以下挡路、要 E 撞；20 只以上踩过即碎。</summary>
+    /// <summary>树：达到 20 只后仍需用 E 整群冲刺撞断。</summary>
     private static bool IsTree(DebrisSpec spec) => spec.Id == "obstacle.tree" || spec.Id == "obstacle.tree_2";
 
     private static ObstacleDefinition GetOrCreateDefinition(

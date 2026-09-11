@@ -136,21 +136,21 @@ public sealed class WolfAttackSchedule : ScriptableObject
             new Stage
             {
                 displayName = "基础袭击", minMemberCount = 20,
-                calmDurationMin = 6f, calmDurationMax = 10f,
+                calmDurationMin = 5f, calmDurationMax = 8f,
                 longWolfWidthMultiplier = 1f,
                 basicIntensityWeight = 1f,
             },
             new Stage
             {
                 displayName = "阵型袭击", minMemberCount = 50,
-                calmDurationMin = 6f, calmDurationMax = 8f,
+                calmDurationMin = 5f, calmDurationMax = 7f,
                 longWolfWidthMultiplier = 1.35f,
                 basicIntensityWeight = 3f, formationIntensityWeight = 4f,
             },
             new Stage
             {
                 displayName = "大型袭击", minMemberCount = 90,
-                calmDurationMin = 6f, calmDurationMax = 8f,
+                calmDurationMin = 5f, calmDurationMax = 7f,
                 longWolfWidthMultiplier = 1.5f,
                 basicIntensityWeight = 2f, formationIntensityWeight = 4f, majorIntensityWeight = 3f,
             },

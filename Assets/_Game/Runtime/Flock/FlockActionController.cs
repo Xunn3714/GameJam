@@ -440,7 +440,7 @@ public sealed class FlockActionController : MonoBehaviour
             return DashImpactResult.Cleared;
         }
 
-        // 树（ContactWhenCountElseInteract）：数量不够只是不能踩碎，E 冲刺不看数量。
+        // 兼容旧版 ContactWhenCountElseInteract 资产：E 冲刺不检查数量。
         int requiredForce = breakable.Definition == null
             || breakable.Definition.BreakRule == ObstacleBreakRule.OnAnyContact
             || breakable.Definition.BreakRule == ObstacleBreakRule.ContactWhenCountElseInteract

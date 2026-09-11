@@ -46,6 +46,7 @@ public sealed class ProgressiveSheepSpawner : MonoBehaviour
     private int currentMinimumBatchSize = 1;
     private int currentMaximumBatchSize = 1;
     private float spawnAngleOffset;
+    private LayerMask spawnBlockingLayers;
     private bool initialized;
 
     private sealed class ActiveSpecialGroup
@@ -147,6 +148,7 @@ public sealed class ProgressiveSheepSpawner : MonoBehaviour
         BuildNamePool();
         AssignNamesToCurrentFlock();
         spawnAngleOffset = NextFloat() * Mathf.PI * 2f;
+        spawnBlockingLayers = MovementBlocking.DefaultMask();
 
         GameObject root = new("RuntimeRecruitableSheep");
         spawnRoot = root.transform;
@@ -169,12 +171,20 @@ public sealed class ProgressiveSheepSpawner : MonoBehaviour
             return false;
         }
 
-        int count = RollCurrentBatchSize();
-
-        if (!TryFindClusterCenter(count, out Vector2 clusterCenter))
+        int requestedCount = RollCurrentBatchSize();
+        int count = requestedCount;
+        int attempts = placementAttempts;
+        Vector2 clusterCenter;
+        while (!TryFindClusterCenter(count, attempts, out clusterCenter))
         {
-            Debug.LogWarning($"无法为下一批 {count} 只羊找到镜头外的安全位置。", this);
-            return false;
+            if (count <= 1)
+            {
+                Debug.LogWarning($"无法为下一批 {requestedCount} 只羊找到镜头外的安全位置。", this);
+                return false;
+            }
+
+            count = Mathf.Max(1, count / 2);
+            attempts = Mathf.Max(1, attempts / 2);
         }
 
         groupSequence++;
@@ -265,6 +275,7 @@ public sealed class ProgressiveSheepSpawner : MonoBehaviour
 
         Debug.Log(
             $"Alpha 刷新了第 {groupId} 组，共 {count} 只{GetTypeDisplayName(typeId)}；" +
+            (count < requestedCount ? $"拥挤区域已从 {requestedCount} 只批次自动缩小；" : string.Empty) +
             $"累计刷新 {TotalSpawned} 只。",
             this);
         return true;
@@ -576,7 +587,7 @@ public sealed class ProgressiveSheepSpawner : MonoBehaviour
         return false;
     }
 
-    private bool TryFindClusterCenter(int count, out Vector2 center)
+    private bool TryFindClusterCenter(int count, int attempts, out Vector2 center)
     {
         Rect bounds = SpawnBounds;
         float clusterRadius = sheepSpacing * Mathf.Sqrt(Mathf.Max(1, count - 1)) + 0.75f;
@@ -594,7 +605,7 @@ public sealed class ProgressiveSheepSpawner : MonoBehaviour
 
         Physics2D.SyncTransforms();
 
-        for (int attempt = 0; attempt < placementAttempts; attempt++)
+        for (int attempt = 0; attempt < Mathf.Max(1, attempts); attempt++)
         {
             float angle = spawnAngleOffset + (groupSequence + attempt) * GoldenAngle;
             Vector2 direction = new(Mathf.Cos(angle), Mathf.Sin(angle));
@@ -623,21 +634,34 @@ public sealed class ProgressiveSheepSpawner : MonoBehaviour
 
     private bool CanPlaceCluster(Vector2 center, int count, Rect bounds)
     {
+        float blockingRadius = sheepSpacing * 0.4f;
+        float sheepClearance = sheepSpacing * 0.8f;
         for (int index = 0; index < count; index++)
         {
             Vector2 position = center + GetClusterOffset(index);
             if (!bounds.Contains(position) || IsInsideExclusionZone(position))
                 return false;
-
-            Collider2D[] hits = Physics2D.OverlapCircleAll(position, sheepSpacing * 0.4f);
-            foreach (Collider2D hit in hits)
-            {
-                if (hit != null)
-                    return false;
-            }
+            if (!MovementBlocking.IsFree(position, blockingRadius, spawnBlockingLayers))
+                return false;
+            if (IsTooCloseToActiveSheep(position, sheepClearance))
+                return false;
         }
 
         return true;
+    }
+
+    private bool IsTooCloseToActiveSheep(Vector2 position, float clearance)
+    {
+        float clearanceSquared = clearance * clearance;
+        foreach (RecruitableSheep sheep in activeBatch)
+        {
+            if (sheep == null || sheep.IsRecruited)
+                continue;
+            if (((Vector2)sheep.transform.position - position).sqrMagnitude < clearanceSquared)
+                return true;
+        }
+
+        return false;
     }
 
     private bool IsOutsideCamera(

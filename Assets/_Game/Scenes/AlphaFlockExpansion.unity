@@ -3650,8 +3650,8 @@ MonoBehaviour:
   spawner: {fileID: 328776009}
   flock: {fileID: 2099400398}
   requiredMemberCount: 20
-  calmDurationMin: 15
-  calmDurationMax: 20
+  calmDurationMin: 12
+  calmDurationMax: 16
   howlDuration: 3
   retreatDuration: 1.5
   attackTimeout: 30
