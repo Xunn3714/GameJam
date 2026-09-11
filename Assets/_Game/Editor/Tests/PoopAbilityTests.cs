@@ -63,6 +63,30 @@ public sealed class PoopAbilityTests
     }
 
     [Test]
+    public void ClickPoopIsBlockedWhenControlsAreDisabled()
+    {
+        GameObject abilityObject = new GameObject("DisabledClickPoopAbilityTest");
+        GameObject poopTemplate = CreatePoopTemplate();
+        GameObject sheepObject = new GameObject("DisabledClickPoopSheep");
+        try
+        {
+            PoopAbility ability = abilityObject.AddComponent<PoopAbility>();
+            ability.Configure(null, poopTemplate, 0f, 10f, 100, 0.2f);
+            SheepMember member = sheepObject.AddComponent<SheepMember>();
+            ability.SetControlEnabled(false);
+
+            Assert.That(ability.TryPoopAt(member), Is.False);
+            Assert.That(ability.ActivePoopCount, Is.Zero);
+        }
+        finally
+        {
+            Object.DestroyImmediate(sheepObject);
+            Object.DestroyImmediate(abilityObject);
+            Object.DestroyImmediate(poopTemplate);
+        }
+    }
+
+    [Test]
     public void SheepPoopReactionStartsWithoutMovingPhysicsRoot()
     {
         GameObject sheep = new GameObject("PoopReactionSheep");

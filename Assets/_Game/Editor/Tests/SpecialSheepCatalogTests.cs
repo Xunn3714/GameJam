@@ -254,6 +254,43 @@ public sealed class ProgressiveSheepSpawnerGroupTests
     }
 
     [Test]
+    public void GlowPreviewKeepsExistingTrailAndPremiumAuraPlaying()
+    {
+        GameObject sheep = new("GlowPreviewSheep");
+        try
+        {
+            SpriteRenderer source = sheep.AddComponent<SpriteRenderer>();
+            SpecialSheepAcquisitionVfx effect = sheep.AddComponent<SpecialSheepAcquisitionVfx>();
+            SpriteRenderer outerGlow = CreateChildComponent<SpriteRenderer>(sheep, "OuterGlow");
+            SpriteRenderer innerGlow = CreateChildComponent<SpriteRenderer>(sheep, "InnerGlow");
+            ParticleSystem burst = CreateChildComponent<ParticleSystem>(sheep, "Burst");
+            ParticleSystem trail = CreateChildComponent<ParticleSystem>(sheep, "Trail");
+            ParticleSystem premium = CreateChildComponent<ParticleSystem>(sheep, "Premium");
+
+            SetPrivateField(effect, "sourceRenderer", source);
+            SetPrivateField(effect, "outerGlow", outerGlow);
+            SetPrivateField(effect, "innerGlow", innerGlow);
+            SetPrivateField(effect, "acquisitionBurstParticles", burst);
+            SetPrivateField(effect, "trailParticles", trail);
+            SetPrivateField(effect, "premiumParticles", premium);
+
+            trail.Play(true);
+            premium.Play(true);
+            Assert.IsTrue(trail.isPlaying);
+            Assert.IsTrue(premium.isPlaying);
+
+            effect.PlayGlowPreview(SheepQuality.Gold);
+
+            Assert.IsTrue(trail.isPlaying, "点击预览不能清除紫色/金色羊的常驻拖尾。");
+            Assert.IsTrue(premium.isPlaying, "点击预览不能清除金色羊的常驻环绕粒子。");
+        }
+        finally
+        {
+            UnityEngine.Object.DestroyImmediate(sheep);
+        }
+    }
+
+    [Test]
     public void RewardReservationsExhaustAvailableColorPurpleAndGoldTypesWithoutDuplicates()
     {
         GameObject spawnerObject = new("TestRewardSpawner");
@@ -456,5 +493,22 @@ public sealed class ProgressiveSheepSpawnerGroupTests
             UnityEngine.Object.DestroyImmediate(flockObject);
             UnityEngine.Object.DestroyImmediate(runtimeCatalog);
         }
+    }
+
+    private static T CreateChildComponent<T>(GameObject parent, string name)
+        where T : Component
+    {
+        GameObject child = new(name);
+        child.transform.SetParent(parent.transform, false);
+        return child.AddComponent<T>();
+    }
+
+    private static void SetPrivateField(object target, string fieldName, object value)
+    {
+        System.Reflection.FieldInfo field = target.GetType().GetField(
+            fieldName,
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        Assert.IsNotNull(field, fieldName);
+        field.SetValue(target, value);
     }
 }

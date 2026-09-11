@@ -10,6 +10,7 @@ public sealed class CameraFollow2DTests
         try
         {
             follow.UnlockMaximumOrthographicSize(7f);
+            follow.SetOrthographicSize(5f, immediate: true);
 
             Assert.That(camera.orthographicSize, Is.EqualTo(5f).Within(0.001f));
             Assert.That(follow.TargetOrthographicSize, Is.EqualTo(5f).Within(0.001f));
@@ -33,27 +34,32 @@ public sealed class CameraFollow2DTests
     }
 
     [Test]
-    public void UnlockMaximumOrthographicSize_IsOneWayAndNeverMovesTheCamera()
+    public void UnlockMaximumOrthographicSize_NewStagePullsOutButRepeatedStagePreservesWheelTarget()
     {
         GameObject cameraObject = CreateCamera(out Camera camera, out CameraFollow2D follow);
         try
         {
             follow.UnlockMaximumOrthographicSize(7f);
             Assert.That(follow.MaximumOrthographicSize, Is.EqualTo(7f).Within(0.001f));
-            Assert.That(follow.TargetOrthographicSize, Is.EqualTo(5f).Within(0.001f));
+            Assert.That(follow.TargetOrthographicSize, Is.EqualTo(7f).Within(0.001f),
+                "A newly unlocked stage should automatically target its wider view.");
             Assert.That(camera.orthographicSize, Is.EqualTo(5f).Within(0.001f));
 
-            follow.AdjustOrthographicSize(-1f);
-            follow.UnlockMaximumOrthographicSize(10f);
+            follow.AdjustOrthographicSize(1f);
+            follow.UnlockMaximumOrthographicSize(7f);
             Assert.That(follow.TargetOrthographicSize, Is.EqualTo(6f).Within(0.001f),
-                "Unlocking a new stage must preserve the player's zoom target.");
+                "Reapplying the current stage must preserve the player's later wheel target.");
+
+            follow.UnlockMaximumOrthographicSize(10f);
+            Assert.That(follow.TargetOrthographicSize, Is.EqualTo(10f).Within(0.001f),
+                "A higher stage should override the old wheel target once and pull the view out.");
             Assert.That(follow.MaximumOrthographicSize, Is.EqualTo(10f).Within(0.001f));
             Assert.That(camera.orthographicSize, Is.EqualTo(5f).Within(0.001f));
 
             follow.UnlockMaximumOrthographicSize(5f);
             Assert.That(follow.MaximumOrthographicSize, Is.EqualTo(10f).Within(0.001f),
                 "Unlocked camera stages must never downgrade.");
-            Assert.That(follow.TargetOrthographicSize, Is.EqualTo(6f).Within(0.001f));
+            Assert.That(follow.TargetOrthographicSize, Is.EqualTo(10f).Within(0.001f));
             Assert.That(camera.orthographicSize, Is.EqualTo(5f).Within(0.001f));
         }
         finally

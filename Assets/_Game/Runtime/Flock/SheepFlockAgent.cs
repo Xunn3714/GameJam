@@ -56,6 +56,11 @@ public sealed class SheepFlockAgent : MonoBehaviour
     [SerializeField, Min(0f)] private float idlePaceRadius = 0.8f;
     [SerializeField, Min(0f)] private float idlePaceSpeed = 0.42f;
 
+    [Header("Group Action")]
+    [Tooltip("蓄势停顿时轻微缩小舒适边界，让羊群自然回拢而不是瞬间冻结。")]
+    [SerializeField, Range(0f, 0.3f)] private float windupCompression = 0.12f;
+    [SerializeField, Min(0f)] private float windupSettleSpeed = 1.35f;
+
     [Header("Blocking")]
     [SerializeField] private LayerMask blockingLayers;
     [SerializeField, Min(0f)] private float blockingRadius = 0f;
@@ -86,6 +91,9 @@ public sealed class SheepFlockAgent : MonoBehaviour
     private int observedFacingIntentRevision = -1;
     private bool hasPendingFacingIntent;
     private bool hasAppliedFacingIntent;
+    private bool hasNormalMovementReport;
+    private bool wasNormalMovementBlocked;
+    private Vector2 normalMovementReportDirection;
 
     private enum IdlePaceState
     {
@@ -100,6 +108,52 @@ public sealed class SheepFlockAgent : MonoBehaviour
     public Vector2 Position => body != null ? body.position : (Vector2)transform.position;
     public bool IsMovementLocked => visualAnimator != null && visualAnimator.IsMovementLocked;
     public int SimulationSlot => simulationSlot;
+
+    internal bool TryGetNormalMovementBlocked(Vector2 direction, out bool blocked)
+    {
+        blocked = false;
+        if (!hasNormalMovementReport || direction.sqrMagnitude <= 0.0001f)
+            return false;
+
+        if (Vector2.Dot(normalMovementReportDirection, direction.normalized) < 0.95f)
+            return false;
+
+        blocked = wasNormalMovementBlocked;
+        return true;
+    }
+
+    /// <summary>
+    /// 整群冲刺首次撞击时探测成员正前方仍在接触的障碍，供控制器一次性
+    /// 收集整条冲击前缘；不会移动成员或产生额外的撞击次数。
+    /// </summary>
+    internal bool TryGetGroupActionForwardBlocker(
+        Vector2 direction,
+        float probeDistance,
+        out Collider2D blocker)
+    {
+        blocker = null;
+        if (body == null || direction.sqrMagnitude <= 0.0001f)
+            return false;
+
+        if (MovementBlocking.TryGetBlocker(
+                body.position,
+                blockingRadius,
+                blockingLayers,
+                out blocker))
+        {
+            return true;
+        }
+
+        Vector2 forward = direction.normalized;
+        MovementBlocking.ResolveDashMove(
+            body.position,
+            body.position + forward * Mathf.Max(0.05f, probeDistance),
+            blockingRadius,
+            blockingLayers,
+            out MovementBlockResult blockResult);
+        blocker = blockResult.Blocker;
+        return blockResult.WasBlocked && blocker != null;
+    }
 
     private void Awake()
     {
@@ -129,6 +183,7 @@ public sealed class SheepFlockAgent : MonoBehaviour
         observedFacingIntentRevision = -1;
         hasPendingFacingIntent = false;
         hasAppliedFacingIntent = false;
+        hasNormalMovementReport = false;
         visualAnimator?.ClearFlockFacingIntent();
         visualAnimator?.SetGroupActionVisual(false);
         wasControllerMoving = owner != null && owner.IsMoving;
@@ -148,8 +203,13 @@ public sealed class SheepFlockAgent : MonoBehaviour
             return;
 
         float deltaTime = Time.fixedDeltaTime;
-        visualAnimator?.SetGroupActionVisual(flock.IsGroupActionActive);
+        visualAnimator?.SetGroupActionVisual(
+            flock.IsGroupActionActive,
+            flock.IsGroupActionAnticipating);
         UpdateFacingIntent(deltaTime);
+
+        if (flock.IsGroupActionActive)
+            hasNormalMovementReport = false;
 
         if (visualAnimator != null && visualAnimator.IsMovementLocked)
         {
@@ -157,15 +217,26 @@ public sealed class SheepFlockAgent : MonoBehaviour
             return;
         }
 
+        if (flock.IsGroupActionFollowThrough)
+        {
+            UpdateGroupActionFollowThrough(deltaTime);
+            return;
+        }
+
         if (flock.IsGroupActionHolding)
         {
-            StopImmediately();
+            if (flock.IsGroupActionAnticipating)
+                UpdateGroupActionHold(deltaTime);
+            else
+                StopImmediately();
             return;
         }
 
         // 所有成员直接读取同一份羊群中心速度，不再从某只领头羊向外延迟传播。
         Vector2 driveVelocity = flock.MovementVelocity;
         bool flockIsMoving = driveVelocity.sqrMagnitude > 0.0001f;
+        if (!flockIsMoving)
+            hasNormalMovementReport = false;
         float speedScale = flock.MemberSpeedMultiplier;
         bool controllerMovementChanged = wasControllerMoving != flock.IsMoving;
         int steeringInterval = flock.GetSteeringUpdateInterval();
@@ -228,23 +299,49 @@ public sealed class SheepFlockAgent : MonoBehaviour
         {
             if (flock.IsGroupActionActive)
             {
-                flock.ReportGroupActionMemberBlocked(blockResult.Blocker);
-                StopImmediately();
-                return;
+                Vector2 blockerPoint = blockResult.Blocker != null
+                    ? blockResult.Blocker.ClosestPoint(from)
+                    : from + desiredStep;
+                bool stopsGroup = FlockActionController.ShouldMemberBlockStopAction(
+                    flock.Center,
+                    flock.GroupActionDirection,
+                    desiredStep,
+                    blockerPoint);
+                // 中间栅栏段已经撞开后，中心可能先穿过缺口。左右较晚接触同一排
+                // 栅栏的羊即使落在中心后方，也要继续上报，扩出完整的实际冲击面。
+                stopsGroup |= flock.IsGroupActionFenceBreach(blockResult.Blocker);
+                if (stopsGroup)
+                {
+                    flock.ReportGroupActionMemberBlocked(blockResult.Blocker);
+                    StopImmediately();
+                    return;
+                }
+
+                // 后撤碰墙或后排成员从接触面向前脱离时，不让零距离 Sweep 命中
+                // 把整群锁死。回退到普通解析，让该成员停住、滑边或走出身后障碍。
+                target = MovementBlocking.ResolveMove(
+                    from,
+                    from + desiredStep,
+                    blockingRadius,
+                    blockingLayers,
+                    out _);
             }
-
-            bool hardImpact = !CanBreakOnContact(blockResult.Blocker);
-            bool shouldRequestAnimation = hardImpact || Time.time >= nextImpactFeedbackTime;
-            bool animationStarted = shouldRequestAnimation
-                && visualAnimator != null
-                && visualAnimator.PlayObstacleImpact(hardImpact, velocity);
-            if (!hardImpact && animationStarted)
-                nextImpactFeedbackTime = Time.time + 0.2f;
-
-            if (hardImpact && visualAnimator != null && visualAnimator.IsMovementLocked)
+            else
             {
-                StopImmediately();
-                return;
+                bool hardImpact = !CanBreakOnContact(blockResult.Blocker);
+                bool shouldRequestAnimation = hardImpact || Time.time >= nextImpactFeedbackTime;
+                bool animationStarted = shouldRequestAnimation
+                    && visualAnimator != null
+                    && visualAnimator.PlayObstacleImpact(hardImpact, velocity);
+                if (!hardImpact && animationStarted)
+                    nextImpactFeedbackTime = Time.time + 0.2f;
+
+                if (hardImpact && visualAnimator != null && visualAnimator.IsMovementLocked)
+                {
+                    RecordNormalMovementResult(driveVelocity, target - from);
+                    StopImmediately();
+                    return;
+                }
             }
         }
 
@@ -253,6 +350,8 @@ public sealed class SheepFlockAgent : MonoBehaviour
         {
             target = TrySlideAroundObstacle(from, desiredStep);
         }
+
+        RecordNormalMovementResult(driveVelocity, target - from);
 
         // 把实际走出去的位移反算回速度，避免贴墙的羊把"想走但没走成"的速度
         // 通过 alignment 传染给邻居，导致整群往墙里挤。
@@ -264,11 +363,102 @@ public sealed class SheepFlockAgent : MonoBehaviour
         body.MovePosition(target);
     }
 
+    private void RecordNormalMovementResult(Vector2 driveVelocity, Vector2 actualDisplacement)
+    {
+        if (driveVelocity.sqrMagnitude <= 0.0001f)
+        {
+            hasNormalMovementReport = false;
+            return;
+        }
+
+        Vector2 driveDirection = driveVelocity.normalized;
+        hasNormalMovementReport = true;
+        normalMovementReportDirection = driveDirection;
+        wasNormalMovementBlocked = actualDisplacement.sqrMagnitude <= 0.000001f
+            || Vector2.Dot(actualDisplacement, driveDirection) < -0.000001f;
+    }
+
     private void StopImmediately()
     {
         velocity = Vector2.zero;
         cachedSteeringVelocity = Vector2.zero;
         hasCachedSteering = false;
+    }
+
+    private void UpdateGroupActionHold(float deltaTime)
+    {
+        Vector2 from = body.position;
+        float activeRadius = GetComfortableRadius() * (1f - Mathf.Clamp01(windupCompression));
+        Vector2 cohesionOffset = CalculateCohesionOffset(
+            flock.Center - from,
+            activeRadius,
+            out _);
+        float maximumSettleSpeed = Mathf.Max(0f, windupSettleSpeed) * flock.MemberSpeedMultiplier;
+        Vector2 targetVelocity = Vector2.ClampMagnitude(
+            cohesionOffset * cohesionWeight,
+            maximumSettleSpeed);
+        float response = Mathf.Max(0f, idleBraking) * flock.MemberSpeedMultiplier;
+        velocity = Vector2.MoveTowards(velocity, targetVelocity, response * deltaTime);
+        cachedSteeringVelocity = velocity;
+        hasCachedSteering = true;
+        wasControllerMoving = false;
+
+        if (velocity.sqrMagnitude <= stopSpeed * stopSpeed)
+        {
+            velocity = Vector2.zero;
+            return;
+        }
+
+        Vector2 desiredStep = velocity * deltaTime;
+        Vector2 target = MovementBlocking.ResolveMove(
+            from,
+            from + desiredStep,
+            blockingRadius,
+            blockingLayers);
+        if (target == from)
+            target = TrySlideAroundObstacle(from, desiredStep);
+
+        velocity = (target - from) / Mathf.Max(deltaTime, 0.0001f);
+        if (target != from)
+            body.MovePosition(target);
+    }
+
+    private void UpdateGroupActionFollowThrough(float deltaTime)
+    {
+        Vector2 forward = flock.GroupActionDirection.sqrMagnitude > 0.0001f
+            ? flock.GroupActionDirection.normalized
+            : Vector2.right;
+        Vector2 driveVelocity = forward * flock.GroupActionFollowThroughSpeed;
+        velocity = CalculateSteeringVelocity(driveVelocity, true, deltaTime);
+        cachedSteeringVelocity = velocity;
+        hasCachedSteering = true;
+        wasControllerMoving = true;
+
+        Vector2 from = body.position;
+        Vector2 desiredStep = velocity * deltaTime;
+        Vector2 target = MovementBlocking.ResolveDashMove(
+            from,
+            from + desiredStep,
+            blockingRadius,
+            blockingLayers,
+            out MovementBlockResult blockResult);
+        if (blockResult.WasBlocked)
+        {
+            bool hardImpact = flock.GroupActionFollowThroughHardImpact;
+            bool shouldRequestAnimation = hardImpact || Time.time >= nextImpactFeedbackTime;
+            bool animationStarted = shouldRequestAnimation
+                && visualAnimator != null
+                && visualAnimator.PlayObstacleImpact(hardImpact, forward);
+            if (!hardImpact && animationStarted)
+                nextImpactFeedbackTime = Time.time + 0.2f;
+
+            StopImmediately();
+            return;
+        }
+
+        velocity = (target - from) / Mathf.Max(deltaTime, 0.0001f);
+        if (target != from)
+            body.MovePosition(target);
     }
 
     private void UpdateFacingIntent(float deltaTime)
@@ -641,5 +831,7 @@ public sealed class SheepFlockAgent : MonoBehaviour
         maximumIdleStartDelay = Mathf.Max(maximumIdleStartDelay, minimumIdleStartDelay);
         maximumIdlePauseDuration = Mathf.Max(maximumIdlePauseDuration, minimumIdlePauseDuration);
         maximumIdlePaceDuration = Mathf.Max(maximumIdlePaceDuration, minimumIdlePaceDuration);
+        windupCompression = Mathf.Clamp(windupCompression, 0f, 0.3f);
+        windupSettleSpeed = Mathf.Max(0f, windupSettleSpeed);
     }
 }
