@@ -107,6 +107,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     private bool trueEndingRunning;
     private ScreenFlashView screenFlashView;
     private WolfEdgeThreatView wolfThreatView;
+    private DestructionScoreHudView destructionScoreView;
     private PagodaLandmark hookedPagoda;
     private bool firstWolfEventCompleted;
     private int newRecruitCount;
@@ -169,6 +170,8 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
 
         if (poopAbility != null)
             poopAbility.Used += HandlePoopUsed;
+
+        BreakableObstacle.AnyBroken += HandleObstacleBroken;
     }
 
     private void OnDisable()
@@ -198,6 +201,8 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
 
         if (poopAbility != null)
             poopAbility.Used -= HandlePoopUsed;
+
+        BreakableObstacle.AnyBroken -= HandleObstacleBroken;
     }
 
     private void Start()
@@ -216,11 +221,13 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
             initialAnimator?.SetFacingImmediately(true);
         }
 
+        UnityEngine.UI.Image bannerBackground = bannerView != null
+            ? bannerView.GetComponent<UnityEngine.UI.Image>()
+            : null;
+        Sprite notificationSprite = bannerBackground != null ? bannerBackground.sprite : null;
+
         if (joinToastView != null)
         {
-            UnityEngine.UI.Image bannerBackground = bannerView != null
-                ? bannerView.GetComponent<UnityEngine.UI.Image>() : null;
-            Sprite notificationSprite = bannerBackground != null ? bannerBackground.sprite : null;
             joinToastView.ConfigureStack(notificationSprite);
             CollectionPanelController collectionPanel = uiCanvas != null
                 ? uiCanvas.GetComponentInChildren<CollectionPanelController>(true)
@@ -238,6 +245,19 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         runStartTime = Time.time;
         stats = new AlphaRunStats();
         progression = new AlphaProgression(stages, exitUnlockFlockSize, Mathf.Max(1, flock.MemberCount));
+
+        if (uiCanvas != null)
+        {
+            Camera gameplayCamera = cameraFollow != null
+                ? cameraFollow.GetComponent<Camera>()
+                : Camera.main;
+            destructionScoreView = DestructionScoreHudView.Create(
+                uiCanvas.transform,
+                gameplayCamera,
+                notificationSprite);
+            destructionScoreView?.SetFlockCount(flock.MemberCount);
+            destructionScoreView?.SetScore(0);
+        }
 
         // 有节奏控制器时狼由它管（含阶段门槛和狼嚎预警）；否则退回旧的定时生成器。
         if (wolfDirector == null)
@@ -316,6 +336,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         if (!initialized || ended)
             return;
 
+        destructionScoreView?.SetFlockCount(memberCount);
         RefreshComposition();
 
         if (memberCount <= 0)
@@ -620,6 +641,19 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         RefreshObjectives();
     }
 
+    private void HandleObstacleBroken(BreakableObstacle obstacle)
+    {
+        if (!initialized || ended || obstacle == null || stats == null)
+            return;
+
+        ObstacleDefinition definition = obstacle.Definition;
+        string obstacleId = definition != null ? definition.ObstacleId : null;
+        string displayName = definition != null ? definition.DisplayName : obstacle.name;
+        int score = obstacle.DestructionScore;
+        stats.RecordDestruction(obstacleId, displayName, score);
+        destructionScoreView?.ShowGain(obstacle.transform.position, score, stats.DestructionScore);
+    }
+
     /// <summary>把 Alpha 的进度翻译成主线、技能计数和可选支线条目。</summary>
     private void RefreshObjectives()
     {
@@ -685,6 +719,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         flockMovement?.SetControlEnabled(false);
         if (pauseManager != null)
             pauseManager.SetResultLocked(true);
+        destructionScoreView?.SetGameplayVisible(false);
         RefreshObjectives();
         Time.timeScale = 0f;
 
@@ -727,6 +762,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
             string panelDescription = "<b>一路同行</b>\n\n" + journeyMessage
                 + $"\n\n招募羊种：{stats.RecruitedByType.Count} 种"
                 + $"\n同行羊种：{stats.CurrentComposition.Count} 种"
+                + "\n\n<b>破坏记录</b>\n" + stats.BuildDestructionSummary()
                 + "\n\n每一次相遇，都让旅程更有意义。\n<size=80%>按 R 再来一局</size>";
             if (victory)
                 panel.ShowVictory(panelDescription, flock.MemberCount, stats.HighestFlockSize, stats.TotalRecruited, stats.TotalTaken, stats.SurvivalSeconds, victoryTitle);

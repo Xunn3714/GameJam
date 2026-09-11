@@ -35,7 +35,6 @@ public static class WorldObstaclePrefabBuilder
     public const string FlowerPrefabPath = PrefabFolder + "/Obstacle_Flower.prefab";
 
     public const string FenceDefinitionPath = DefinitionFolder + "/obstacle.fence.asset";
-    public const string PenFenceDefinitionPath = DefinitionFolder + "/obstacle.pen_fence.asset";
     public const string BorderFenceDefinitionPath = DefinitionFolder + "/obstacle.border_fence.asset";
     public const string RedChestDefinitionPath = DefinitionFolder + "/obstacle.red_chest.asset";
     public const string HouseDefinitionPath = DefinitionFolder + "/obstacle.house.asset";
@@ -108,10 +107,6 @@ public static class WorldObstaclePrefabBuilder
 
         ObstacleDefinition fenceDefinition = GetOrCreateDefinition(
             FenceDefinitionPath, "obstacle.fence", "围栏", ObstacleSizeCategory.Medium,
-            ObstacleBreakRule.RequireCountAndInteract, 5, ObstacleCountSource.CurrentFlockCount,
-            ObstacleBrokenBehavior.BecomeBackground, fenceBroken, createOnly: true);
-        GetOrCreateDefinition(
-            PenFenceDefinitionPath, "obstacle.pen_fence", "羊圈栅栏", ObstacleSizeCategory.Medium,
             ObstacleBreakRule.RequireCountAndInteract, 6, ObstacleCountSource.CurrentFlockCount,
             ObstacleBrokenBehavior.BecomeBackground, fenceBroken);
         GetOrCreateDefinition(

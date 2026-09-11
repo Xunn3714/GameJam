@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// 单局固定地标：7 个红箱子、房屋，以及 2×2/2×3 成片农田。它们只在开局生成一次（Spawn 有一次性保护），
@@ -18,7 +19,8 @@ public sealed class WorldLandmarkSpawner : MonoBehaviour
     [SerializeField] private GameObject haystackPrefab;
     [SerializeField] private GameObject barrelPrefab;
     [SerializeField] private GameObject fencePrefab;
-    [SerializeField] private ObstacleDefinition penFenceDefinition;
+    [FormerlySerializedAs("penFenceDefinition")]
+    [SerializeField] private ObstacleDefinition fenceDefinition;
     [SerializeField] private ObstacleDefinition redChestDefinition;
     [SerializeField] private ObstacleDefinition houseDefinition;
     [SerializeField] private Sprite redChestSprite;
@@ -275,7 +277,7 @@ public sealed class WorldLandmarkSpawner : MonoBehaviour
         fence.transform.rotation = Quaternion.Euler(0f, 0f, rotation);
         BreakableObstacle breakable = fence.GetComponent<BreakableObstacle>();
         if (breakable != null)
-            breakable.Configure(penFenceDefinition, fence.GetComponent<SpriteRenderer>());
+            breakable.Configure(fenceDefinition, fence.GetComponent<SpriteRenderer>());
     }
 
     private GameObject CreatePrefab(GameObject prefab, Vector2 position, string name)

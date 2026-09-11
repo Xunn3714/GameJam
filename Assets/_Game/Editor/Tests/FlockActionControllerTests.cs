@@ -258,8 +258,10 @@ public sealed class FlockActionControllerTests
         segment.transform.SetParent(parent, false);
         Collider2D collider = segment.AddComponent<BoxCollider2D>();
         BreakableObstacle obstacle = segment.AddComponent<BreakableObstacle>();
-        segment.AddComponent<FenceObstacle>();
+        FenceObstacle fence = segment.AddComponent<FenceObstacle>();
         obstacle.Configure(definition, null);
+        // EditMode 下不依赖 Awake 的执行时机，明确绑定围栏的可破坏主体。
+        SetPrivateField(fence, "breakable", obstacle);
         segment.SetActive(true);
         return collider;
     }
