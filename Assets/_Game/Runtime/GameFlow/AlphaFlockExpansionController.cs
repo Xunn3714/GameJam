@@ -4,7 +4,7 @@ using UnityEngine.InputSystem;
 
 /// <summary>
 /// 羊群暴力扩张 Alpha 的关卡控制器：
-/// 阶段推进（只升不降）、周边野生羊密度维持、狼群节奏接入、出口解锁与冲出地图、全灭失败、按类型统计、提示横幅。
+/// 阶段推进（只升不降）、周边野生羊密度维持、狼群节奏接入、冲出地图解锁、全灭失败、按类型统计、提示横幅。
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class AlphaFlockExpansionController : MonoBehaviour
@@ -68,7 +68,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     [SerializeField, Min(0.02f)] private float impactFeedbackInterval = 0.12f;
 
     [Header("Exit")]
-    [Tooltip("历史最高羊数达到这个值后永久解锁出口；撞开围栏时当前羊数也必须达标。")]
+    [Tooltip("历史最高羊数达到这个值后永久解锁冲出地图；撞开围栏时当前羊数也必须达标。")]
     [SerializeField, Min(1)] private int exitUnlockFlockSize = 100;
     [Tooltip("羊群中心越过地图边界多远算成功冲出。")]
     [SerializeField, Min(0.5f)] private float exitMargin = 2.5f;
@@ -529,7 +529,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         flockMovement?.SetExternalMovementCanLeaveBounds(true);
         ExpandCameraBoundsForExit();
         ShowBanner($"历史最高达到 {exitUnlockFlockSize} 只！按 E 让整群蓄势冲刺，撞开围栏后冲出草原");
-        Debug.Log("出口已解锁。", this);
+        Debug.Log("冲出地图已解锁。", this);
     }
 
     private Rect GetExpandedExitBounds()
@@ -556,7 +556,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
 
     private void HandleBorderFenceBroken(FenceObstacle fence)
     {
-        // 一次宽正面冲击可能同时撞开相邻多段外围围栏；全局出口反馈只播一次。
+        // 一次宽正面冲击可能同时撞开相邻多段外围围栏；全局破栏反馈只播一次。
         if (borderBroken)
             return;
 
@@ -950,15 +950,15 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
             wolfLine = wolvesUnlocked ? $"狼：已解锁（场上 {wolves}）" : $"狼：达到 {wolfUnlockFlockSize} 只后出现";
         }
 
-        string exitLine;
+        string escapeLine;
         if (!ExitUnlocked)
-            exitLine = $"出口：历史最高 {progression.HighestFlockSize}/{exitUnlockFlockSize}";
+            escapeLine = $"冲出地图：历史最高 {progression.HighestFlockSize}/{exitUnlockFlockSize}";
         else if (borderRing != null && borderRing.AnyBroken)
-            exitLine = "出口：围栏已破，冲出去！";
+            escapeLine = "冲出地图：围栏已破，冲出去！";
         else if (currentFlock >= exitUnlockFlockSize)
-            exitLine = "出口：已解锁，按 E 整群冲刺破栏";
+            escapeLine = "冲出地图：已解锁，按 E 整群冲刺破栏";
         else
-            exitLine = $"出口：已解锁，当前羊数 {currentFlock}/{exitUnlockFlockSize}";
+            escapeLine = $"冲出地图：已解锁，当前羊数 {currentFlock}/{exitUnlockFlockSize}";
 
         GUI.Box(new Rect(12f, 12f, 390f, 200f), GUIContent.none);
         GUILayout.BeginArea(new Rect(24f, 20f, 370f, 190f));
@@ -972,7 +972,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
                 $"狼记忆：{wolfSpawner.DodgeMemory.Count} 次，玩家平均躲 {wolfSpawner.DodgeMemory.AverageDegrees:0.0}°",
                 labelStyle);
         }
-        GUILayout.Label(exitLine, labelStyle);
+        GUILayout.Label(escapeLine, labelStyle);
         GUILayout.Label("WASD 移动 · E 整群后退蓄势冲刺", labelStyle);
         GUILayout.EndArea();
     }

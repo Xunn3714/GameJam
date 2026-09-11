@@ -4,22 +4,20 @@ using UnityEngine;
 public enum MapBlockRole
 {
     /// 出生羊圈所在格。
-    Spawn,
+    Spawn = 0,
 
-    /// 贴外圈的推荐出口格：它的一条外边没有公路和河流，其他外围围栏仍可撞开通关。
-    Exit,
-
-    Forest,
-    Plains,
+    // 数值 1 曾用于已移除的 Exit。保留后续枚举的序列化数值，避免现有区块资产错位。
+    Forest = 2,
+    Plains = 3,
 
     /// 村庄：房屋区块（小房子或大房子，由定义决定）+ 固定红箱子 + 拖拉机。
-    Village,
+    Village = 4,
 
-    Lake,
+    Lake = 5,
 }
 
 /// <summary>
-/// 一种地图区块模板。地图按 3×2 网格拼装：出生点 / 出口 / 森林 / 平原 / 村庄各一格、剩余格子在森林 / 平原 / 村庄里随机，位置随机，
+/// 一种地图区块模板。地图按 3×2 网格拼装：出生点 / 森林 / 平原 / 村庄各至少一格，剩余格子在森林 / 平原 / 村庄里随机，位置随机，
 /// 同一角色有多份定义时按权重抽一份；宝塔另外随机落在某一格之上。
 /// 散布物和地标数量按格配置，由 WorldDebrisSpawner / WorldLandmarkSpawner 读取。
 /// </summary>
@@ -67,7 +65,7 @@ public sealed class MapBlockDefinition : ScriptableObject
 
     public static bool IsFixed(MapBlockRole blockRole)
     {
-        return blockRole == MapBlockRole.Spawn || blockRole == MapBlockRole.Exit;
+        return blockRole == MapBlockRole.Spawn;
     }
 
     private void OnValidate()

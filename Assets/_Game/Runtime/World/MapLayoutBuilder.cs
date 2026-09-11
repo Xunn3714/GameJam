@@ -10,7 +10,7 @@ public enum MapEdge
     Right,
 }
 
-/// <summary>网格里的一格：矩形、抽到的区块定义，以及出口格贴外圈的那条边。</summary>
+/// <summary>网格里的一格：矩形和抽到的区块定义。</summary>
 public sealed class MapCell
 {
     public MapCell(int column, int row, Rect rect)
@@ -24,7 +24,6 @@ public sealed class MapCell
     public int Row { get; }
     public Rect Rect { get; }
     public MapBlockDefinition Definition { get; internal set; }
-    public MapEdge? ExitEdge { get; internal set; }
     /// <summary>洪山宝通寺落在这一格之上（与区块类型无关）。</summary>
     public bool HasPagoda { get; internal set; }
     public MapBlockRole Role => Definition != null ? Definition.Role : MapBlockRole.Plains;
@@ -32,11 +31,10 @@ public sealed class MapCell
 
 /// <summary>
 /// 把外围围栏内的地图切成 columns×rows 个等大格子，按世界种子分配区块：
-/// 出生点 / 出口 / 森林 / 平原 / 村庄各一格，第六格在森林 / 平原 / 村庄里随机；宝塔再随机落在某一格之上。
+/// 出生点 / 森林 / 平原 / 村庄各至少一格，剩余格子在森林 / 平原 / 村庄里随机；宝塔再随机落在某一格之上。
 /// 在 Awake 里（早于所有 Start）把羊圈、羊群、初始羊和相机整体挪到出生格，
 /// 并同步散布物 / 地标的羊圈排除区，后面的系统不需要知道地图变过。
-/// 围栏外再围一圈"公路 + 河流"；出口格的外边留出一条无公路风险的引导路线，
-/// 但外围围栏仍保持原玩法规则：撞开任意一段并越过地图边界都能获胜。
+/// 围栏外再围一圈"公路 + 河流"；四条边规则一致，撞开任意一段并越过地图边界都能获胜。
 /// </summary>
 [DisallowMultipleComponent]
 [DefaultExecutionOrder(-100)]
@@ -70,13 +68,6 @@ public sealed class MapLayoutBuilder : MonoBehaviour
     [SerializeField, Min(0f)] private float debrisPenPadding = 4f;
     [SerializeField, Min(0f)] private float landmarkPenPadding = 5f;
 
-    [Header("Exit")]
-    [Tooltip("出口格地面上的指向标识；留空则用运行时生成的三角形。")]
-    [SerializeField] private Sprite arrowSprite;
-    [SerializeField, Min(0)] private int arrowCount = 3;
-    [Tooltip("美术路牌（箭头.png）的缩放；贴图本身箭头朝上、带木桩。")]
-    [SerializeField, Min(0.1f)] private float arrowScale = 2f;
-
     [Header("Outer Ring (road + river)")]
     [Tooltip("围栏外侧紧贴的公路带宽度；踩上去会有运羊卡车全速开过来。")]
     [SerializeField, Min(0.5f)] private float roadWidth = 8f;
@@ -88,10 +79,6 @@ public sealed class MapLayoutBuilder : MonoBehaviour
     [SerializeField, Range(0f, 1f)] private float riverCenterInTile = 0.38f;
     [SerializeField, Range(0.05f, 1f)] private float riverWidthInTile = 0.42f;
     [SerializeField] private Sprite truckSprite;
-    [Tooltip("出口缺口外面铺的一小块草地（和地图背景同一张贴图），不然冲出去是一片虚空。")]
-    [SerializeField] private Sprite grassSprite;
-    [Tooltip("出口外草地往外延伸多远（从围栏算起，含公路 + 河的宽度）。")]
-    [SerializeField, Min(0f)] private float exitApronDepth = 40f;
     [SerializeField, Min(0.1f)] private float truckSpeed = 40f;
     [SerializeField, Min(0f)] private float truckCooldown = 2f;
 
@@ -101,7 +88,6 @@ public sealed class MapLayoutBuilder : MonoBehaviour
     public IReadOnlyList<MapCell> Cells => cells;
     public Rect WorldRect => borderRing != null ? borderRing.WorldRect : worldRect;
     public MapCell SpawnCell => FindCell(MapBlockRole.Spawn);
-    public MapCell ExitCell => FindCell(MapBlockRole.Exit);
     public MapCell PagodaCell
     {
         get
@@ -111,7 +97,7 @@ public sealed class MapLayoutBuilder : MonoBehaviour
             return null;
         }
     }
-    /// <summary>公路 + 河流带的总宽度：出口方向之外，围栏外这么远都不算冲出去。</summary>
+    /// <summary>围栏外公路与河流带的总宽度。</summary>
     public float OuterRingWidth => roadWidth + riverWidth;
 
     public MapCell CellAt(Vector2 position)
@@ -139,7 +125,6 @@ public sealed class MapLayoutBuilder : MonoBehaviour
         }
 
         RelocateSpawn();
-        ConfigureExit();
         BuildOuterRing();
     }
 
@@ -147,7 +132,6 @@ public sealed class MapLayoutBuilder : MonoBehaviour
     public static readonly MapBlockRole[] RequiredRoles =
     {
         MapBlockRole.Spawn,
-        MapBlockRole.Exit,
         MapBlockRole.Forest,
         MapBlockRole.Plains,
         MapBlockRole.Village,
@@ -194,31 +178,13 @@ public sealed class MapLayoutBuilder : MonoBehaviour
             (roles[index], roles[swap]) = (roles[swap], roles[index]);
         }
 
-        // 大于 3×2 的可配置网格会出现内部格。出口必须落在地图外沿，否则没有合法 ExitEdge，
-        // 旧实现会在 PickOuterEdge 中对空列表调用 Random.Next(0) 并让场景启动失败。
-        int exitIndex = roles.FindIndex(0, result.Length, role => role == MapBlockRole.Exit);
-        if (exitIndex >= 0 && !IsOuterCell(result[exitIndex], columns, rows))
-        {
-            List<int> outerIndices = new();
-            for (int index = 0; index < result.Length; index++)
-            {
-                if (IsOuterCell(result[index], columns, rows))
-                    outerIndices.Add(index);
-            }
-
-            int swap = outerIndices[random.Next(outerIndices.Count)];
-            (roles[exitIndex], roles[swap]) = (roles[swap], roles[exitIndex]);
-        }
-
         for (int index = 0; index < result.Length; index++)
         {
             MapBlockRole role = roles[index];
             result[index].Definition = PickByRole(pool, role, random);
-            if (role == MapBlockRole.Exit)
-                result[index].ExitEdge = PickOuterEdge(result[index], columns, rows, random);
         }
 
-        // 宝塔随机落在出生格、出口格以外的任意一格之上（出口格中间有一排路牌，别盖住）。
+        // 宝塔随机落在出生格以外的任意一格之上。
         List<MapCell> pagodaCandidates = new();
         foreach (MapCell cell in result)
         {
@@ -242,24 +208,6 @@ public sealed class MapLayoutBuilder : MonoBehaviour
         }
 
         return candidates.Count > 0 ? PickWeighted(candidates, random) : FindByRole(pool, role);
-    }
-
-    private static MapEdge PickOuterEdge(MapCell cell, int columns, int rows, System.Random random)
-    {
-        List<MapEdge> edges = new(4);
-        if (cell.Row == rows - 1) edges.Add(MapEdge.Top);
-        if (cell.Row == 0) edges.Add(MapEdge.Bottom);
-        if (cell.Column == 0) edges.Add(MapEdge.Left);
-        if (cell.Column == columns - 1) edges.Add(MapEdge.Right);
-        return edges[random.Next(edges.Count)];
-    }
-
-    private static bool IsOuterCell(MapCell cell, int columns, int rows)
-    {
-        return cell.Column == 0
-            || cell.Column == columns - 1
-            || cell.Row == 0
-            || cell.Row == rows - 1;
     }
 
     private static MapBlockDefinition FindByRole(IReadOnlyList<MapBlockDefinition> pool, MapBlockRole role)
@@ -336,41 +284,6 @@ public sealed class MapLayoutBuilder : MonoBehaviour
         TutorialPen.SyncBodies(target);
     }
 
-    // ---------------------------------------------------------------- exit
-
-    /// <summary>
-    /// 在出口格地面铺几块指向推荐路线的路牌。围栏整圈都按同一门槛可撞，
-    /// 从其他方向越界同样获胜，但会先进入带卡车风险的公路区域。
-    /// </summary>
-    private void ConfigureExit()
-    {
-        MapCell exit = ExitCell;
-        if (exit == null || !exit.ExitEdge.HasValue || arrowSprite == null)
-            return;
-
-        Vector2 direction = EdgeDirection(exit.ExitEdge.Value);
-        Vector2 edgeCenter = EdgeCenter(exit.Rect, exit.ExitEdge.Value);
-        // 路牌贴图箭头朝上（+Y）：把 +Y 转到出口方向。
-        float spriteAngle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg - 90f;
-        Transform arrows = new GameObject("ExitArrows").transform;
-        arrows.SetParent(transform, false);
-        for (int index = 0; index < arrowCount; index++)
-        {
-            // 从格子中心往出口边等距排，最后一枚离围栏 6 单位。
-            float t = (index + 1f) / (arrowCount + 1f);
-            Vector2 position = Vector2.Lerp(exit.Rect.center, edgeCenter - direction * 6f, t);
-            GameObject arrow = new GameObject($"ExitArrow_{index + 1}");
-            arrow.transform.SetParent(arrows, false);
-            arrow.transform.position = position;
-            arrow.transform.rotation = Quaternion.Euler(0f, 0f, spriteAngle);
-            arrow.transform.localScale = Vector3.one * arrowScale;
-            SpriteRenderer renderer = arrow.AddComponent<SpriteRenderer>();
-            renderer.sprite = arrowSprite;
-            renderer.sortingLayerName = "Background";
-            renderer.sortingOrder = -40;
-        }
-    }
-
     private static Vector2 EdgeDirection(MapEdge edge)
     {
         return edge switch
@@ -385,8 +298,7 @@ public sealed class MapLayoutBuilder : MonoBehaviour
     // ---------------------------------------------------------------- outer ring
 
     /// <summary>
-    /// 围栏外侧：先一圈公路（可走，触发卡车），再一圈河流（空气墙）。
-    /// 出口格贴外圈的那一段两者都不铺，作为更安全、可辨识的推荐路线。
+    /// 围栏外侧四边统一铺设公路（可走，触发卡车）和河流（空气墙）。
     /// </summary>
     private void BuildOuterRing()
     {
@@ -394,8 +306,6 @@ public sealed class MapLayoutBuilder : MonoBehaviour
         ringRoot.SetParent(transform, false);
 
         Rect world = WorldRect;
-        MapCell exit = ExitCell;
-        MapEdge? exitEdge = exit != null ? exit.ExitEdge : null;
         float total = roadWidth + riverWidth;
 
         foreach (MapEdge edge in new[] { MapEdge.Top, MapEdge.Bottom, MapEdge.Left, MapEdge.Right })
@@ -413,67 +323,11 @@ public sealed class MapLayoutBuilder : MonoBehaviour
                 _ => world.xMax,
             };
 
-            // 出口那一段（出口格的整条边）留空。
-            float gapFrom = float.NaN;
-            float gapTo = float.NaN;
-            if (exitEdge.HasValue && exitEdge.Value == edge)
-            {
-                gapFrom = horizontal ? exit.Rect.xMin : exit.Rect.yMin;
-                gapTo = horizontal ? exit.Rect.xMax : exit.Rect.yMax;
-            }
-
-            if (!float.IsNaN(gapFrom))
-                BuildExitApron(edge, horizontal, edgeLine, outward[horizontal ? 1 : 0], gapFrom, gapTo);
-
             float roadCenter = edgeLine + outward[horizontal ? 1 : 0] * roadWidth * 0.5f;
             float riverCenter = edgeLine + outward[horizontal ? 1 : 0] * (roadWidth + riverWidth * 0.5f);
-            foreach ((float a, float b) in SplitAround(from, to, gapFrom, gapTo))
-            {
-                BuildRoad(edge, horizontal, roadCenter, a, b);
-                BuildRiver(edge, horizontal, riverCenter, a, b);
-            }
+            BuildRoad(edge, horizontal, roadCenter, from, to);
+            BuildRiver(edge, horizontal, riverCenter, from, to);
         }
-    }
-
-    /// <summary>出口缺口外贴一块草地：沿边覆盖整个缺口，往外铺 exitApronDepth。</summary>
-    private void BuildExitApron(MapEdge edge, bool horizontal, float edgeLine, float sign, float from, float to)
-    {
-        float depth = Mathf.Max(roadWidth + riverWidth, exitApronDepth);
-        float center = edgeLine + sign * depth * 0.5f;
-        (Vector2 position, float length, float rotation) = Strip(horizontal, center, from, to);
-        GameObject apron = new GameObject($"ExitApron_{edge}");
-        apron.transform.SetParent(ringRoot, false);
-        apron.transform.position = position;
-        apron.transform.rotation = Quaternion.Euler(0f, 0f, rotation);
-        SpriteRenderer renderer = apron.AddComponent<SpriteRenderer>();
-        renderer.sortingLayerName = "Background";
-        renderer.sortingOrder = -100;
-        renderer.drawMode = SpriteDrawMode.Tiled;
-        renderer.tileMode = SpriteTileMode.Continuous;
-        renderer.size = new Vector2(depth, length);
-        if (grassSprite != null)
-        {
-            renderer.sprite = grassSprite;
-        }
-        else
-        {
-            renderer.sprite = RuntimeSprites.Solid();
-            renderer.color = new Color(0.28f, 0.46f, 0.25f, 1f);
-        }
-    }
-
-    private static IEnumerable<(float, float)> SplitAround(float from, float to, float gapFrom, float gapTo)
-    {
-        if (float.IsNaN(gapFrom))
-        {
-            yield return (from, to);
-            yield break;
-        }
-
-        if (gapFrom - from > 0.5f)
-            yield return (from, gapFrom);
-        if (to - gapTo > 0.5f)
-            yield return (gapTo, to);
     }
 
     /// <summary>沿某条边铺一段条带；horizontal = 条带沿 x 方向延伸，此时 center 是 y。</summary>
@@ -572,12 +426,8 @@ public sealed class MapLayoutBuilder : MonoBehaviour
         {
             Gizmos.color = RoleColor(cell.Definition != null ? cell.Role : (MapBlockRole?)null);
             Gizmos.DrawWireCube(cell.Rect.center, cell.Rect.size);
-            if (cell.ExitEdge.HasValue)
-                Gizmos.DrawWireCube(EdgeCenter(cell.Rect, cell.ExitEdge.Value), Vector3.one * 3f);
 #if UNITY_EDITOR
             string label = cell.Definition != null ? $"{cell.Role} · {cell.Definition.DisplayName}" : $"({cell.Column},{cell.Row})";
-            if (cell.ExitEdge.HasValue)
-                label += $" → {cell.ExitEdge.Value}";
             if (cell.HasPagoda)
                 label += " + 宝塔";
             UnityEditor.Handles.Label(cell.Rect.center, label);
@@ -585,23 +435,11 @@ public sealed class MapLayoutBuilder : MonoBehaviour
         }
     }
 
-    private static Vector2 EdgeCenter(Rect rect, MapEdge edge)
-    {
-        return edge switch
-        {
-            MapEdge.Top => new Vector2(rect.center.x, rect.yMax),
-            MapEdge.Bottom => new Vector2(rect.center.x, rect.yMin),
-            MapEdge.Left => new Vector2(rect.xMin, rect.center.y),
-            _ => new Vector2(rect.xMax, rect.center.y),
-        };
-    }
-
     private static Color RoleColor(MapBlockRole? role)
     {
         return role switch
         {
             MapBlockRole.Spawn => Color.cyan,
-            MapBlockRole.Exit => Color.red,
             MapBlockRole.Forest => new Color(0.1f, 0.6f, 0.1f),
             MapBlockRole.Plains => Color.yellow,
             MapBlockRole.Village => new Color(1f, 0.6f, 0.2f),

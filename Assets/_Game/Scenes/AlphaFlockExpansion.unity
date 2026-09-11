@@ -6906,7 +6906,6 @@ MonoBehaviour:
     height: 140
   blockPool:
   - {fileID: 11400000, guid: 8d9b01659d8b24b41942c020354c2c18, type: 2}
-  - {fileID: 11400000, guid: 55f655d8994cabb4b9921cf6ca7c5a38, type: 2}
   - {fileID: 11400000, guid: dbf7f0418e46cbe40b8898563a424782, type: 2}
   - {fileID: 11400000, guid: ab8d8e575decac7439321a4618ada25c, type: 2}
   - {fileID: 11400000, guid: ec9715953c60cf74982cb256f6ce6371, type: 2}
@@ -6915,9 +6914,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 1c98ffb027e5f1645b1cef85c87e2f7d, type: 2}
   debrisPenPadding: 4
   landmarkPenPadding: 5
-  arrowSprite: {fileID: 21300000, guid: abe4e29cee501954fa2795927b7eed83, type: 3}
-  arrowCount: 3
-  arrowScale: 2
   roadWidth: 8
   riverWidth: 6
   riverSprite: {fileID: 21300000, guid: 718e4091924cc7043aa9fec40f381be2, type: 3}

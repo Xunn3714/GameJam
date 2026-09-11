@@ -22,7 +22,6 @@ public static class AlphaFlockExpansionSceneSetup
     private const string GrassBackgroundPath = "Assets/Art/WorldSprites/Tiles/草原_背景.png";
     private const string RiverTilePath = "Assets/Art/WorldSprites/Tiles/草原_河.png";
     private const string TruckSpritePath = "Assets/Art/new_buildings/大运.png";
-    private const string ArrowSpritePath = "Assets/Art/new_buildings/箭头.png";
     private const string WarningRectAssetPath = "Assets/_Game/Content/Art/Prototype/WolfWarningRect.asset";
     private const string SheepMemberPrefabPath = "Assets/_Game/Content/Perfabs/Sheep/SheepMember.prefab";
     private const string RecruitableSheepPrefabPath = "Assets/_Game/Content/Perfabs/Sheep/RecruitableSheep.prefab";
@@ -135,7 +134,7 @@ public static class AlphaFlockExpansionSceneSetup
     private static readonly DebrisPick[] SparseGrass =
     {
         new DebrisPick("obstacle.grass_1", 3f), new DebrisPick("obstacle.grass_2", 3f), new DebrisPick("obstacle.flower", 2f),
-        // 出生 / 出口 / 村庄格也零星来几棵树和石头，别像被推平过。
+        // 出生 / 村庄格也零星来几棵树和石头，别像被推平过。
         new DebrisPick("obstacle.tree", 1f, 2.4f), new DebrisPick("obstacle.tree_2", 0.6f, 2.8f), new DebrisPick("obstacle.rock", 0.6f, 2.6f),
     };
 
@@ -169,7 +168,6 @@ public static class AlphaFlockExpansionSceneSetup
     private static readonly BlockSpec[] BlockSpecs =
     {
         new BlockSpec("block.spawn", "出生点", MapBlockRole.Spawn, 1f, 0.45f, SparseGrass),
-        new BlockSpec("block.exit", "出口", MapBlockRole.Exit, 1f, 0.6f, SparseGrass),
         new BlockSpec("block.forest_a", "森林 A", MapBlockRole.Forest, 1f, 3.5f, ForestA),
         new BlockSpec("block.forest_b", "森林 B", MapBlockRole.Forest, 1f, 4f, ForestB),
         new BlockSpec("block.plains_grass", "平原·草", MapBlockRole.Plains, 1f, 0.9f, PlainsGrass, farms: 3),
@@ -411,7 +409,7 @@ public static class AlphaFlockExpansionSceneSetup
         Debug.Log(
             $"Alpha 羊群扩张场景已生成：{ScenePath}。" +
             $"地图 {WorldRect.width}x{WorldRect.height}（{MapColumns}x{MapRows} 区块，出生格随机），出生羊圈 6 只教程羊，狼在 {WolfUnlockFlockSize} 只后出现，" +
-            $"历史最高 {ExitUnlockFlockSize} 只后解锁出口，冲刺时当前羊数达标才能撞开外围围栏。");
+            $"历史最高 {ExitUnlockFlockSize} 只后解锁冲出地图，冲刺时当前羊数达标才能撞开外围围栏。");
     }
 
     // ------------------------------------------------------------------ scene
@@ -871,9 +869,7 @@ public static class AlphaFlockExpansionSceneSetup
         for (int index = 0; index < pool.Length; index++)
             poolProperty.GetArrayElementAtIndex(index).objectReferenceValue = pool[index];
         serialized.FindProperty("riverSprite").objectReferenceValue = LoadTiledSprite(RiverTilePath, optional: true);
-        serialized.FindProperty("grassSprite").objectReferenceValue = LoadGrassSprite();
         serialized.FindProperty("truckSprite").objectReferenceValue = WorldObstaclePrefabBuilder.LoadSpriteAt(TruckSpritePath, optional: true);
-        serialized.FindProperty("arrowSprite").objectReferenceValue = WorldObstaclePrefabBuilder.LoadSpriteAt(ArrowSpritePath, optional: true);
         serialized.ApplyModifiedPropertiesWithoutUndo();
 
         // 两个撒点器改为按格生成；大房子 / 拖拉机没有美术时保持为空，运行时自动退回小房子 / 不放拖拉机。
@@ -917,7 +913,7 @@ public static class AlphaFlockExpansionSceneSetup
                 SerializedObject serialized = new SerializedObject(definition);
                 serialized.FindProperty("blockId").stringValue = spec.File;
                 serialized.FindProperty("displayName").stringValue = spec.DisplayName;
-                serialized.FindProperty("role").enumValueIndex = (int)spec.Role;
+                serialized.FindProperty("role").intValue = (int)spec.Role;
                 serialized.FindProperty("weight").floatValue = spec.Weight;
                 serialized.FindProperty("debrisDensityPer100SquareUnits").floatValue = spec.Density;
                 SerializedProperty debris = serialized.FindProperty("debris");

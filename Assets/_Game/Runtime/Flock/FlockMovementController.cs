@@ -649,7 +649,7 @@ public sealed class FlockMovementController : MonoBehaviour
     }
 
     /// <summary>
-    /// 出口解锁后允许 E 冲刺扫过地图边界并命中外圈围栏；普通移动仍受边界限制。
+    /// 冲出地图解锁后允许 E 冲刺扫过地图边界并命中外圈围栏；普通移动仍受边界限制。
     /// </summary>
     public void SetExternalMovementCanLeaveBounds(bool canLeave)
     {

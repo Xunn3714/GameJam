@@ -45,7 +45,7 @@ public sealed class WorldDebrisSpawnerTests
         {
             debrisPrefab.SetActive(false);
             SerializedObject definitionData = new SerializedObject(definition);
-            definitionData.FindProperty("role").enumValueIndex = (int)MapBlockRole.Plains;
+            definitionData.FindProperty("role").intValue = (int)MapBlockRole.Plains;
             SerializedProperty debris = definitionData.FindProperty("debris");
             debris.arraySize = 1;
             debris.GetArrayElementAtIndex(0).FindPropertyRelative("prefab").objectReferenceValue = debrisPrefab;
