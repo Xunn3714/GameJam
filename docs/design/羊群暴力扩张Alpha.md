@@ -89,7 +89,7 @@
 
 ### 验证
 
-- EditMode 测试：`Assets/_Game/Editor/Tests/AlphaProgressionTests.cs`（阶段不降级、100 只解锁出口、门槛可配、拉屎计数行）、`PoopAbilityTests.cs`（冷却、10 秒配置、100 个容量、分圈、渲染顺序与羊动画入口）、`AlphaUiIntegrationTests.cs`（主场景参数及现有 `BreakParticles` 引用）、`AlphaRunStatsTests.cs`（统计准确）、`FlockSeparationTests.cs`（主群连通、持续脱队与重新招募）、`WolfEdgeThreatViewTests.cs`（可见边界、四向 / 斜向投影与狼头像资产引用）。
+- EditMode 测试：`Assets/_Game/Editor/Tests/AlphaProgressionTests.cs`（阶段不降级、100 只解锁出口、门槛可配、拉屎计数行）、`PoopAbilityTests.cs`（冷却、10 秒配置、100 个容量、分圈、渲染顺序与羊动画入口）、`AlphaUiIntegrationTests.cs`（主场景参数及现有 `BreakParticles` 引用）、`AlphaRunStatsTests.cs`（统计准确）、`FlockSeparationTests.cs`（主群连通、持续脱队、重新招募与移动中镜头焦点回正）、`WolfEdgeThreatViewTests.cs`（可见边界、四向 / 斜向投影与狼头像资产引用）。
 - 菜单：`Game Jam → Alpha Flock Expansion → Setup Scene`（会先执行 `Game Jam → World → Build Obstacle Prefabs`）。
 
 ### 2026-09-05 第二轮调整
@@ -164,7 +164,7 @@
 - 距离脱队最多移除到剩余一只羊；若一轮判定中所有成员都超出成员场，保留距离中心最近的一只继续追赶。狼群捕获仍可造成真正的零羊失败。E 冲刺、封闭外围围栏和障碍破坏门槛不受普通移动规则影响。
 - 外圈出口解锁后，普通中心仍受原地图边界限制；仅 E 冲刺可越界扫到围栏。任意一段围栏实际撞破后才扩张中心与镜头边界，避免目标中心提前跑出封闭地图。
 - 镜头中央设置随正交镜头尺寸缩放的椭圆安全区，普通移动时其中必须至少保留一只已入群成员；成员接近边缘时中心逐渐减速，越过边缘的分量被限制。松开移动约 0.1 秒后，目标中心以 0.32 秒平滑参数回到稳定锚点附近的局部羊群中心；单羊直接以该羊为锚点，E 整群动作期间暂停回正。
-- 自动回正是可被抢占的低优先级状态：任意有效方向输入、E 动作、暂停或玩法控制权关闭都会立即取消回正，并同时清除中心与镜头的回正惯性。成员被捕获或脱队导致锚点失效时会重选有效成员；成员数归零时直接退出回正。
+- 羊群目标中心的自动位移回正是可被抢占的低优先级状态：任意有效方向输入、E 动作、暂停或玩法控制权关闭都会立即取消该位移并清除惯性。镜头焦点与这个状态解耦：即使玩家持续移动，可操作羊接近中央安全区边缘时，镜头也会从目标中心平滑过渡到局部羊群焦点，不修改输入速度或羊群目标中心。成员被捕获或脱队导致锚点失效时会重选有效成员；成员数归零时直接退出回正。
 
 ### 2026-09-10 E 冲刺距离调优
 

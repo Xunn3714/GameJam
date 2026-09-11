@@ -119,7 +119,7 @@ public sealed class CameraFollow2D : MonoBehaviour
         }
 
         Vector2 focusPosition = flockController != null
-            ? flockController.Center
+            ? flockController.CameraFocus
             : (Vector2)target.position;
 
         UpdateZoom();

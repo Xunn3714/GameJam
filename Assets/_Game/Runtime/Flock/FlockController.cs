@@ -81,6 +81,11 @@ public sealed class FlockController : MonoBehaviour
         ? (Vector2)movementController.transform.position
         : (Vector2)transform.position;
 
+    /// <summary>镜头使用的独立焦点；移动中仍会保持可操作羊处于画面中央区域。</summary>
+    public Vector2 CameraFocus => movementController != null
+        ? movementController.CameraFocus
+        : Center;
+
     /// <summary>羊群当前的速度上限（含阶段倍率）；没有移动控制器时给个默认值。</summary>
     public float CurrentSpeedLimit => movementController != null ? movementController.CurrentSpeedLimit : 4f;
 
