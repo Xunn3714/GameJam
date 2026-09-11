@@ -67,6 +67,32 @@ public sealed class MapLayoutTests
     }
 
     [Test]
+    public void ConfigurableGridKeepsExitOnOuterBoundary()
+    {
+        Rect largerWorld = new Rect(-150f, -150f, 300f, 300f);
+        for (int seed = 0; seed < 200; seed++)
+        {
+            MapCell[] cells = MapLayoutBuilder.Assign(new System.Random(seed), 3, 3, largerWorld, FullPool());
+            MapCell exit = cells.Single(cell => cell.Role == MapBlockRole.Exit);
+
+            Assert.IsTrue(exit.ExitEdge.HasValue, $"seed {seed}: exit without edge");
+            Assert.IsTrue(
+                exit.Column == 0 || exit.Column == 2 || exit.Row == 0 || exit.Row == 2,
+                $"seed {seed}: exit was assigned to interior cell ({exit.Column}, {exit.Row})");
+        }
+    }
+
+    [Test]
+    public void NullPoolLeavesDefinitionsEmptyInsteadOfThrowing()
+    {
+        MapCell[] cells = null;
+        Assert.DoesNotThrow(() =>
+            cells = MapLayoutBuilder.Assign(new System.Random(5), 3, 3, World, null));
+        Assert.That(cells, Has.Length.EqualTo(9));
+        Assert.IsTrue(cells.All(cell => cell.Definition == null));
+    }
+
+    [Test]
     public void PagodaLandsOnExactlyOneNonSpawnCell()
     {
         for (int seed = 1; seed <= 100; seed++)

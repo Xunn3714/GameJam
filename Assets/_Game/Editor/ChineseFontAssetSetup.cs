@@ -61,9 +61,6 @@ public static class ChineseFontAssetSetup
 
         fontAsset.atlasPopulationMode = AtlasPopulationMode.Dynamic;
         fontAsset.isMultiAtlasTexturesEnabled = true;
-        SerializedObject fontAssetData = new SerializedObject(fontAsset);
-        fontAssetData.FindProperty("m_ClearDynamicDataOnBuild").boolValue = false;
-        fontAssetData.ApplyModifiedPropertiesWithoutUndo();
         if (!fontAsset.TryAddCharacters(PreviewCharacters, out string missingCharacters))
             Debug.LogWarning($"Noto Sans SC 缺少以下预览字符：{missingCharacters}");
 

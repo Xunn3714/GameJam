@@ -17,8 +17,6 @@ MonoBehaviour:
   sizeCategory: 1
   breakRule: 1
   requiredFlockCount: 6
-  requiredDashHits: 1
-  countSource: 0
   brokenBehavior: 0
   breakAnimationDuration: 0.4
   brokenSortingLayer: Background

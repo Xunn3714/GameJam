@@ -35,7 +35,8 @@ public sealed class MapCell
 /// 出生点 / 出口 / 森林 / 平原 / 村庄各一格，第六格在森林 / 平原 / 村庄里随机；宝塔再随机落在某一格之上。
 /// 在 Awake 里（早于所有 Start）把羊圈、羊群、初始羊和相机整体挪到出生格，
 /// 并同步散布物 / 地标的羊圈排除区，后面的系统不需要知道地图变过。
-/// 围栏外再围一圈"公路 + 河流"，只有出口格的那条外边留空，是唯一能冲出去的地方。
+/// 围栏外再围一圈"公路 + 河流"；出口格的外边留出一条无公路风险的引导路线，
+/// 但外围围栏仍保持原玩法规则：撞开任意一段并越过地图边界都能获胜。
 /// </summary>
 [DisallowMultipleComponent]
 [DefaultExecutionOrder(-100)]
@@ -142,24 +143,6 @@ public sealed class MapLayoutBuilder : MonoBehaviour
         BuildOuterRing();
     }
 
-    /// <summary>羊群中心是否从出口边冲出了地图（其他方向被公路 + 河流挡住，不算）。</summary>
-    public bool IsBeyondExit(Vector2 position, float margin)
-    {
-        MapCell exit = ExitCell;
-        if (exit == null || !exit.ExitEdge.HasValue)
-            return false;
-
-        Rect rect = exit.Rect;
-        return exit.ExitEdge.Value switch
-        {
-            MapEdge.Top => position.y > rect.yMax + margin,
-            MapEdge.Bottom => position.y < rect.yMin - margin,
-            MapEdge.Left => position.x < rect.xMin - margin,
-            _ => position.x > rect.xMax + margin,
-        };
-    }
-
-
     /// <summary>五种角色各至少一格；多出来的格子在 FillerRoles 里随机。</summary>
     public static readonly MapBlockRole[] RequiredRoles =
     {
@@ -185,6 +168,10 @@ public sealed class MapLayoutBuilder : MonoBehaviour
         Rect world,
         IReadOnlyList<MapBlockDefinition> pool)
     {
+        if (random == null)
+            throw new ArgumentNullException(nameof(random));
+
+        pool ??= Array.Empty<MapBlockDefinition>();
         columns = Mathf.Max(1, columns);
         rows = Mathf.Max(1, rows);
         MapCell[] result = new MapCell[columns * rows];
@@ -205,6 +192,22 @@ public sealed class MapLayoutBuilder : MonoBehaviour
         {
             int swap = random.Next(index + 1);
             (roles[index], roles[swap]) = (roles[swap], roles[index]);
+        }
+
+        // 大于 3×2 的可配置网格会出现内部格。出口必须落在地图外沿，否则没有合法 ExitEdge，
+        // 旧实现会在 PickOuterEdge 中对空列表调用 Random.Next(0) 并让场景启动失败。
+        int exitIndex = roles.FindIndex(0, result.Length, role => role == MapBlockRole.Exit);
+        if (exitIndex >= 0 && !IsOuterCell(result[exitIndex], columns, rows))
+        {
+            List<int> outerIndices = new();
+            for (int index = 0; index < result.Length; index++)
+            {
+                if (IsOuterCell(result[index], columns, rows))
+                    outerIndices.Add(index);
+            }
+
+            int swap = outerIndices[random.Next(outerIndices.Count)];
+            (roles[exitIndex], roles[swap]) = (roles[swap], roles[exitIndex]);
         }
 
         for (int index = 0; index < result.Length; index++)
@@ -249,6 +252,14 @@ public sealed class MapLayoutBuilder : MonoBehaviour
         if (cell.Column == 0) edges.Add(MapEdge.Left);
         if (cell.Column == columns - 1) edges.Add(MapEdge.Right);
         return edges[random.Next(edges.Count)];
+    }
+
+    private static bool IsOuterCell(MapCell cell, int columns, int rows)
+    {
+        return cell.Column == 0
+            || cell.Column == columns - 1
+            || cell.Row == 0
+            || cell.Row == rows - 1;
     }
 
     private static MapBlockDefinition FindByRole(IReadOnlyList<MapBlockDefinition> pool, MapBlockRole role)
@@ -328,8 +339,8 @@ public sealed class MapLayoutBuilder : MonoBehaviour
     // ---------------------------------------------------------------- exit
 
     /// <summary>
-    /// 在出口格地面铺几块指向出口的路牌。围栏整圈都按同一门槛可撞：出口之外撞出去只会落到公路上（卡车）、
-    /// 再外面是河（空气墙），真正能离开地图的仍然只有出口那一段。
+    /// 在出口格地面铺几块指向推荐路线的路牌。围栏整圈都按同一门槛可撞，
+    /// 从其他方向越界同样获胜，但会先进入带卡车风险的公路区域。
     /// </summary>
     private void ConfigureExit()
     {
@@ -375,7 +386,7 @@ public sealed class MapLayoutBuilder : MonoBehaviour
 
     /// <summary>
     /// 围栏外侧：先一圈公路（可走，触发卡车），再一圈河流（空气墙）。
-    /// 出口格贴外圈的那一段两者都不铺，是唯一能冲出去的缺口。
+    /// 出口格贴外圈的那一段两者都不铺，作为更安全、可辨识的推荐路线。
     /// </summary>
     private void BuildOuterRing()
     {

@@ -83,8 +83,16 @@ public sealed class WorldDebrisSpawner : MonoBehaviour
     private float regrowTimer;
     private float noiseOffsetX;
     private float noiseOffsetY;
+    private int targetPopulation;
 
-    public int SpawnedCount => spawned.Count;
+    public int SpawnedCount
+    {
+        get
+        {
+            PruneDestroyedInstances();
+            return spawned.Count;
+        }
+    }
     public Rect Area => area;
 
     public void SetArea(Rect newArea)
@@ -149,8 +157,12 @@ public sealed class WorldDebrisSpawner : MonoBehaviour
             target = SpawnInArea(inner, entries, densityPer100SquareUnits, random, ref placed, null);
         }
 
+        targetPopulation = maximumCount > 0 ? Mathf.Min(target, maximumCount) : target;
         Physics2D.SyncTransforms();
-        Debug.Log($"地图散布了 {placed} 个可破坏物（目标 {target}）。", this);
+        // 开局同一物理帧内靠这两张表防重叠；同步进物理世界后，后续补撒只需做物理查询。
+        placedPositions.Clear();
+        placedClearances.Clear();
+        Debug.Log($"地图散布了 {placed} 个可破坏物（目标 {targetPopulation}）。", this);
     }
 
     /// <summary>
@@ -215,8 +227,11 @@ public sealed class WorldDebrisSpawner : MonoBehaviour
         GameObject instance = Instantiate(entry.Prefab, position, Quaternion.identity, debrisRoot);
         instance.name = $"{entry.Prefab.name}_{placed + 1:000}";
         spawned.Add(instance);
-        placedPositions.Add(position);
-        placedClearances.Add(entry.Clearance);
+        if (checkPlacedList)
+        {
+            placedPositions.Add(position);
+            placedClearances.Add(entry.Clearance);
+        }
         placed++;
         return true;
     }
@@ -268,7 +283,13 @@ public sealed class WorldDebrisSpawner : MonoBehaviour
     /// </summary>
     public void Regrow(int count)
     {
-        if (layout == null || layout.Cells.Count == 0)
+        if (count <= 0 || regrowRandom == null || layout == null || layout.Cells.Count == 0)
+            return;
+
+        PruneDestroyedInstances();
+        int cap = maximumCount > 0 ? Mathf.Min(targetPopulation, maximumCount) : targetPopulation;
+        int budget = Mathf.Min(count, Mathf.Max(0, cap - spawned.Count));
+        if (budget <= 0)
             return;
 
         Physics2D.SyncTransforms();
@@ -278,7 +299,7 @@ public sealed class WorldDebrisSpawner : MonoBehaviour
             Mathf.Max(0f, area.width - borderPadding * 2f), Mathf.Max(0f, area.height - borderPadding * 2f));
 
         int placed = spawned.Count;
-        for (int index = 0; index < count; index++)
+        for (int index = 0; index < budget; index++)
         {
             MapCell cell = layout.Cells[regrowRandom.Next(layout.Cells.Count)];
             MapBlockDefinition definition = cell.Definition;
@@ -306,9 +327,18 @@ public sealed class WorldDebrisSpawner : MonoBehaviour
                 if (IsVisibleToCamera(camera, position))
                     continue;
                 if (TryPlace(pick, position, regrowRandom, ref placed, checkPlacedList: false))
+                {
+                    // 同一轮可能补多个；立即同步，避免下一项落到刚生成物的碰撞体上。
+                    Physics2D.SyncTransforms();
                     break;
+                }
             }
         }
+    }
+
+    private void PruneDestroyedInstances()
+    {
+        spawned.RemoveAll(instance => instance == null);
     }
 
     private bool IsVisibleToCamera(Camera camera, Vector2 position)
@@ -343,6 +373,8 @@ public sealed class WorldDebrisSpawner : MonoBehaviour
         spawned.Clear();
         placedPositions.Clear();
         placedClearances.Clear();
+        targetPopulation = 0;
+        regrowRandom = null;
         if (debrisRoot != null)
         {
             Destroy(debrisRoot.gameObject);

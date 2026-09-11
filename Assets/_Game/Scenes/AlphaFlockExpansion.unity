@@ -6913,12 +6913,10 @@ MonoBehaviour:
   - {fileID: 11400000, guid: fa901790a8e9b514f9ce1a380d1aa1db, type: 2}
   - {fileID: 11400000, guid: a066f7632b8d2c14ebd322a67bfcd361, type: 2}
   - {fileID: 11400000, guid: 1c98ffb027e5f1645b1cef85c87e2f7d, type: 2}
-  removeSpawnPenFences: 0
   debrisPenPadding: 4
   landmarkPenPadding: 5
   arrowSprite: {fileID: 21300000, guid: abe4e29cee501954fa2795927b7eed83, type: 3}
   arrowCount: 3
-  lockFencesOutsideExit: 0
   arrowScale: 2
   roadWidth: 8
   riverWidth: 6
@@ -16058,7 +16056,6 @@ MonoBehaviour:
   wolfSpawner: {fileID: 328776009}
   borderRing: {fileID: 709801617}
   tutorialPen: {fileID: 913610307}
-  mapLayout: {fileID: 0}
   bannerView: {fileID: 1087933637}
   uiCanvas: {fileID: 1165002866}
   hudView: {fileID: 1621521910}
@@ -25711,7 +25708,7 @@ MonoBehaviour:
     width: 26
     height: 18
   densityPer100SquareUnits: 0.8
-  maximumCount: 0
+  maximumCount: 520
   placementAttemptsPerItem: 32
   minimumSpacing: 2.2
   spawnOnStart: 1

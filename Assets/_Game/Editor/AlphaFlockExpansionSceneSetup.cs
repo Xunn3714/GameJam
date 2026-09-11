@@ -879,8 +879,8 @@ public static class AlphaFlockExpansionSceneSetup
         // 两个撒点器改为按格生成；大房子 / 拖拉机没有美术时保持为空，运行时自动退回小房子 / 不放拖拉机。
         SerializedObject debrisSerialized = new SerializedObject(debris);
         debrisSerialized.FindProperty("layout").objectReferenceValue = builder;
-        // 按格配置密度后不再需要全图总上限（0 = 不限制）。
-        debrisSerialized.FindProperty("maximumCount").intValue = 0;
+        // 保留全局安全上限；按格密度决定目标数量，补撒只恢复到该目标，不会无限增长。
+        debrisSerialized.FindProperty("maximumCount").intValue = 520;
         debrisSerialized.FindProperty("minimumSpacing").floatValue = 2.2f;
         // 森林接近满铺时随机落点大多会撞到已放下的树，尝试次数太少会让实际数量远低于目标。
         debrisSerialized.FindProperty("placementAttemptsPerItem").intValue = 32;
@@ -898,7 +898,10 @@ public static class AlphaFlockExpansionSceneSetup
         return builder;
     }
 
-    /// <summary>按 BlockSpecs 建（或刷新）区块定义资产；已存在的只更新字段，保留 GUID。</summary>
+    /// <summary>
+    /// 按 BlockSpecs 创建缺失的区块定义资产。已经存在的资产视为策划配置源，
+    /// 重跑场景 Setup 时不覆盖手工调参，也不删除规格表之外的扩展定义。
+    /// </summary>
     private static MapBlockDefinition[] EnsureBlockDefinitions()
     {
         WorldObstaclePrefabBuilder.EnsureFolder(BlockDefinitionFolder);
@@ -911,48 +914,38 @@ public static class AlphaFlockExpansionSceneSetup
             {
                 definition = ScriptableObject.CreateInstance<MapBlockDefinition>();
                 AssetDatabase.CreateAsset(definition, path);
-            }
+                SerializedObject serialized = new SerializedObject(definition);
+                serialized.FindProperty("blockId").stringValue = spec.File;
+                serialized.FindProperty("displayName").stringValue = spec.DisplayName;
+                serialized.FindProperty("role").enumValueIndex = (int)spec.Role;
+                serialized.FindProperty("weight").floatValue = spec.Weight;
+                serialized.FindProperty("debrisDensityPer100SquareUnits").floatValue = spec.Density;
+                SerializedProperty debris = serialized.FindProperty("debris");
+                debris.arraySize = 0;
+                foreach (DebrisPick pick in spec.Debris)
+                {
+                    WorldObstaclePrefabBuilder.DebrisSpec debrisSpec = WorldObstaclePrefabBuilder.DebrisSpecs
+                        .FirstOrDefault(item => item.Id == pick.Id);
+                    GameObject prefab = debrisSpec != null ? AssetDatabase.LoadAssetAtPath<GameObject>(debrisSpec.PrefabPath) : null;
+                    if (prefab == null)
+                        continue;   // 对应美术还没到（例如新树），这条先跳过。
 
-            SerializedObject serialized = new SerializedObject(definition);
-            serialized.FindProperty("blockId").stringValue = spec.File;
-            serialized.FindProperty("displayName").stringValue = spec.DisplayName;
-            serialized.FindProperty("role").enumValueIndex = (int)spec.Role;
-            serialized.FindProperty("weight").floatValue = spec.Weight;
-            serialized.FindProperty("debrisDensityPer100SquareUnits").floatValue = spec.Density;
-            SerializedProperty debris = serialized.FindProperty("debris");
-            debris.arraySize = 0;
-            foreach (DebrisPick pick in spec.Debris)
-            {
-                WorldObstaclePrefabBuilder.DebrisSpec debrisSpec = WorldObstaclePrefabBuilder.DebrisSpecs
-                    .FirstOrDefault(item => item.Id == pick.Id);
-                GameObject prefab = debrisSpec != null ? AssetDatabase.LoadAssetAtPath<GameObject>(debrisSpec.PrefabPath) : null;
-                if (prefab == null)
-                    continue;   // 对应美术还没到（例如新树），这条先跳过。
-
-                debris.arraySize++;
-                SerializedProperty entry = debris.GetArrayElementAtIndex(debris.arraySize - 1);
-                entry.FindPropertyRelative("prefab").objectReferenceValue = prefab;
-                entry.FindPropertyRelative("weight").floatValue = pick.Weight;
-                entry.FindPropertyRelative("clearance").floatValue = pick.Clearance > 0f ? pick.Clearance : debrisSpec.Clearance;
+                    debris.arraySize++;
+                    SerializedProperty entry = debris.GetArrayElementAtIndex(debris.arraySize - 1);
+                    entry.FindPropertyRelative("prefab").objectReferenceValue = prefab;
+                    entry.FindPropertyRelative("weight").floatValue = pick.Weight;
+                    entry.FindPropertyRelative("clearance").floatValue = pick.Clearance > 0f ? pick.Clearance : debrisSpec.Clearance;
+                }
+                serialized.FindProperty("minimumHouseCount").intValue = spec.HouseMin;
+                serialized.FindProperty("maximumHouseCount").intValue = spec.HouseMax;
+                serialized.FindProperty("fixedRedChestCount").intValue = spec.Chests;
+                serialized.FindProperty("minimumTractorCount").intValue = spec.TractorMin;
+                serialized.FindProperty("maximumTractorCount").intValue = spec.TractorMax;
+                serialized.FindProperty("farmClusterCount").intValue = spec.Farms;
+                serialized.FindProperty("allowBigHouse").boolValue = spec.BigHouse;
+                serialized.ApplyModifiedPropertiesWithoutUndo();
             }
-            serialized.FindProperty("minimumHouseCount").intValue = spec.HouseMin;
-            serialized.FindProperty("maximumHouseCount").intValue = spec.HouseMax;
-            serialized.FindProperty("fixedRedChestCount").intValue = spec.Chests;
-            serialized.FindProperty("minimumTractorCount").intValue = spec.TractorMin;
-            serialized.FindProperty("maximumTractorCount").intValue = spec.TractorMax;
-            serialized.FindProperty("farmClusterCount").intValue = spec.Farms;
-            serialized.FindProperty("allowBigHouse").boolValue = spec.BigHouse;
-            serialized.ApplyModifiedPropertiesWithoutUndo();
             result.Add(definition);
-        }
-
-        // 清掉规格表里已经没有的旧定义（例如改名 / 删掉的区块），避免 Inspector 里留一堆废资产。
-        HashSet<string> keep = new HashSet<string>(BlockSpecs.Select(spec => $"{BlockDefinitionFolder}/{spec.File}.asset"));
-        foreach (string guid in AssetDatabase.FindAssets("t:MapBlockDefinition", new[] { BlockDefinitionFolder }))
-        {
-            string path = AssetDatabase.GUIDToAssetPath(guid);
-            if (!keep.Contains(path))
-                AssetDatabase.DeleteAsset(path);
         }
 
         AssetDatabase.SaveAssets();
