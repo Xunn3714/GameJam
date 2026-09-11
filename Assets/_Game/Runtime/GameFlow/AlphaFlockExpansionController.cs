@@ -96,7 +96,6 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     private SheepDiscoveryToastView discoveryToastView;
     private bool wolvesUnlocked;
     private bool wolfPackWarningShown;
-    private bool scaredWolfHintShown;
     private bool wolvesAnnounced;
     private bool initialized;
     private bool ended;
@@ -157,7 +156,6 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         {
             wolfDirector.PhaseChanged += HandleWolfPhaseChanged;
             wolfDirector.WolfReleased += HandleWolfReleased;
-            wolfDirector.WolfScared += HandleWolfScared;
         }
 
         if (borderRing != null)
@@ -188,7 +186,6 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         {
             wolfDirector.PhaseChanged -= HandleWolfPhaseChanged;
             wolfDirector.WolfReleased -= HandleWolfReleased;
-            wolfDirector.WolfScared -= HandleWolfScared;
         }
 
         if (borderRing != null)
@@ -478,7 +475,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
 
         wolvesAnnounced = true;
         ShowBanner(
-            "狼群盯上了你的羊群……听到狼嚎就抱紧！",
+            "狼群来了……听到狼嚎就抱紧！",
             null,
             wolfDirector != null ? wolfDirector.HowlClip : null);
         Debug.Log("狼开始进攻。", this);
@@ -488,15 +485,6 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     {
         if (wolf != null)
             wolf.Attacked += HandleWolfAttacked;
-    }
-
-    private void HandleWolfScared(Wolf wolf)
-    {
-        if (scaredWolfHintShown)
-            return;
-
-        scaredWolfHintShown = true;
-        ShowBanner("羊群已经足够庞大，面对一只弱小的狼，也许……？");
     }
 
     private void HandleWolfAttacked(Wolf wolf, WolfAttackResult result)
@@ -515,7 +503,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         borderRing?.ApplyRequiredCount(exitUnlockFlockSize);
         flockMovement?.SetExternalMovementCanLeaveBounds(true);
         ExpandCameraBoundsForExit();
-        ShowBanner($"历史最高达到 {exitUnlockFlockSize} 只！按 E 让整群蓄势冲刺，撞开围栏后冲出草原");
+        ShowBanner("是时候撞破外围栅栏了！");
         Debug.Log("冲出地图已解锁。", this);
     }
 
@@ -578,7 +566,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
         pagodaTaskUnlocked = true;
         taskPanelToggle?.OpenTaskPanel();
         RefreshObjectives();
-        ShowBanner($"这塔里好像有点什么……得凑够 {pagoda.RequiredFlockCount} 只羊才撞得动");
+        ShowBanner($"这塔里好像藏着什么……集结 {pagoda.RequiredFlockCount} 只羊再来撞！");
     }
 
     private void HandlePagodaSmashed(PagodaLandmark pagoda)
