@@ -20,8 +20,6 @@ public static class AlphaFlockExpansionSceneSetup
     private const string ScenePath = SceneFolder + "/AlphaFlockExpansion.unity";
     private const string SceneTemplatePath = "Assets/Settings/Scenes/URP2DSceneTemplate.unity";
     private const string GrassBackgroundPath = "Assets/Art/WorldSprites/Tiles/草原_背景.png";
-    private const string RiverTilePath = "Assets/Art/WorldSprites/Tiles/草原_河.png";
-    private const string TruckSpritePath = "Assets/Art/new_buildings/大运.png";
     private const string WarningRectAssetPath = "Assets/_Game/Content/Art/Prototype/WolfWarningRect.asset";
     private const string SheepMemberPrefabPath = "Assets/_Game/Content/Perfabs/Sheep/SheepMember.prefab";
     private const string RecruitableSheepPrefabPath = "Assets/_Game/Content/Perfabs/Sheep/RecruitableSheep.prefab";
@@ -76,6 +74,7 @@ public static class AlphaFlockExpansionSceneSetup
     private const float BorderFenceScale = 2f;   // 外围围栏 4x2 单位
     private const float PenFenceScale = 1f;      // 羊圈栅栏 2x1 单位
     private const int ExitUnlockFlockSize = 100;
+    private const float EscapeBoundsExpansion = 10f;
     private const int TutorialRequiredFlockSize = 6;
     private const int WolfUnlockFlockSize = 20;
 
@@ -488,7 +487,8 @@ public static class AlphaFlockExpansionSceneSetup
         Sprite grass = LoadGrassSprite();
         GameObject background = new GameObject("GrassBackground");
         background.transform.SetParent(world.transform, false);
-        background.transform.position = new Vector3(WorldRect.center.x, WorldRect.center.y, 0f);
+        Rect grassRect = Expand(WorldRect, EscapeBoundsExpansion);
+        background.transform.position = new Vector3(grassRect.center.x, grassRect.center.y, 0f);
         SpriteRenderer renderer = background.AddComponent<SpriteRenderer>();
         renderer.sprite = grass;
         // 放在 Background 排序层最底下：碎掉的围栏 / 木桶会切到 Background 层（order 10），要能画在草地上面。
@@ -498,7 +498,7 @@ public static class AlphaFlockExpansionSceneSetup
         {
             renderer.drawMode = SpriteDrawMode.Tiled;
             renderer.tileMode = SpriteTileMode.Continuous;
-            renderer.size = WorldRect.size;
+            renderer.size = grassRect.size;
         }
         else
         {
@@ -514,7 +514,7 @@ public static class AlphaFlockExpansionSceneSetup
         return grass;
     }
 
-    /// <summary>可平铺的地面贴图（草地 / 河流）需要 Sprite + Full Rect 网格 + Repeat；不是的话改导入设置后重新导入。</summary>
+    /// <summary>可平铺的草地贴图需要 Sprite + Full Rect 网格 + Repeat；不是的话改导入设置后重新导入。</summary>
     private static Sprite LoadTiledSprite(string path, bool optional)
     {
         if (!System.IO.File.Exists(path))
@@ -868,8 +868,6 @@ public static class AlphaFlockExpansionSceneSetup
         poolProperty.arraySize = pool.Length;
         for (int index = 0; index < pool.Length; index++)
             poolProperty.GetArrayElementAtIndex(index).objectReferenceValue = pool[index];
-        serialized.FindProperty("riverSprite").objectReferenceValue = LoadTiledSprite(RiverTilePath, optional: true);
-        serialized.FindProperty("truckSprite").objectReferenceValue = WorldObstaclePrefabBuilder.LoadSpriteAt(TruckSpritePath, optional: true);
         serialized.ApplyModifiedPropertiesWithoutUndo();
 
         // 两个撒点器改为按格生成；大房子 / 拖拉机没有美术时保持为空，运行时自动退回小房子 / 不放拖拉机。
@@ -1496,6 +1494,7 @@ public static class AlphaFlockExpansionSceneSetup
         serialized.FindProperty("resultPanelPrefab").objectReferenceValue = ui.ResultPanelPrefab;
         serialized.FindProperty("wolfUnlockFlockSize").intValue = WolfUnlockFlockSize;
         serialized.FindProperty("exitUnlockFlockSize").intValue = ExitUnlockFlockSize;
+        serialized.FindProperty("exitBoundsExpansion").floatValue = EscapeBoundsExpansion;
         serialized.ApplyModifiedPropertiesWithoutUndo();
     }
 

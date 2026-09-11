@@ -172,7 +172,6 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
             poopAbility.Used += HandlePoopUsed;
 
         BreakableObstacle.AnyBroken += HandleObstacleBroken;
-        TruckHazard.SheepTaken += HandleTruckTookSheep;
     }
 
     private void OnDisable()
@@ -204,7 +203,6 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
             poopAbility.Used -= HandlePoopUsed;
 
         BreakableObstacle.AnyBroken -= HandleObstacleBroken;
-        TruckHazard.SheepTaken -= HandleTruckTookSheep;
     }
 
     private void Start()
@@ -508,17 +506,6 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
 
         SheepIdentity identity = result.CapturedSheep.GetComponent<SheepIdentity>();
         stats.RecordTaken(identity != null ? identity.SheepTypeId : MvpSheepCatalog.DefaultTypeId);
-    }
-
-    /// <summary>公路上的运羊卡车抓走散羊：和狼叼走一样计入"被抓走"。</summary>
-    private void HandleTruckTookSheep(SheepMember sheep)
-    {
-        if (!initialized || ended || sheep == null)
-            return;
-
-        SheepIdentity identity = sheep.GetComponent<SheepIdentity>();
-        stats.RecordTaken(identity != null ? identity.SheepTypeId : MvpSheepCatalog.DefaultTypeId);
-        ShowLatestBanner("运羊车把一只散羊拉走了！");
     }
 
     // ---------------------------------------------------------------- exit

@@ -265,9 +265,21 @@ public sealed class AlphaUiIntegrationTests
                     "Assets/_Game/Content/Data/World/Blocks/block.exit.asset"),
                 Is.Null,
                 "The removed dedicated exit block must not remain in the project.");
-            Assert.That(controllerData.FindProperty("exitMargin").floatValue,
-                Is.LessThan(layoutData.FindProperty("roadWidth").floatValue),
-                "The flock must cross the win threshold before reaching the river wall on every side.");
+            Assert.That(layoutData.FindProperty("roadWidth"), Is.Null);
+            Assert.That(layoutData.FindProperty("riverSprite"), Is.Null);
+            Assert.That(layoutData.FindProperty("truckSprite"), Is.Null);
+
+            SpriteRenderer grassBackground = objects
+                .Where(item => item.name == "GrassBackground")
+                .Select(item => item.GetComponent<SpriteRenderer>())
+                .FirstOrDefault(item => item != null);
+            Assert.That(grassBackground, Is.Not.Null);
+            Rect worldRect = layoutData.FindProperty("worldRect").rectValue;
+            float escapeExpansion = controllerData.FindProperty("exitBoundsExpansion").floatValue;
+            Assert.That(grassBackground.size.x,
+                Is.EqualTo(worldRect.width + escapeExpansion * 2f).Within(0.001f));
+            Assert.That(grassBackground.size.y,
+                Is.EqualTo(worldRect.height + escapeExpansion * 2f).Within(0.001f));
 
             MvpHudView hud = objects
                 .Select(item => item.GetComponent<MvpHudView>())
