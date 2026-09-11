@@ -376,7 +376,7 @@ public class SheepCollectionManager : MonoBehaviour
                     "普通羊",
 
                 description =
-                    "最常见、也最可靠的羊群伙伴。",
+                    "最常见的伙伴，也是羊群可靠的起点。",
 
                 order =
                     0

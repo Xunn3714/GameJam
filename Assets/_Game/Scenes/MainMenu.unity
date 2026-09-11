@@ -6579,6 +6579,7 @@ MonoBehaviour:
   menuPanel: {fileID: 1440701069}
   settingPanel: {fileID: 1180106028}
   collectionPanel: {fileID: 1440604214}
+  collectionPanelPrefab: {fileID: 9195101949866837353, guid: 0a68c203d7e6de348ae0aaf73278d1ef, type: 3}
   statisticsPanel: {fileID: 1017768828}
   creditsPanel: {fileID: 2060352540}
   developersPanel: {fileID: 189101045}
