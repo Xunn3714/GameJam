@@ -161,6 +161,27 @@ public sealed class SpecialSheepCatalogTests
         }
     }
 
+    [Test]
+    public void CatalogDescriptionsStayShortEnoughForTheDetailCard()
+    {
+        foreach (SpecialSheepCatalog.Tier tier in catalog.Tiers)
+        {
+            foreach (SpecialSheepCatalog.Entry entry in tier.Entries)
+            {
+                if (entry == null)
+                    continue;
+
+                Assert.That(entry.CodexDescription, Is.Not.Null.And.Not.Empty,
+                    entry.DisplayName);
+                if (tier.Quality == SheepQuality.EasterEgg)
+                    continue;
+
+                Assert.That(entry.CodexDescription.Length, Is.LessThanOrEqualTo(24),
+                    $"{entry.DisplayName} 的图鉴描述过长：{entry.CodexDescription}");
+            }
+        }
+    }
+
     private static bool ContainsDisplayName(
         IReadOnlyList<SpecialSheepCatalog.Entry> entries,
         string displayName)

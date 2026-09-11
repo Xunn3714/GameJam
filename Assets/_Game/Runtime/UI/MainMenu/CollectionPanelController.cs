@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -30,6 +31,8 @@ public class CollectionPanelController : MonoBehaviour
 
 
     private Image scrollbarSheepIcon;
+    private ScrollRect collectionScroll;
+    private Coroutine ensureVisibleRoutine;
 
     private void OnEnable()
     {
@@ -65,12 +68,17 @@ public class CollectionPanelController : MonoBehaviour
 
     private void EnsureScrollbarSheepIcon()
     {
-        if (scrollbarSheepIcon != null || contentRoot == null)
+        if (contentRoot == null)
             return;
 
-        ScrollRect scroll = contentRoot.GetComponentInParent<ScrollRect>(true);
-        RectTransform handle = scroll != null && scroll.verticalScrollbar != null
-            ? scroll.verticalScrollbar.handleRect : null;
+        if (collectionScroll == null)
+            collectionScroll = contentRoot.GetComponentInParent<ScrollRect>(true);
+
+        if (scrollbarSheepIcon != null)
+            return;
+
+        RectTransform handle = collectionScroll != null && collectionScroll.verticalScrollbar != null
+            ? collectionScroll.verticalScrollbar.handleRect : null;
         if (handle == null)
             return;
 
@@ -211,6 +219,7 @@ public class CollectionPanelController : MonoBehaviour
                 firstUnlockedCard,
                 firstUnlocked
             );
+            firstUnlockedCard.Focus();
         }
         else
         {
@@ -283,6 +292,70 @@ public class CollectionPanelController : MonoBehaviour
         ShowSheepDetail(
             sheep
         );
+
+        QueueEnsureCardVisible(card);
+    }
+
+    private void QueueEnsureCardVisible(SheepCardView card)
+    {
+        if (!isActiveAndEnabled || card == null)
+            return;
+
+        if (ensureVisibleRoutine != null)
+            StopCoroutine(ensureVisibleRoutine);
+
+        ensureVisibleRoutine = StartCoroutine(
+            EnsureCardVisibleAfterLayout(card.transform as RectTransform));
+    }
+
+    private IEnumerator EnsureCardVisibleAfterLayout(RectTransform cardRect)
+    {
+        yield return null;
+        ensureVisibleRoutine = null;
+        EnsureCardVisible(cardRect);
+    }
+
+    public void EnsureCardVisible(RectTransform cardRect)
+    {
+        if (cardRect == null || contentRoot == null)
+            return;
+
+        if (collectionScroll == null)
+            collectionScroll = contentRoot.GetComponentInParent<ScrollRect>(true);
+
+        RectTransform viewport = collectionScroll != null
+            ? collectionScroll.viewport
+            : null;
+        RectTransform content = contentRoot as RectTransform;
+        if (collectionScroll == null || viewport == null || content == null)
+            return;
+
+        Canvas.ForceUpdateCanvases();
+        LayoutRebuilder.ForceRebuildLayoutImmediate(content);
+
+        Bounds viewportBounds = new Bounds(viewport.rect.center, viewport.rect.size);
+        Bounds contentBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(
+            viewport,
+            content);
+        Bounds cardBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(
+            viewport,
+            cardRect);
+        float hiddenHeight = contentBounds.size.y - viewportBounds.size.y;
+        if (hiddenHeight <= 0.01f)
+            return;
+
+        float position = collectionScroll.verticalNormalizedPosition;
+        if (cardBounds.max.y > viewportBounds.max.y)
+        {
+            position += (cardBounds.max.y - viewportBounds.max.y) / hiddenHeight;
+        }
+        else if (cardBounds.min.y < viewportBounds.min.y)
+        {
+            position -= (viewportBounds.min.y - cardBounds.min.y) / hiddenHeight;
+        }
+
+        collectionScroll.StopMovement();
+        collectionScroll.verticalNormalizedPosition = Mathf.Clamp01(position);
     }
 
 

@@ -29,6 +29,8 @@ public sealed class AlphaUiIntegrationTests
         "Assets/_Game/Content/Perfabs/UI/SettingPanel.prefab";
     private const string CollectionPanelPrefabPath =
         "Assets/_Game/Content/Perfabs/UI/CollectionPanel.prefab";
+    private const string SheepCardPrefabPath =
+        "Assets/_Game/Content/Perfabs/UI/SheepCard.prefab";
     private const string FenceSpritePath =
         "Assets/Art/Debris/obstacle_fence_256x128.png";
     private const string CatalogPath =
@@ -206,6 +208,17 @@ public sealed class AlphaUiIntegrationTests
             Assert.That(pauseData.FindProperty("taskPanelToggle").objectReferenceValue, Is.Not.Null);
             Assert.That(pauseData.FindProperty("bannerView").objectReferenceValue, Is.Not.Null);
 
+            CollectionPanelController inGameCollection = objects
+                .Select(item => item.GetComponent<CollectionPanelController>())
+                .FirstOrDefault(item => item != null);
+            Assert.That(inGameCollection, Is.Not.Null);
+            RectTransform inGameDetailPanel =
+                inGameCollection.detailImage.transform.parent as RectTransform;
+            Assert.That(inGameDetailPanel, Is.Not.Null);
+            Assert.That(inGameDetailPanel.sizeDelta, Is.EqualTo(new Vector2(590f, 620f)));
+            Assert.That(inGameCollection.detailImage.rectTransform.sizeDelta,
+                Is.EqualTo(new Vector2(320f, 320f)));
+
             TMP_Text gatherHint = objects
                 .Select(item => item.GetComponent<TMP_Text>())
                 .FirstOrDefault(item => item != null && item.gameObject.name == "Gather_Hint");
@@ -262,6 +275,12 @@ public sealed class AlphaUiIntegrationTests
                 .SelectMany(root => root.GetComponentsInChildren<MainMenuController>(true))
                 .FirstOrDefault();
             Assert.That(menu, Is.Not.Null);
+            SerializedObject menuData = new SerializedObject(menu);
+            Object sharedCollectionPrefab =
+                menuData.FindProperty("collectionPanelPrefab").objectReferenceValue;
+            Assert.That(sharedCollectionPrefab, Is.Not.Null);
+            Assert.That(AssetDatabase.GetAssetPath(sharedCollectionPrefab),
+                Is.EqualTo(CollectionPanelPrefabPath));
             Assert.That(menu.creditsPanel, Is.Not.Null);
             Button developers = scene.GetRootGameObjects()
                 .SelectMany(root => root.GetComponentsInChildren<Button>(true))
@@ -272,6 +291,49 @@ public sealed class AlphaUiIntegrationTests
         finally
         {
             EditorSceneManager.CloseScene(scene, true);
+        }
+    }
+
+    [Test]
+    public void MainMenuReplacesItsLegacyCatalogWithSharedGameplayPrefab()
+    {
+        GameObject root = new GameObject("MainMenuCatalogBindingTest");
+        root.SetActive(false);
+        try
+        {
+            MainMenuController menu = root.AddComponent<MainMenuController>();
+            menu.menuPanel = new GameObject("MenuPanel");
+            menu.menuPanel.transform.SetParent(root.transform, false);
+            menu.collectionPanel = new GameObject("LegacyCollectionPanel");
+            menu.collectionPanel.transform.SetParent(root.transform, false);
+            menu.collectionPanel.SetActive(false);
+
+            SerializedObject menuData = new SerializedObject(menu);
+            menuData.FindProperty("collectionPanelPrefab").objectReferenceValue =
+                AssetDatabase.LoadAssetAtPath<GameObject>(CollectionPanelPrefabPath);
+            menuData.ApplyModifiedPropertiesWithoutUndo();
+
+            MethodInfo bindSharedCollection = typeof(MainMenuController).GetMethod(
+                "BindSharedCollectionPanel",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(bindSharedCollection, Is.Not.Null);
+            bindSharedCollection.Invoke(menu, null);
+
+            Assert.That(menu.collectionPanel, Is.Not.Null);
+            Assert.That(menu.collectionPanel.name, Is.EqualTo("CollectionPanel"));
+            Assert.That(menu.collectionPanel.GetComponent<CollectionPanelController>(), Is.Not.Null);
+
+            Button backButton = menu.collectionPanel.GetComponentsInChildren<Button>(true)
+                .Single(button => button.gameObject.name == "Btn_Back");
+            menu.menuPanel.SetActive(false);
+            menu.collectionPanel.SetActive(true);
+            backButton.onClick.Invoke();
+            Assert.That(menu.menuPanel.activeSelf, Is.True);
+            Assert.That(menu.collectionPanel.activeSelf, Is.False);
+        }
+        finally
+        {
+            Object.DestroyImmediate(root);
         }
     }
 
@@ -305,7 +367,78 @@ public sealed class AlphaUiIntegrationTests
         Assert.That(collection, Is.Not.Null);
         RectTransform sheepImage = collection.GetComponentsInChildren<RectTransform>(true)
             .Single(item => item.gameObject.name == "SheepImage");
-        Assert.That(sheepImage.sizeDelta, Is.EqualTo(new Vector2(220f, 190f)));
+        Assert.That(sheepImage.sizeDelta, Is.EqualTo(new Vector2(320f, 320f)));
+        Assert.That(sheepImage.GetComponent<Image>().preserveAspect, Is.True);
+
+        RectTransform detailPanel = collection.GetComponentsInChildren<RectTransform>(true)
+            .Single(item => item.gameObject.name == "DetailPanel");
+        Assert.That(detailPanel.sizeDelta, Is.EqualTo(new Vector2(590f, 620f)));
+    }
+
+    [Test]
+    public void CollectionCardShowsQualityBeyondItsOutline()
+    {
+        GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(SheepCardPrefabPath);
+        GameObject instance = Object.Instantiate(prefab);
+        try
+        {
+            SheepCardView card = instance.GetComponent<SheepCardView>();
+            Assert.That(card, Is.Not.Null);
+
+            card.Setup(null, "一只名字特别特别长的测试羊", 12,
+                SheepQuality.Gold, true, null);
+
+            Assert.That(card.sheepImage.preserveAspect, Is.True);
+            Assert.That(card.nameText.overflowMode, Is.EqualTo(TextOverflowModes.Ellipsis));
+            Assert.That(card.countText.text, Is.EqualTo("发现 12 次"));
+            Assert.That(card.QualityWash, Is.Not.Null);
+            Assert.That(card.QualityWash.color.a, Is.GreaterThan(0.1f));
+            Assert.That(card.QualityBadge, Is.Not.Null);
+            Assert.That(card.QualityBadge.color, Is.EqualTo(
+                SheepCardView.GetQualityColor(SheepQuality.Gold)));
+            Assert.That(card.QualityBadgeText.text, Is.EqualTo("金色"));
+
+            card.Setup(null, "彩色测试羊", 1,
+                SheepQuality.EasterEgg, true, null);
+            Transform rainbow = card.QualityBadge.transform.Find("RainbowSegments");
+            Assert.That(rainbow, Is.Not.Null);
+            Assert.That(rainbow.gameObject.activeSelf, Is.True);
+            Assert.That(rainbow.childCount, Is.EqualTo(5));
+        }
+        finally
+        {
+            Object.DestroyImmediate(instance);
+        }
+    }
+
+    [Test]
+    public void CollectionDetailPreservesImageAndEllipsizesOverflow()
+    {
+        GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(CollectionPanelPrefabPath);
+        GameObject instance = Object.Instantiate(prefab);
+        try
+        {
+            CollectionPanelController controller = instance.GetComponent<CollectionPanelController>();
+            SheepDetailCardView detail = controller.GetOrCreateDetailCard();
+            SheepCollectionEntry entry = new()
+            {
+                displayName = "测试羊",
+                quality = SheepQuality.Purple,
+                description = new string('长', 200)
+            };
+
+            detail.Show(entry, 7);
+
+            Assert.That(detail.SheepImage.preserveAspect, Is.True);
+            Assert.That(detail.CountText.text, Is.EqualTo("发现次数：7"));
+            Assert.That(detail.DescriptionText.overflowMode,
+                Is.EqualTo(TextOverflowModes.Ellipsis));
+            Assert.That(detail.DescriptionText.maxVisibleLines, Is.EqualTo(12));
+        }
+        finally
+        {
+            Object.DestroyImmediate(instance);
+        }
     }
 
     [Test]

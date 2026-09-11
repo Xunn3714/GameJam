@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 
 public class MainMenuController : MonoBehaviour
 {
@@ -9,6 +10,7 @@ public class MainMenuController : MonoBehaviour
     [Header("Sub Panels")]
     public GameObject settingPanel;
     public GameObject collectionPanel;
+    [SerializeField] private GameObject collectionPanelPrefab;
     public GameObject statisticsPanel;
     public GameObject creditsPanel;
 
@@ -23,7 +25,55 @@ public class MainMenuController : MonoBehaviour
 
     private void Start()
     {
+        BindSharedCollectionPanel();
         ShowMenu();
+    }
+
+
+    private void BindSharedCollectionPanel()
+    {
+        if (collectionPanelPrefab == null)
+            return;
+
+        GameObject legacyPanel = collectionPanel;
+        Transform targetParent = legacyPanel != null
+            ? legacyPanel.transform.parent
+            : transform.parent;
+        int siblingIndex = legacyPanel != null
+            ? legacyPanel.transform.GetSiblingIndex()
+            : -1;
+
+        // The scene copy is inactive, so using it as the temporary parent prevents
+        // the shared panel from refreshing before all main-menu systems have started.
+        Transform instantiateParent = legacyPanel != null && !legacyPanel.activeInHierarchy
+            ? legacyPanel.transform
+            : targetParent;
+        GameObject sharedPanel = Instantiate(collectionPanelPrefab, instantiateParent, false);
+        sharedPanel.name = collectionPanelPrefab.name;
+        sharedPanel.SetActive(false);
+        if (sharedPanel.transform.parent != targetParent)
+            sharedPanel.transform.SetParent(targetParent, false);
+        if (siblingIndex >= 0)
+            sharedPanel.transform.SetSiblingIndex(siblingIndex);
+
+        Button[] buttons = sharedPanel.GetComponentsInChildren<Button>(true);
+        foreach (Button button in buttons)
+        {
+            if (button.gameObject.name != "Btn_Back")
+                continue;
+
+            button.onClick.AddListener(BackToMenu);
+            break;
+        }
+
+        collectionPanel = sharedPanel;
+        if (legacyPanel != null)
+        {
+            if (Application.isPlaying)
+                Destroy(legacyPanel);
+            else
+                DestroyImmediate(legacyPanel);
+        }
     }
 
 

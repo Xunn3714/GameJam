@@ -166,6 +166,21 @@ public sealed class SheepNotificationTests
             SheepDetailCardView popupCard = discovery.GetComponent<SheepDetailCardView>();
             Assert.That(discovery.GetComponent<Image>().sprite, Is.SameAs(sprite));
             Assert.That(popupCard.SheepImage.sprite, Is.SameAs(sprite));
+            Assert.That(((RectTransform)discovery.transform).sizeDelta,
+                Is.EqualTo(new Vector2(420f, 560f)));
+            Assert.That(popupCard.SheepImage.rectTransform.sizeDelta,
+                Is.EqualTo(new Vector2(360f, 300f)));
+            Assert.That(((RectTransform)discovery.transform).sizeDelta.y,
+                Is.GreaterThan(((RectTransform)discovery.transform).sizeDelta.x));
+            Assert.That(popupCard.SheepImage.rectTransform.anchoredPosition.x, Is.Zero);
+            Assert.That(popupCard.SheepNameText.rectTransform.anchoredPosition.x, Is.Zero);
+            Assert.That(popupCard.SheepNameText.fontSizeMax, Is.EqualTo(36f));
+            Assert.That(popupCard.CountText.text, Is.EqualTo("首次发现！"));
+            Assert.That(popupCard.DescriptionText.fontSizeMax, Is.EqualTo(22f));
+            Assert.That(popupCard.RarityText.gameObject.activeSelf, Is.False);
+            Assert.That(discovery.transform.Find("Txt_AbilityName").gameObject.activeSelf, Is.False);
+            Assert.That(discovery.transform.Find("Txt_AbilityDescription").gameObject.activeSelf,
+                Is.False);
             foreach (Graphic graphic in discovery.GetComponentsInChildren<Graphic>(true))
                 Assert.That(graphic.raycastTarget, Is.False);
             Assert.That(((RectTransform)join.transform).anchorMax, Is.EqualTo(Vector2.one));
