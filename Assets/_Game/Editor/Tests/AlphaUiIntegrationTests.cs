@@ -245,6 +245,30 @@ public sealed class AlphaUiIntegrationTests
             Assert.That(controllerData.FindProperty("pauseManager").objectReferenceValue, Is.Not.Null);
             Assert.That(controllerData.FindProperty("bannerView").objectReferenceValue, Is.Not.Null);
 
+            MapLayoutBuilder layout = objects
+                .Select(item => item.GetComponent<MapLayoutBuilder>())
+                .FirstOrDefault(item => item != null);
+            Assert.That(layout, Is.Not.Null);
+            SerializedObject layoutData = new SerializedObject(layout);
+            SerializedProperty blockPool = layoutData.FindProperty("blockPool");
+            Assert.That(blockPool.arraySize, Is.EqualTo(7));
+            for (int index = 0; index < blockPool.arraySize; index++)
+            {
+                MapBlockDefinition definition =
+                    (MapBlockDefinition)blockPool.GetArrayElementAtIndex(index).objectReferenceValue;
+                Assert.That(definition, Is.Not.Null, $"Map block {index} is missing.");
+            }
+            Assert.That(layoutData.FindProperty("arrowSprite"), Is.Null,
+                "The removed dedicated exit must not return as a serialized arrow field.");
+            Assert.That(
+                AssetDatabase.LoadAssetAtPath<MapBlockDefinition>(
+                    "Assets/_Game/Content/Data/World/Blocks/block.exit.asset"),
+                Is.Null,
+                "The removed dedicated exit block must not remain in the project.");
+            Assert.That(controllerData.FindProperty("exitMargin").floatValue,
+                Is.LessThan(layoutData.FindProperty("roadWidth").floatValue),
+                "The flock must cross the win threshold before reaching the river wall on every side.");
+
             MvpHudView hud = objects
                 .Select(item => item.GetComponent<MvpHudView>())
                 .FirstOrDefault(item => item != null);
