@@ -286,7 +286,7 @@ public sealed class SheepNotificationTests
         TMP_Text abilityName = MvpUiFactory.CreateText("Txt_AbilityName", panel.transform, string.Empty, 20f);
         TMP_Text ability = MvpUiFactory.CreateText("Txt_AbilityDescription", panel.transform, string.Empty, 18f);
         SheepDetailCardView template = panel.gameObject.AddComponent<SheepDetailCardView>();
-        template.Configure(sheepImage, name, rarity, count, description, abilityName, ability, null);
+        template.Configure(sheepImage, name, rarity, count, description, null, abilityName, ability, null, false);
         panel.gameObject.SetActive(false);
         return SheepDiscoveryToastView.Create(root.transform, template, panelSprite);
     }

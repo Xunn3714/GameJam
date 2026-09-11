@@ -65,8 +65,8 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
 
     [Header("Impact Feedback")]
     [Tooltip("第一阶段镜头尺寸下的主动撞击振幅；实际值会随当前视野等比放大。")]
-    [SerializeField, Min(0f)] private float impactShakeAmplitude = 0.16f;
-    [SerializeField, Min(0f)] private float impactShakeDuration = 0.2f;
+    [SerializeField, Min(0f)] private float impactShakeAmplitude = 0.30f;
+    [SerializeField, Min(0f)] private float impactShakeDuration = 0.22f;
     [SerializeField, Min(0.02f)] private float impactFeedbackInterval = 0.12f;
 
     [Header("Exit")]
@@ -789,7 +789,34 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
                 panel.ShowVictory(panelDescription, flock.MemberCount, stats.HighestFlockSize, stats.TotalRecruited, stats.TotalTaken, stats.SurvivalSeconds, victoryTitle);
             else
                 panel.ShowDefeat(panelDescription, 0, stats.HighestFlockSize, stats.TotalRecruited, stats.TotalTaken, stats.SurvivalSeconds);
-            panel.StyleJourneySummary();
+
+            string featuredTypeId = null;
+            int featuredCount = 0;
+            stats.TryGetMostCommonCurrentSpecialType(out featuredTypeId, out featuredCount);
+            SpecialSheepCatalog.Entry featuredEntry = sheepSpawner.Catalog != null
+                ? sheepSpawner.Catalog.Find(featuredTypeId)
+                : null;
+            panel.StyleJourneySummary(new ResultPanelView.JourneySummary
+            {
+                Victory = victory,
+                IsTrueEnding = stats.IsTrueEnding,
+                CurrentSheep = victory ? flock.MemberCount : 0,
+                HighestSheep = stats.HighestFlockSize,
+                RecruitedSheep = stats.TotalRecruited,
+                LostSheep = stats.TotalTaken,
+                DestructionScore = stats.DestructionScore,
+                DestroyedObjects = stats.TotalDestroyed,
+                TrueEndingFlockSize = stats.TrueEndingFlockSize,
+                ElapsedSeconds = stats.SurvivalSeconds,
+                HoleSquareMeters = stats.TrueEndingFlockSize * AlphaRunStats.HoleSquareMetersPerSheep,
+                CaitaiJin = stats.TrueEndingFlockSize * AlphaRunStats.CaitaiJinPerSheep,
+                PoopCount = poopUseCount,
+                FeaturedSheepName = featuredEntry != null
+                    ? featuredEntry.DisplayName
+                    : sheepSpawner.GetTypeDisplayName(featuredTypeId),
+                FeaturedSheepCount = featuredCount,
+                FeaturedSheepSprite = featuredEntry != null ? featuredEntry.Sprite : null,
+            });
             resultPanelShown = true;
         }
         else if (resultView != null)

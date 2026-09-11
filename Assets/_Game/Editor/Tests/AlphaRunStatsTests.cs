@@ -109,4 +109,23 @@ public sealed class AlphaRunStatsTests
         Assert.That(stats.BuildTrueEndingHighlights(), Is.EqualTo(
             "踩出了 300 平方米的大洞\n找到了 135 斤的美味洪山菜薹"));
     }
+
+    [Test]
+    public void MostCommonCurrentSpecialTypeExcludesCommonAndUsesStableTieBreak()
+    {
+        AlphaRunStats stats = new AlphaRunStats();
+        stats.ObserveComposition(new[]
+        {
+            Common, Common, Common,
+            "sheep.special.zebra", "sheep.special.zebra",
+            Black, Black,
+        });
+
+        Assert.That(stats.TryGetMostCommonCurrentSpecialType(out string typeId, out int count), Is.True);
+        Assert.That(typeId, Is.EqualTo(Black));
+        Assert.That(count, Is.EqualTo(2));
+
+        stats.ObserveComposition(new[] { Common, Common });
+        Assert.That(stats.TryGetMostCommonCurrentSpecialType(out _, out _), Is.False);
+    }
 }

@@ -17,6 +17,7 @@ public sealed class SpecialSheepCatalog : ScriptableObject
         [SerializeField] private string displayName;
         [SerializeField, HideInInspector] private Sprite sprite;
         [SerializeField, TextArea(2, 4)] private string codexDescription;
+        [SerializeField, TextArea(3, 8)] private string flavorText;
         [SerializeField, TextArea(2, 4)] private string visualEffectDescription;
         [SerializeField, TextArea(2, 4)] private string gameplayEffectDescription;
         [SerializeField, TextArea(1, 3)] private string unlockHint;
@@ -27,6 +28,7 @@ public sealed class SpecialSheepCatalog : ScriptableObject
         public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? TypeId : displayName.Trim();
         public Sprite Sprite => sprite;
         public string CodexDescription => codexDescription?.Trim();
+        public string FlavorText => flavorText?.Trim();
         public string VisualEffectDescription => visualEffectDescription?.Trim();
         public string GameplayEffectDescription => gameplayEffectDescription?.Trim();
         public string UnlockHint => unlockHint?.Trim();

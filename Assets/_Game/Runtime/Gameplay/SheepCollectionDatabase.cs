@@ -24,6 +24,10 @@ public class SheepCollectionEntry
     [TextArea(2, 5)]
     public string description;
 
+    [Header("Flavor Text")]
+    [TextArea(3, 8)]
+    public string flavorText;
+
     [Header("Special Ability")]
     public string abilityName;
 

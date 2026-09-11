@@ -136,6 +136,30 @@ public sealed class AlphaRunStats
                $"找到了 {caitaiJin:0.#} 斤的美味洪山菜薹";
     }
 
+    /// <summary>
+    /// 结局时仍在队伍里、数量最多的非普通羊。数量相同时按类型 id 排序，保证结果稳定。
+    /// </summary>
+    public bool TryGetMostCommonCurrentSpecialType(out string typeId, out int count)
+    {
+        typeId = null;
+        count = 0;
+
+        foreach (KeyValuePair<string, int> pair in currentComposition)
+        {
+            if (pair.Value <= 0 || string.Equals(pair.Key, MvpSheepCatalog.DefaultTypeId, StringComparison.Ordinal))
+                continue;
+
+            if (pair.Value > count
+                || (pair.Value == count && string.CompareOrdinal(pair.Key, typeId) < 0))
+            {
+                typeId = pair.Key;
+                count = pair.Value;
+            }
+        }
+
+        return !string.IsNullOrEmpty(typeId);
+    }
+
     public string BuildReport(Func<string, string> displayName)
     {
         displayName ??= id => id;

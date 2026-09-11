@@ -133,6 +133,44 @@ public sealed class AlphaUiIntegrationTests
     }
 
     [Test]
+    public void OpeningPausePreservesOpenTaskPanelState()
+    {
+        GameObject pausePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(PauseSystemPrefabPath);
+        GameObject taskPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(TaskSystemPrefabPath);
+        GameObject pauseInstance = Object.Instantiate(pausePrefab);
+        GameObject taskInstance = Object.Instantiate(taskPrefab);
+        try
+        {
+            PauseManager manager = pauseInstance.GetComponent<PauseManager>();
+            TaskPanelToggle taskPanelToggle = taskInstance.GetComponentInChildren<TaskPanelToggle>(true);
+            Assert.That(taskPanelToggle, Is.Not.Null);
+
+            SerializedObject pauseData = new SerializedObject(manager);
+            pauseData.FindProperty("taskPanelToggle").objectReferenceValue = taskPanelToggle;
+            pauseData.ApplyModifiedPropertiesWithoutUndo();
+
+            taskPanelToggle.OpenTaskPanel();
+            Assert.That(taskPanelToggle.IsOpen, Is.True);
+
+            manager.OpenPause();
+            Assert.That(manager.IsPaused, Is.True);
+            Assert.That(taskPanelToggle.gameObject.activeSelf, Is.False);
+            Assert.That(taskPanelToggle.IsOpen, Is.True,
+                "Opening pause should hide the task system without closing the task panel.");
+
+            manager.ResumeGame();
+            Assert.That(taskPanelToggle.gameObject.activeSelf, Is.True);
+            Assert.That(taskPanelToggle.IsOpen, Is.True);
+        }
+        finally
+        {
+            Time.timeScale = 1f;
+            Object.DestroyImmediate(taskInstance);
+            Object.DestroyImmediate(pauseInstance);
+        }
+    }
+
+    [Test]
     public void AlphaSceneKeepsMainGameplayAndUsesSingleUiStack()
     {
         Scene scene = EditorSceneManager.OpenScene(AlphaScenePath, OpenSceneMode.Additive);
@@ -695,6 +733,100 @@ public sealed class AlphaUiIntegrationTests
             TMP_Text title = instance.GetComponentsInChildren<TMP_Text>(true)
                 .First(text => text.gameObject.name == "ResultTitle");
             Assert.That(title.text, Is.EqualTo("寻得美食"));
+        }
+        finally
+        {
+            Object.DestroyImmediate(instance);
+        }
+    }
+
+    [Test]
+    public void ResultPanelBuildsFeaturedSheepAndPoopSummary()
+    {
+        GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(ResultPanelPrefabPath);
+        GameObject instance = Object.Instantiate(prefab);
+        Texture2D texture = new Texture2D(8, 8);
+        Sprite sprite = Sprite.Create(texture, new Rect(0f, 0f, 8f, 8f), Vector2.one * 0.5f);
+        try
+        {
+            ResultPanelView view = instance.GetComponent<ResultPanelView>();
+            view.ShowVictory("结算说明", 128, 143, 129, 2, 112f);
+            view.StyleJourneySummary(new ResultPanelView.JourneySummary
+            {
+                Victory = true,
+                CurrentSheep = 128,
+                HighestSheep = 143,
+                RecruitedSheep = 129,
+                LostSheep = 2,
+                DestructionScore = 942,
+                DestroyedObjects = 125,
+                ElapsedSeconds = 112f,
+                PoopCount = 7,
+                FeaturedSheepName = "安吉羊",
+                FeaturedSheepCount = 14,
+                FeaturedSheepSprite = sprite,
+            });
+
+            TMP_Text[] texts = instance.GetComponentsInChildren<TMP_Text>(true);
+            Assert.That(texts.Single(text => text.gameObject.name == "SheepCountLabel").text,
+                Is.EqualTo("成功带出：128 只"));
+            Assert.That(texts.Single(text => text.gameObject.name == "FeaturedSheepName").text,
+                Is.EqualTo("安吉羊"));
+            Assert.That(texts.Single(text => text.gameObject.name == "FeaturedSheepCount").text,
+                Is.EqualTo("最终同行 14 只"));
+            Assert.That(texts.Single(text => text.gameObject.name == "PoopCount").text,
+                Does.Contain("7"));
+
+            Image featuredImage = instance.GetComponentsInChildren<Image>(true)
+                .Single(image => image.gameObject.name == "FeaturedSheepImage");
+            Assert.That(featuredImage.sprite, Is.SameAs(sprite));
+            Assert.That(featuredImage.preserveAspect, Is.True);
+        }
+        finally
+        {
+            Object.DestroyImmediate(instance);
+            Object.DestroyImmediate(sprite);
+            Object.DestroyImmediate(texture);
+        }
+    }
+
+    [Test]
+    public void ResultPanelDefeatUsesSmallPoopIconInsteadOfFeaturedSheep()
+    {
+        GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(ResultPanelPrefabPath);
+        GameObject instance = Object.Instantiate(prefab);
+        try
+        {
+            ResultPanelView view = instance.GetComponent<ResultPanelView>();
+            SerializedObject serialized = new SerializedObject(view);
+            Sprite poopSprite = (Sprite)serialized.FindProperty("defeatPoopSprite").objectReferenceValue;
+            Assert.That(poopSprite, Is.Not.Null);
+            Assert.That(AssetDatabase.GetAssetPath(poopSprite), Is.EqualTo("Assets/Art/UI/Icon/屎.png"));
+
+            view.ShowDefeat("失败说明", 0, 32, 31, 32, 75f);
+            view.StyleJourneySummary(new ResultPanelView.JourneySummary
+            {
+                Victory = false,
+                HighestSheep = 32,
+                RecruitedSheep = 31,
+                LostSheep = 32,
+                ElapsedSeconds = 75f,
+                PoopCount = 4,
+            });
+
+            TMP_Text[] texts = instance.GetComponentsInChildren<TMP_Text>(true);
+            Assert.That(texts.Single(text => text.gameObject.name == "FeaturedSheepHeading").text,
+                Is.EqualTo("最后留下的……"));
+            Assert.That(texts.Single(text => text.gameObject.name == "FeaturedSheepName").text,
+                Is.EqualTo("一坨屎"));
+            Assert.That(texts.Single(text => text.gameObject.name == "FeaturedSheepCount").text,
+                Is.EqualTo("羊没了，屎还在"));
+
+            Image featuredImage = instance.GetComponentsInChildren<Image>(true)
+                .Single(image => image.gameObject.name == "FeaturedSheepImage");
+            Assert.That(featuredImage.sprite, Is.SameAs(poopSprite));
+            Assert.That(featuredImage.rectTransform.sizeDelta, Is.EqualTo(new Vector2(360f, 230f)));
+            Assert.That(featuredImage.rectTransform.anchoredPosition, Is.EqualTo(new Vector2(265f, 15f)));
         }
         finally
         {
