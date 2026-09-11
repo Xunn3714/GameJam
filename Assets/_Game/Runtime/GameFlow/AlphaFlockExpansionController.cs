@@ -45,7 +45,8 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
     [SerializeField] private ResultPanelView resultPanelPrefab;
 
     [Header("Progression")]
-    [SerializeField] private FlockGrowthStage[] stages =
+    [SerializeField]
+    private FlockGrowthStage[] stages =
     {
         new("孤羊", 1, 1, 1, 5f),
         new("小群", 12, 2, 3, 7f),
@@ -592,6 +593,7 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
 
         flockActions?.SetControlEnabled(false);
         flockMovement?.SetControlEnabled(false);
+        wolfDirector?.DisableAttackInteractions();
         wolfDirector?.Stop();
         wolfSpawner?.StopSpawning();
         ShowBanner("宝通寺塌了！羊群踩穿了洪山……");

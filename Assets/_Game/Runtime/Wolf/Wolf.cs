@@ -463,53 +463,53 @@ public sealed class Wolf : MonoBehaviour
         switch (state)
         {
             case State.Charging:
-            {
-                if (longSweep == null && alwaysCaptureOne && !attackResolved)
                 {
-                    HomeTowardNearestSheep(deltaTime);
-                }
+                    if (longSweep == null && alwaysCaptureOne && !attackResolved)
+                    {
+                        HomeTowardNearestSheep(deltaTime);
+                    }
 
-                float step = ChargeSpeed * deltaTime;
-                Vector2 nextPosition = body.position + chargeDirection * step;
-                if (longSweep != null && attackInteractionEnabled)
-                    longSweep.Sweep(this, flock, body.position, nextPosition, chargeDirection);
-                body.MovePosition(nextPosition);
-                chargeTravelled += step;
+                    float step = ChargeSpeed * deltaTime;
+                    Vector2 nextPosition = body.position + chargeDirection * step;
+                    if (longSweep != null && attackInteractionEnabled)
+                        longSweep.Sweep(this, flock, body.position, nextPosition, chargeDirection);
+                    body.MovePosition(nextPosition);
+                    chargeTravelled += step;
 
-                // 吓跑模式：冲到羊群面前就掉头逃跑。
-                if (scared && !scaredTurned && flock != null
-                    && ((flock.Center - nextPosition).magnitude <= scareTurnDistance
-                        || Vector2.Dot(flock.Center - nextPosition, chargeDirection) <= 0f))
-                {
-                    TurnAndRunAway();
+                    // 吓跑模式：冲到羊群面前就掉头逃跑。
+                    if (scared && !scaredTurned && flock != null
+                        && ((flock.Center - nextPosition).magnitude <= scareTurnDistance
+                            || Vector2.Dot(flock.Center - nextPosition, chargeDirection) <= 0f))
+                    {
+                        TurnAndRunAway();
+                        break;
+                    }
+
+                    // 狼的投影越过羊群中心的那一刻，记录这次玩家躲到了哪边。
+                    if (!dodgeRecorded && flock != null
+                        && Vector2.Dot(flock.Center - nextPosition, chargeDirection) <= 0f)
+                    {
+                        RecordDodge();
+                    }
+
+                    if (chargeTravelled >= chargeLength)
+                    {
+                        RecordDodge();
+                        state = State.Fleeing;
+                    }
                     break;
                 }
-
-                // 狼的投影越过羊群中心的那一刻，记录这次玩家躲到了哪边。
-                if (!dodgeRecorded && flock != null
-                    && Vector2.Dot(flock.Center - nextPosition, chargeDirection) <= 0f)
-                {
-                    RecordDodge();
-                }
-
-                if (chargeTravelled >= chargeLength)
-                {
-                    RecordDodge();
-                    state = State.Fleeing;
-                }
-                break;
-            }
             case State.Fleeing:
-            {
-                float currentFleeSpeed = longSweep != null
-                    ? ChargeSpeed
-                    : scared ? ScaredFleeSpeed() : fleeSpeed * speedScale;
-                Vector2 fleePosition = body.position + chargeDirection * (currentFleeSpeed * deltaTime);
-                if (longSweep != null && attackInteractionEnabled)
-                    longSweep.Sweep(this, flock, body.position, fleePosition, chargeDirection);
-                body.MovePosition(fleePosition);
-                break;
-            }
+                {
+                    float currentFleeSpeed = longSweep != null
+                        ? ChargeSpeed
+                        : scared ? ScaredFleeSpeed() : fleeSpeed * speedScale;
+                    Vector2 fleePosition = body.position + chargeDirection * (currentFleeSpeed * deltaTime);
+                    if (longSweep != null && attackInteractionEnabled)
+                        longSweep.Sweep(this, flock, body.position, fleePosition, chargeDirection);
+                    body.MovePosition(fleePosition);
+                    break;
+                }
             case State.Kicked:
                 body.MovePosition(body.position + chargeDirection * (kickedSpeed * deltaTime));
                 break;
@@ -1034,6 +1034,14 @@ public sealed class Wolf : MonoBehaviour
         Vector2 side = new Vector2(-chargeDirection.y, chargeDirection.x);
         sheep.transform.localPosition = -chargeDirection * distance + side * (index % 2 == 0 ? 0.24f : -0.24f);
         Attacked?.Invoke(this, new WolfAttackResult(false, Array.Empty<SheepMember>(), sheep));
+    }
+
+    /// <summary>
+    /// 停止后续攻击交互，但保持狼当前的移动状态。
+    /// </summary>
+    public void DisableAttackInteraction()
+    {
+        attackInteractionEnabled = false;
     }
 
     /// <summary>
