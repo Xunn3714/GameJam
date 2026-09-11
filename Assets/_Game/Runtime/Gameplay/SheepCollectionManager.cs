@@ -469,6 +469,8 @@ public class SheepCollectionManager : MonoBehaviour
                                 ? $"一只独特的{entry.DisplayName}。"
                                 : entry.CodexDescription,
 
+                        flavorText = entry.FlavorText,
+
                         order =
                             order++
                     }

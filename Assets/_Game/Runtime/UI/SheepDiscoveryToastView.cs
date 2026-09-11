@@ -46,6 +46,7 @@ public sealed class SheepDiscoveryToastView : MonoBehaviour
         if (popupCard == null)
             return null;
 
+        popupCard.SetFlavorTextAllowed(false);
         ApplyCompactLayout(popupCard);
         GameObject cardObject = popupCard.gameObject;
         cardObject.name = "SheepDiscoveryCard";
@@ -265,7 +266,17 @@ public sealed class SheepDiscoveryToastView : MonoBehaviour
         TMP_Text ability = CreateText(panel.transform, "Txt_AbilityDescription", -485f, 18f);
 
         SheepDetailCardView card = panel.gameObject.AddComponent<SheepDetailCardView>();
-        card.Configure(sheepImage, name, rarity, count, description, abilityName, ability, null);
+        card.Configure(
+            sheepImage,
+            name,
+            rarity,
+            count,
+            description,
+            null,
+            abilityName,
+            ability,
+            null,
+            false);
         return card;
     }
 
