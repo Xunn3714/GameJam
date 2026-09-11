@@ -89,6 +89,10 @@ public sealed class WolfEventDirector : MonoBehaviour
     public WolfLossTracker LossTracker => lossTracker;
     public WolfAttackSchedule Schedule => schedule;
     public AudioClip HowlClip => howlClip;
+    /// <summary>边缘来袭提示统一使用普通狼头像，避免长狼的横向皮肤被压成细条。</summary>
+    public Sprite ThreatIndicatorSprite => spawner != null && spawner.WolfPrefab != null
+        ? spawner.WolfPrefab.ThreatIndicatorSprite
+        : null;
     /// <summary>当前羊数对应的节奏表阶段下标；没用节奏表为 -1。</summary>
     public int CurrentStageIndex => schedule != null ? schedule.GetStageIndex(CurrentMemberCount) : -1;
 

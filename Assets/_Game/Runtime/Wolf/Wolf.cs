@@ -147,6 +147,10 @@ public sealed class Wolf : MonoBehaviour
     /// <summary>这只狼是不是"被吓跑"模式（不叼羊，露面后掉头逃跑，碰到羊群会被踹飞）。</summary>
     public bool IsScared => scared;
     public bool IsLongWolf => longSweep != null || GetComponent<LongWolfSweep>() != null;
+    /// <summary>屏幕边缘来袭提示使用的头像；优先保持稳定的待机正面图。</summary>
+    public Sprite ThreatIndicatorSprite => idleSprite != null
+        ? idleSprite
+        : (bodyRenderer != null ? bodyRenderer.sprite : null);
     /// <summary>用于统计归属的攻击方式（由生成方设置）。</summary>
     public WolfAttackType AttackType { get; set; } = WolfAttackType.SmartWolf;
     /// <summary>这只狼是否走编队指定的固定路线（不瞄准羊群、不做预判）。</summary>
