@@ -96,15 +96,6 @@ public class PauseManager : MonoBehaviour
         }
 
 
-        // TaskPanel 打开时先关闭 TaskPanel
-        if (taskPanelToggle != null &&
-            taskPanelToggle.IsOpen)
-        {
-            taskPanelToggle.CloseTaskPanel();
-            return;
-        }
-
-
         TogglePause();
     }
 
@@ -135,14 +126,8 @@ public class PauseManager : MonoBehaviour
             return;
 
 
-        if (taskPanelToggle != null &&
-            taskPanelToggle.IsOpen)
-        {
-            taskPanelToggle.CloseTaskPanel();
-        }
-
-
-        // 暂停时隐藏 TaskSystem
+        // 暂停时只隐藏 TaskSystem，不改变任务栏的展开状态。
+        // 恢复游戏后仍保持原状态，任务栏只能通过自己的关闭按钮收起。
         if (taskPanelToggle != null)
         {
             taskPanelToggle.gameObject.SetActive(false);
