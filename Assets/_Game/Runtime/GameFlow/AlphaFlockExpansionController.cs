@@ -768,7 +768,34 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
                 panel.ShowVictory(panelDescription, flock.MemberCount, stats.HighestFlockSize, stats.TotalRecruited, stats.TotalTaken, stats.SurvivalSeconds, victoryTitle);
             else
                 panel.ShowDefeat(panelDescription, 0, stats.HighestFlockSize, stats.TotalRecruited, stats.TotalTaken, stats.SurvivalSeconds);
-            panel.StyleJourneySummary();
+
+            string featuredTypeId = null;
+            int featuredCount = 0;
+            stats.TryGetMostCommonCurrentSpecialType(out featuredTypeId, out featuredCount);
+            SpecialSheepCatalog.Entry featuredEntry = sheepSpawner.Catalog != null
+                ? sheepSpawner.Catalog.Find(featuredTypeId)
+                : null;
+            panel.StyleJourneySummary(new ResultPanelView.JourneySummary
+            {
+                Victory = victory,
+                IsTrueEnding = stats.IsTrueEnding,
+                CurrentSheep = victory ? flock.MemberCount : 0,
+                HighestSheep = stats.HighestFlockSize,
+                RecruitedSheep = stats.TotalRecruited,
+                LostSheep = stats.TotalTaken,
+                DestructionScore = stats.DestructionScore,
+                DestroyedObjects = stats.TotalDestroyed,
+                TrueEndingFlockSize = stats.TrueEndingFlockSize,
+                ElapsedSeconds = stats.SurvivalSeconds,
+                HoleSquareMeters = stats.TrueEndingFlockSize * AlphaRunStats.HoleSquareMetersPerSheep,
+                CaitaiJin = stats.TrueEndingFlockSize * AlphaRunStats.CaitaiJinPerSheep,
+                PoopCount = poopUseCount,
+                FeaturedSheepName = featuredEntry != null
+                    ? featuredEntry.DisplayName
+                    : sheepSpawner.GetTypeDisplayName(featuredTypeId),
+                FeaturedSheepCount = featuredCount,
+                FeaturedSheepSprite = featuredEntry != null ? featuredEntry.Sprite : null,
+            });
             resultPanelShown = true;
         }
         else if (resultView != null)
