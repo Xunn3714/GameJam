@@ -11,9 +11,11 @@ public sealed class SheepDetailCardView : MonoBehaviour
     [SerializeField] private TMP_Text rarityText;
     [SerializeField] private TMP_Text countText;
     [SerializeField] private TMP_Text descriptionText;
+    [SerializeField] private TMP_Text flavorText;
     [SerializeField] private TMP_Text abilityNameText;
     [SerializeField] private TMP_Text abilityDescriptionText;
     [SerializeField] private Image sentenceImage;
+    private bool allowFlavorText = true;
 
     public Image SheepImage => sheepImage;
     public TMP_Text SheepNameText => sheepNameText;
@@ -27,24 +29,29 @@ public sealed class SheepDetailCardView : MonoBehaviour
         TMP_Text rarity,
         TMP_Text count,
         TMP_Text description,
+        TMP_Text flavor,
         TMP_Text abilityName,
         TMP_Text abilityDescription,
-        Image sentence)
+        Image sentence,
+        bool allowFlavorText)
     {
         sheepImage = image;
         sheepNameText = name;
         rarityText = rarity;
         countText = count;
         descriptionText = description;
+        flavorText = flavor;
         abilityNameText = abilityName;
         abilityDescriptionText = abilityDescription;
         sentenceImage = sentence;
+        this.allowFlavorText = allowFlavorText;
 
         ConfigureImage(sheepImage);
         ConfigureSingleLineText(sheepNameText, 20f, 30f);
         ConfigureSingleLineText(rarityText, 15f, 22f);
         ConfigureSingleLineText(countText, 14f, 18f);
         ConfigureParagraphText(descriptionText, 12, 15f, 19f);
+        ConfigureFlavorText(flavorText, allowFlavorText);
         ConfigureSingleLineText(abilityNameText, 15f, 21f);
         ConfigureParagraphText(abilityDescriptionText, 3, 14f, 18f);
     }
@@ -80,6 +87,14 @@ public sealed class SheepDetailCardView : MonoBehaviour
             descriptionText.text = string.IsNullOrWhiteSpace(sheep.description)
                 ? "暂无描述。"
                 : sheep.description.Trim();
+
+        bool hasFlavorText = allowFlavorText
+            && !string.IsNullOrWhiteSpace(sheep.flavorText);
+        if (flavorText != null)
+        {
+            flavorText.gameObject.SetActive(hasFlavorText);
+            flavorText.text = hasFlavorText ? sheep.flavorText.Trim() : string.Empty;
+        }
 
         bool hasAbilityName = !string.IsNullOrWhiteSpace(sheep.abilityName);
         if (abilityNameText != null)
@@ -118,6 +133,11 @@ public sealed class SheepDetailCardView : MonoBehaviour
             countText.text = string.Empty;
         if (descriptionText != null)
             descriptionText.text = "在草原上遇见新的羊，\n它的资料就会记录在这里。";
+        if (flavorText != null)
+        {
+            flavorText.gameObject.SetActive(false);
+            flavorText.text = string.Empty;
+        }
         if (abilityNameText != null)
         {
             abilityNameText.gameObject.SetActive(false);
@@ -133,6 +153,16 @@ public sealed class SheepDetailCardView : MonoBehaviour
             sentenceImage.sprite = null;
             sentenceImage.enabled = false;
         }
+    }
+
+    public void SetFlavorTextAllowed(bool allowed)
+    {
+        allowFlavorText = allowed;
+        if (flavorText == null)
+            return;
+
+        flavorText.gameObject.SetActive(false);
+        flavorText.text = string.Empty;
     }
 
     private static void ConfigureImage(Image image)
@@ -175,5 +205,20 @@ public sealed class SheepDetailCardView : MonoBehaviour
         text.fontSizeMin = minimumSize;
         text.fontSizeMax = maximumSize;
         text.maxVisibleLines = maximumLines;
+    }
+
+    private static void ConfigureFlavorText(TMP_Text text, bool allowFlavorText)
+    {
+        if (text == null)
+            return;
+
+        text.raycastTarget = false;
+        text.textWrappingMode = TextWrappingModes.Normal;
+        text.overflowMode = TextOverflowModes.Ellipsis;
+        text.enableAutoSizing = true;
+        text.fontSizeMin = 14f;
+        text.fontSizeMax = 20f;
+        text.maxVisibleLines = 3;
+        text.gameObject.SetActive(allowFlavorText);
     }
 }

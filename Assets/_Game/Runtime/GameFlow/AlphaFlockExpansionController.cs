@@ -63,8 +63,8 @@ public sealed class AlphaFlockExpansionController : MonoBehaviour
 
     [Header("Impact Feedback")]
     [Tooltip("第一阶段镜头尺寸下的主动撞击振幅；实际值会随当前视野等比放大。")]
-    [SerializeField, Min(0f)] private float impactShakeAmplitude = 0.16f;
-    [SerializeField, Min(0f)] private float impactShakeDuration = 0.2f;
+    [SerializeField, Min(0f)] private float impactShakeAmplitude = 0.30f;
+    [SerializeField, Min(0f)] private float impactShakeDuration = 0.22f;
     [SerializeField, Min(0.02f)] private float impactFeedbackInterval = 0.12f;
 
     [Header("Exit")]
